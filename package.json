@@ -6,8 +6,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "postinstall": "npm ci --prefix dashboard",
-    "build": "npm run build --prefix dashboard",
+    "postinstall": "npm ci --prefix dashboard --include=dev",
+    "build": "npm ci --prefix dashboard --include=dev && npm run build --prefix dashboard",
     "start": "node scripts/verify-env.mjs && npm run start --prefix dashboard"
   }
 }
