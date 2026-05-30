@@ -1,31 +1,65 @@
+// Runs before the app starts on Railway/production
+
+// Railway auto-injects RAILWAY_PUBLIC_DOMAIN when you generate a public domain
+if (!process.env.NEXT_PUBLIC_APP_URL?.trim() && process.env.RAILWAY_PUBLIC_DOMAIN?.trim()) {
+  process.env.NEXT_PUBLIC_APP_URL = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+  console.log(`Using Railway domain: ${process.env.NEXT_PUBLIC_APP_URL}`);
+}
+
 const required = [
   {
     key: "DATABASE_URL",
-    hint: "Railway → your service → Variables → add DATABASE_URL with your Neon connection string",
+    hint: [
+      "Railway → Swiftdroom service → Variables → Raw Editor",
+      "Paste your Neon connection string as DATABASE_URL",
+      "Or: Railway → + New → Database → Add Neon, then reference ${{Neon.DATABASE_URL}}",
+    ],
   },
   {
     key: "JWT_SECRET",
-    hint: "Any long random string (32+ characters)",
+    hint: [
+      "Generate any random 32+ character string",
+      "Example: openssl rand -base64 32",
+    ],
   },
+];
+
+const recommended = [
   {
     key: "NEXT_PUBLIC_APP_URL",
-    hint: "Your public Railway URL, e.g. https://swiftdroom-production.up.railway.app",
+    hint: "Set to your Railway URL, or generate a domain in Railway → Settings → Networking (auto-detected via RAILWAY_PUBLIC_DOMAIN)",
+  },
+  {
+    key: "DIRECT_URL",
+    hint: "Neon direct connection string (for migrations). Optional if DATABASE_URL is already the direct URL.",
   },
 ];
 
 const missing = required.filter(({ key }) => !process.env[key]?.trim());
 
 if (missing.length > 0) {
-  console.error("\nMissing required environment variables:\n");
+  console.error("\n=== Swiftdroom: missing required environment variables ===\n");
   for (const { key, hint } of missing) {
     console.error(`  ${key}`);
-    console.error(`    ${hint}\n`);
+    for (const line of hint) {
+      console.error(`    ${line}`);
+    }
+    console.error("");
   }
-  console.error(
-    "Neon example:\n" +
-      '  DATABASE_URL=postgresql://user:pass@ep-xxx.us-east-1.aws.neon.tech/neondb?sslmode=require\n'
-  );
+  console.error("Quick setup in Railway Variables (Raw Editor):\n");
+  console.error(`  DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require`);
+  console.error(`  JWT_SECRET=paste-a-long-random-string-here`);
+  console.error(`  ADMIN_EMAIL=you@company.com\n`);
   process.exit(1);
 }
 
-console.log("Environment variables OK");
+if (!process.env.NEXT_PUBLIC_APP_URL?.trim()) {
+  console.warn("\nWarning: NEXT_PUBLIC_APP_URL not set.");
+  console.warn("Generate a public domain in Railway → Settings → Networking\n");
+  for (const { key, hint } of recommended) {
+    console.warn(`  ${key}: ${hint[0]}`);
+  }
+  console.warn("");
+}
+
+console.log("Required environment variables OK");

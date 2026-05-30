@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getPriceIdForPlan, type PlanId } from "@/lib/plans";
+import { getAppUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
 
 const checkoutSchema = z.object({
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { planId } = checkoutSchema.parse(body);
     const stripe = getStripe();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = getAppUrl();
 
     let customerId = user.stripeCustomerId;
     if (!customerId) {
