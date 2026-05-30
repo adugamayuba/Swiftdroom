@@ -23,7 +23,15 @@ export default function RegisterPage() {
       body: JSON.stringify({ name, email, password }),
     });
 
-    const data = await res.json();
+    let data: { error?: string; apiToken?: string; redirectTo?: string } = {};
+    try {
+      data = await res.json();
+    } catch {
+      setError(`Server error (${res.status}). Try again or check /api/health.`);
+      setLoading(false);
+      return;
+    }
+
     setLoading(false);
 
     if (!res.ok) {

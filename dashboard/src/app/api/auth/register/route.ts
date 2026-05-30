@@ -1,18 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import {
-  createSession,
-  hashPassword,
-  verifyPassword,
-  getUserFromApiToken,
-} from "@/lib/auth";
+import { createSession, hashPassword, getUserFromApiToken } from "@/lib/auth";
 
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().optional(),
 });
+
+function registrationError(error: unknown) {
+  console.error("Registration error:", error);
+
+  if (error instanceof z.ZodError) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Email already registered" },
+        { status: 400 }
+      );
+    }
+    if (error.code === "P2021") {
+      return NextResponse.json(
+        {
+          error:
+            "Database tables missing. Run migrations or redeploy the service.",
+        },
+        { status: 503 }
+      );
+    }
+  }
+
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return NextResponse.json(
+      { error: "Database connection failed. Check DATABASE_URL in Railway." },
+      { status: 503 }
+    );
+  }
+
+  return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +81,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await createSession(user.id);
+    try {
+      await createSession(user.id);
+    } catch (sessionError) {
+      console.error("Session creation failed after register:", sessionError);
+    }
 
     const { getPostAuthRedirect } = await import("@/lib/user-flow");
 
@@ -60,13 +95,7 @@ export async function POST(request: NextRequest) {
       redirectTo: getPostAuthRedirect(user),
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: "Registration failed" },
-      { status: 500 }
-    );
+    return registrationError(error);
   }
 }
 
@@ -89,4 +118,8 @@ export async function GET(request: NextRequest) {
       apiToken: user.apiToken,
     },
   });
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204 });
 }
