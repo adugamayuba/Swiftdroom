@@ -46,10 +46,10 @@ Load the extension from `extension/` via `chrome://extensions`.
 
 ## Railway deployment
 
-1. Create a Railway project and connect this repo (root: `dashboard/`)
-2. Add a **Neon** PostgreSQL plugin or paste `DATABASE_URL` manually
-3. Set all env vars from `.env.example`
-4. Deploy — Railway runs `npx prisma migrate deploy && npm start`
+1. Create a Railway project and connect the **Swiftdroom** GitHub repo
+2. Leave **Root Directory** empty (deploy from repo root — `package.json` at root handles the monorepo)
+3. Add env vars from `dashboard/.env.example` (Neon `DATABASE_URL`, Stripe, Firebase, etc.)
+4. Railway uses `/railway.toml` automatically: `npm run build` → `npm start`
 
 ### Required environment variables
 
