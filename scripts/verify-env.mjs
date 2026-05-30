@@ -31,11 +31,23 @@ const recommended = [
   },
   {
     key: "DIRECT_URL",
-    hint: "Neon direct connection string (for migrations). Optional if DATABASE_URL is already the direct URL.",
+    hint: [
+      "REQUIRED for migrations on Neon — use the direct connection string (no -pooler in hostname)",
+      "Neon dashboard → Connection Details → Direct connection",
+    ],
   },
 ];
 
 const missing = required.filter(({ key }) => !process.env[key]?.trim());
+
+// Warn if only pooler URL is configured
+if (
+  process.env.DATABASE_URL?.includes("-pooler") &&
+  !process.env.DIRECT_URL?.trim()
+) {
+  console.error("\nWARNING: DATABASE_URL uses Neon pooler but DIRECT_URL is not set.");
+  console.error("Migrations will fail. Add DIRECT_URL from Neon (direct connection).\n");
+}
 
 if (missing.length > 0) {
   console.error("\n=== Swiftdroom: missing required environment variables ===\n");
@@ -47,7 +59,8 @@ if (missing.length > 0) {
     console.error("");
   }
   console.error("Quick setup in Railway Variables (Raw Editor):\n");
-  console.error(`  DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require`);
+  console.error(`  DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require`);
+  console.error(`  DIRECT_URL=postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`);
   console.error(`  JWT_SECRET=paste-a-long-random-string-here`);
   console.error(`  ADMIN_EMAIL=you@company.com\n`);
   process.exit(1);

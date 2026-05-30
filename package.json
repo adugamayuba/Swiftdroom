@@ -8,6 +8,7 @@
   "scripts": {
     "postinstall": "npm ci --prefix dashboard --include=dev",
     "build": "npm ci --prefix dashboard --include=dev && npm run build --prefix dashboard",
-    "start": "node scripts/verify-env.mjs && node scripts/start-production.mjs"
+    "start": "node scripts/verify-env.mjs && node scripts/start-production.mjs",
+    "migrate:deploy": "node scripts/migrate.mjs"
   }
 }

@@ -4,6 +4,7 @@ buildCommand = "npm run build"
 watchPatterns = ["dashboard/**"]
 
 [deploy]
+preDeployCommand = "node scripts/migrate.mjs"
 startCommand = "npm start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
