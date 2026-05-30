@@ -8,6 +8,6 @@
   "scripts": {
     "postinstall": "npm ci --prefix dashboard",
     "build": "npm run build --prefix dashboard",
-    "start": "npm run start --prefix dashboard"
+    "start": "node scripts/verify-env.mjs && npm run start --prefix dashboard"
   }
 }

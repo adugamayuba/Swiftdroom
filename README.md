@@ -44,6 +44,36 @@ npm run dev
 
 Load the extension from `extension/` via `chrome://extensions`.
 
+## Railway + Neon setup
+
+The container crash `Environment variable not found: DATABASE_URL` means Railway does not have your database URL configured yet.
+
+### 1. Create Neon database
+
+1. Go to [neon.tech](https://neon.tech) and create a project
+2. Copy the **connection string** (Pooled or Direct both work)
+3. It looks like: `postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`
+
+### 2. Add variables in Railway
+
+Open your Railway service → **Variables** tab → add these (Raw Editor is fastest):
+
+```env
+DATABASE_URL=postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
+JWT_SECRET=your-long-random-secret-here
+NEXT_PUBLIC_APP_URL=https://YOUR-SERVICE.up.railway.app
+ADMIN_EMAIL=you@company.com
+NODE_ENV=production
+```
+
+The variable name must be exactly `DATABASE_URL` (not `POSTGRES_URL` or `NEON_DATABASE_URL`).
+
+Add Stripe, Firebase, and OpenAI keys from `dashboard/.env.example` when ready.
+
+### 3. Redeploy
+
+After saving variables, Railway redeploys automatically. Migrations run on startup via `prisma migrate deploy`.
+
 ## Railway deployment
 
 1. Create a Railway project and connect the **Swiftdroom** GitHub repo
