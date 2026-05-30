@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swiftdroom</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="setup-screen" class="screen hidden">
+        <h1 class="brand-title">Swiftdroom</h1>
+        <p class="subtitle">Connect your account to get started</p>
+        <label class="field-label">API Token</label>
+        <input
+          type="password"
+          id="api-token-input"
+          placeholder="From dashboard settings"
+        />
+        <label class="field-label">API URL</label>
+        <input type="text" id="api-url-input" value="http://localhost:3000" />
+        <button id="connect-btn" class="btn btn-primary">Connect</button>
+        <p id="setup-error" class="error hidden"></p>
+        <a id="dashboard-link" href="#" target="_blank" class="link"
+          >Open dashboard settings</a
+        >
+      </div>
+
+      <div id="subscription-screen" class="screen hidden">
+        <h1 class="brand-title">Subscription required</h1>
+        <p class="subtitle" id="subscription-message">
+          Complete your profile and subscribe to use the extension.
+        </p>
+        <a id="subscribe-link" href="#" target="_blank" class="btn btn-primary btn-block">
+          View plans
+        </a>
+      </div>
+
+      <div id="main-screen" class="screen hidden">
+        <header class="header">
+          <div class="header-top">
+            <span class="brand">Swiftdroom</span>
+            <span id="usage-badge" class="usage-badge"></span>
+          </div>
+          <select id="persona-select" class="persona-select"></select>
+        </header>
+
+        <div class="actions">
+          <button id="scan-btn" class="btn btn-primary btn-block">
+            Scan & Autofill
+          </button>
+          <button id="rescan-btn" class="btn btn-secondary btn-block">
+            Rescan Fields
+          </button>
+        </div>
+
+        <div id="stats" class="stats hidden">
+          <span id="filled-count">0 filled</span>
+          <span id="uncertain-count">0 need mapping</span>
+        </div>
+
+        <section id="fields-section" class="section hidden">
+          <h2>Fields</h2>
+          <div id="fields-list"></div>
+        </section>
+
+        <section id="ghostwriter-section" class="section hidden">
+          <h2>Ghostwriter</h2>
+          <p class="hint">Open-ended questions on this page</p>
+          <div id="ghostwriter-list"></div>
+        </section>
+
+        <section id="log-section" class="section">
+          <button id="log-application-btn" class="btn btn-secondary btn-block">
+            Log this application
+          </button>
+        </section>
+
+        <footer class="footer">
+          <p class="co-pilot-note">
+            Co-pilot mode: review all fields before submitting.
+          </p>
+        </footer>
+      </div>
+    </div>
+    <script src="lib/api.js"></script>
+    <script src="lib/field-mapper.js"></script>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

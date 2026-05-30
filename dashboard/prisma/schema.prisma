@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum SubscriptionPlan {
+  NONE
+  STARTER
+  PRO
+  BUSINESS
+}
+
+enum SubscriptionStatus {
+  NONE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+model User {
+  id                     String             @id @default(cuid())
+  email                  String             @unique
+  passwordHash           String
+  name                   String?
+  role                   UserRole           @default(USER)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  profile                Profile?
+  personas               Persona[]
+  applications           Application[]
+  fieldMappings          FieldMapping[]
+  apiToken               String             @unique @default(cuid())
+  onboardingComplete     Boolean            @default(false)
+  stripeCustomerId       String?            @unique
+  stripeSubscriptionId   String?            @unique
+  plan                   SubscriptionPlan   @default(NONE)
+  subscriptionStatus     SubscriptionStatus @default(NONE)
+  applicationsUsed       Int                @default(0)
+  applicationsLimit      Int                @default(0)
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+}
+
+model Profile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName       String   @default("")
+  firstName      String   @default("")
+  lastName       String   @default("")
+  email          String   @default("")
+  phone          String   @default("")
+  location       String   @default("")
+  linkedinUrl    String   @default("")
+  githubUrl      String   @default("")
+  portfolioUrl   String   @default("")
+  resumeText     String   @default("")
+  resumeFileName String   @default("")
+  resumeUrl      String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Persona {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  focus     String   @default("")
+  summary   String   @default("")
+  skills    String   @default("")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Application {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   String
+  role      String
+  url       String
+  status    String   @default("applied")
+  personaId String?
+  notes     String   @default("")
+  appliedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model FieldMapping {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain       String
+  labelPattern String
+  fieldKey     String
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, domain, labelPattern])
+  @@index([userId])
+}
+
+model StripeEvent {
+  id        String   @id
+  type      String
+  createdAt DateTime @default(now())
+}
