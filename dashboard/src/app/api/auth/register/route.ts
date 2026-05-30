@@ -37,7 +37,10 @@ function registrationError(error: unknown) {
 
   if (error instanceof Prisma.PrismaClientInitializationError) {
     return NextResponse.json(
-      { error: "Database connection failed. Check DATABASE_URL in Railway." },
+      {
+        error:
+          "Database connection failed. Use Neon pooled URL for DATABASE_URL and direct URL for DIRECT_URL. Redeploy after updating variables.",
+      },
       { status: 503 }
     );
   }
