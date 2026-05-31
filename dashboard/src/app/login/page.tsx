@@ -19,88 +19,98 @@ export default function LoginPage() {
 
     const res = await apiFetch("/api/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
     const data = await res.json();
     setLoading(false);
 
-    if (!res.ok) {
-      setError(data.error || "Login failed");
-      return;
-    }
+    if (!res.ok) { setError(data.error || "Login failed"); return; }
 
-    if (data.sessionToken) {
-      setSessionToken(data.sessionToken);
-    }
-    if (data.apiToken) {
-      localStorage.setItem("swiftdroom_api_token", data.apiToken);
-    }
+    if (data.sessionToken) setSessionToken(data.sessionToken);
+    if (data.apiToken) localStorage.setItem("swiftdroom_api_token", data.apiToken);
 
     router.push(data.redirectTo || "/dashboard");
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link href="/" className="text-xl font-semibold text-neutral-900">
-            Swiftdroom
+    <div className="flex min-h-screen bg-slate-950">
+      {/* Left glow panel */}
+      <div className="relative hidden w-1/2 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/50 via-slate-900 to-slate-950" />
+        <div className="absolute left-1/2 top-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/20 blur-3xl" />
+        <div className="relative">
+          <Link href="/" className="text-xl font-bold text-white">
+            Swift<span className="text-indigo-400">droom</span>
           </Link>
         </div>
+        <div className="relative">
+          <blockquote className="text-2xl font-bold leading-snug text-white">
+            "Apply to jobs 10× faster with AI-powered autofill."
+          </blockquote>
+          <p className="mt-4 text-white/40">Workday · Greenhouse · Lever · Any career page</p>
+        </div>
+        <div className="relative text-sm text-white/20">© 2026 Swiftdroom</div>
+      </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-lg border border-neutral-200 bg-white p-8"
-        >
-          <h1 className="text-xl font-semibold text-neutral-900">Log in</h1>
-          <p className="mt-1 text-sm text-neutral-500">Access your dashboard</p>
+      {/* Right form */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          <div className="mb-2 lg:hidden">
+            <Link href="/" className="text-xl font-bold text-white">
+              Swift<span className="text-indigo-400">droom</span>
+            </Link>
+          </div>
+
+          <h1 className="text-3xl font-bold text-white">Welcome back</h1>
+          <p className="mt-2 text-white/40">Sign in to your account</p>
 
           {error && (
-            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {error}
             </div>
           )}
 
-          <div className="mt-6 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700">Email</label>
+              <label className="mb-1.5 block text-sm font-medium text-white/70">Email</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                placeholder="you@email.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700">Password</label>
+              <label className="mb-1.5 block text-sm font-medium text-white/70">Password</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                placeholder="••••••••"
               />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 w-full rounded-md bg-neutral-900 py-2.5 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/25 transition hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
 
-          <p className="mt-4 text-center text-sm text-neutral-500">
+          <p className="mt-6 text-center text-sm text-white/40">
             No account?{" "}
-            <Link href="/register" className="font-medium text-neutral-900">
-              Create one
+            <Link href="/register" className="font-semibold text-indigo-400 hover:text-indigo-300">
+              Create one free
             </Link>
           </p>
-        </form>
+        </div>
       </div>
     </div>
   );

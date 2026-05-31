@@ -13,7 +13,7 @@ function isProfileComplete(profile: {
   return Boolean(
     profile.fullName.trim() &&
       profile.email.trim() &&
-      profile.resumeText.trim().length > 50
+      profile.resumeText.trim().length > 0
   );
 }
 

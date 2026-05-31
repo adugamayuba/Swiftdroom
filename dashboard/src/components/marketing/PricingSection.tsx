@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { PLANS } from "@/lib/plans";
+import { CheckCircle } from "lucide-react";
 
 export function PricingSection() {
   const plans = [PLANS.STARTER, PLANS.PRO, PLANS.BUSINESS];
 
   return (
-    <section id="pricing" className="border-t border-neutral-200 bg-neutral-50 py-24">
+    <section id="pricing" className="border-y border-white/10 bg-white/[0.02] py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-neutral-900">
+          <p className="text-sm font-semibold uppercase tracking-widest text-indigo-400">Pricing</p>
+          <h2 className="mt-3 text-4xl font-bold tracking-tight text-white">
             Simple, transparent pricing
           </h2>
-          <p className="mt-4 text-neutral-600">
+          <p className="mt-4 text-white/50">
             Pay for applications you actually use. Every plan includes the Chrome extension,
             AI answer generation, and application tracking.
           </p>
@@ -21,42 +23,48 @@ export function PricingSection() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative rounded-lg border bg-white p-8 ${
+              className={`relative rounded-2xl border p-8 transition ${
                 plan.popular
-                  ? "border-neutral-900 shadow-sm"
-                  : "border-neutral-200"
+                  ? "border-indigo-500/50 bg-indigo-600/10 shadow-xl shadow-indigo-600/10"
+                  : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
               }`}
             >
               {plan.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white">
-                  Most popular
-                </span>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <span className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-lg shadow-indigo-600/30">
+                    Most popular
+                  </span>
+                </div>
               )}
-              <h3 className="text-lg font-semibold text-neutral-900">{plan.name}</h3>
-              <p className="mt-1 text-sm text-neutral-500">{plan.description}</p>
+
+              <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+              <p className="mt-1 text-sm text-white/40">{plan.description}</p>
+
               <div className="mt-6 flex items-baseline gap-1">
-                <span className="text-4xl font-semibold tracking-tight text-neutral-900">
+                <span className="text-5xl font-extrabold tracking-tight text-white">
                   {plan.priceLabel}
                 </span>
-                <span className="text-sm text-neutral-500">/month</span>
+                <span className="text-sm text-white/40">/month</span>
               </div>
-              <p className="mt-2 text-sm font-medium text-neutral-700">
-                {plan.applicationsLimit} applications per month
+              <p className="mt-1 text-sm font-medium text-indigo-400">
+                {plan.applicationsLimit} applications / month
               </p>
+
               <ul className="mt-8 space-y-3">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex gap-2 text-sm text-neutral-600">
-                    <span className="text-neutral-400">—</span>
+                  <li key={feature} className="flex items-start gap-2.5 text-sm text-white/60">
+                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                     {feature}
                   </li>
                 ))}
               </ul>
+
               <Link
                 href="/register"
-                className={`mt-8 block w-full rounded-md py-2.5 text-center text-sm font-medium ${
+                className={`mt-8 block w-full rounded-xl py-3 text-center text-sm font-bold transition ${
                   plan.popular
-                    ? "bg-neutral-900 text-white hover:bg-neutral-800"
-                    : "border border-neutral-300 text-neutral-900 hover:bg-neutral-50"
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-500"
+                    : "border border-white/20 text-white hover:border-white/40 hover:bg-white/10"
                 }`}
               >
                 Get started
