@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { resolveUser } from "@/lib/auth";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getAppUrl } from "@/lib/app-url";
 
-export async function POST() {
-  const user = await getCurrentUser();
+export async function POST(request: NextRequest) {
+  const user = await resolveUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

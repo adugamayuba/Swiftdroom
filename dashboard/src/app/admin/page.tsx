@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api-client";
 
 interface Stats {
   totalUsers: number;
@@ -20,7 +21,7 @@ export default function AdminOverviewPage() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/stats")
+    apiFetch("/api/admin/stats")
       .then((r) => r.json())
       .then(setStats);
   }, []);

@@ -10,31 +10,31 @@ const required = [
   {
     key: "DATABASE_URL",
     hint: [
-      "Railway → Swiftdroom service → Variables → Raw Editor",
-      "Paste your Neon connection string as DATABASE_URL",
-      "Or: Railway → + New → Database → Add Neon, then reference ${{Neon.DATABASE_URL}}",
+      "Neon POOLED connection (-pooler in hostname)",
+      "Railway → Swiftdroom service → Variables",
+    ],
+  },
+  {
+    key: "DIRECT_URL",
+    hint: [
+      "Neon DIRECT connection (no -pooler in hostname)",
+      "Required for migrations on deploy",
     ],
   },
   {
     key: "JWT_SECRET",
-    hint: [
-      "Generate any random 32+ character string",
-      "Example: openssl rand -base64 32",
-    ],
+    hint: ["Any random 32+ character string"],
   },
 ];
 
 const recommended = [
   {
     key: "NEXT_PUBLIC_APP_URL",
-    hint: "Set to your Railway URL, or generate a domain in Railway → Settings → Networking (auto-detected via RAILWAY_PUBLIC_DOMAIN)",
+    hint: "Optional if you generated a Railway public domain (auto-detected)",
   },
   {
-    key: "DIRECT_URL",
-    hint: [
-      "REQUIRED for migrations on Neon — use the direct connection string (no -pooler in hostname)",
-      "Neon dashboard → Connection Details → Direct connection",
-    ],
+    key: "ADMIN_EMAIL",
+    hint: "Your email — gets admin access on signup",
   },
 ];
 

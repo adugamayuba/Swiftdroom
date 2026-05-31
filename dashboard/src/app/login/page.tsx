@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch, setSessionToken } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/login", {
+    const res = await apiFetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -30,6 +31,9 @@ export default function LoginPage() {
       return;
     }
 
+    if (data.sessionToken) {
+      setSessionToken(data.sessionToken);
+    }
     if (data.apiToken) {
       localStorage.setItem("swiftdroom_api_token", data.apiToken);
     }

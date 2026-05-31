@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ExternalLink, Trash2 } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 
 interface Application {
   id: string;
@@ -36,7 +37,7 @@ export default function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
 
   function loadApplications() {
-    fetch("/api/applications")
+    apiFetch("/api/applications")
       .then((r) => r.json())
       .then((data) => {
         setApplications(data.applications || []);
@@ -49,7 +50,7 @@ export default function ApplicationsPage() {
   }, []);
 
   async function updateStatus(id: string, status: string) {
-    await fetch(`/api/applications/${id}`, {
+    await apiFetch(`/api/applications/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -59,7 +60,7 @@ export default function ApplicationsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Remove this application?")) return;
-    await fetch(`/api/applications/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/applications/${id}`, { method: "DELETE" });
     loadApplications();
   }
 

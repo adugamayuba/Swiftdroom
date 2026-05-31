@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getCurrentUser, getUserFromApiToken } from "@/lib/auth";
-
-async function resolveUserId(request: NextRequest) {
-  const token = request.headers.get("x-api-token");
-  if (token) {
-    const user = await getUserFromApiToken(token);
-    return user?.id ?? null;
-  }
-  const user = await getCurrentUser();
-  return user?.id ?? null;
-}
+import { resolveUser } from "@/lib/auth";
 
 const personaSchema = z.object({
   name: z.string().min(1),
@@ -22,13 +12,13 @@ const personaSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const userId = await resolveUserId(request);
-  if (!userId) {
+  const user = await resolveUser(request);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const personas = await db.persona.findMany({
-    where: { userId },
+    where: { userId: user.id },
     orderBy: { createdAt: "asc" },
   });
 
@@ -36,10 +26,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await resolveUserId(request);
-  if (!userId) {
+  const user = await resolveUser(request);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const userId = user.id;
 
   try {
     const body = await request.json();

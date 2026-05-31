@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api-client";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-    fetch("/api/me")
+    apiFetch("/api/me")
       .then((r) => {
         if (!r.ok) {
           router.push("/login");
@@ -37,7 +38,7 @@ export default function OnboardingPage() {
         }
       });
 
-    fetch("/api/profile")
+    apiFetch("/api/profile")
       .then((r) => r.json())
       .then((data) => {
         if (data.profile) setProfile((p) => ({ ...p, ...data.profile }));
@@ -55,7 +56,7 @@ export default function OnboardingPage() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("/api/upload/resume", {
+      const res = await apiFetch("/api/upload/resume", {
         method: "POST",
         body: formData,
       });
@@ -80,7 +81,7 @@ export default function OnboardingPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/profile", {
+    const res = await apiFetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(profile),

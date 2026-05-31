@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { resolveUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseName } from "@/lib/utils";
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/lib/firebase";
 
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+  const user = await resolveUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

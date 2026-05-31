@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Star } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 
 interface Persona {
   id: string;
@@ -24,7 +25,7 @@ export default function PersonasPage() {
   });
 
   function loadPersonas() {
-    fetch("/api/personas")
+    apiFetch("/api/personas")
       .then((r) => r.json())
       .then((data) => {
         setPersonas(data.personas || []);
@@ -38,7 +39,7 @@ export default function PersonasPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/personas", {
+    await apiFetch("/api/personas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -49,7 +50,7 @@ export default function PersonasPage() {
   }
 
   async function setDefault(id: string) {
-    await fetch(`/api/personas/${id}`, {
+    await apiFetch(`/api/personas/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isDefault: true }),
@@ -59,7 +60,7 @@ export default function PersonasPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this persona?")) return;
-    await fetch(`/api/personas/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/personas/${id}`, { method: "DELETE" });
     loadPersonas();
   }
 

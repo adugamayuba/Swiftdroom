@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Copy, Check, Globe } from "lucide-react";
+import { apiFetch, getApiBaseUrl } from "@/lib/api-client";
 import { PLANS } from "@/lib/plans";
 
 export default function SettingsPage() {
@@ -20,7 +21,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/me");
+      const res = await apiFetch("/api/me");
       if (res.ok) {
         const data = await res.json();
         if (data.apiToken) {
@@ -42,7 +43,7 @@ export default function SettingsPage() {
 
   async function openBillingPortal() {
     setBillingLoading(true);
-    const res = await fetch("/api/stripe/portal", { method: "POST" });
+    const res = await apiFetch("/api/stripe/portal", { method: "POST" });
     const data = await res.json();
     setBillingLoading(false);
     if (data.url) window.location.href = data.url;
@@ -52,6 +53,8 @@ export default function SettingsPage() {
     usage.plan !== "NONE"
       ? PLANS[usage.plan as keyof typeof PLANS]?.name
       : "No plan";
+
+  const extensionApiUrl = getApiBaseUrl() || "(same as dashboard — local dev)";
 
   return (
     <div className="max-w-2xl">
@@ -93,6 +96,16 @@ export default function SettingsPage() {
             />
           </div>
         </div>
+      </section>
+
+      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
+        <h2 className="font-medium text-neutral-900">Extension API URL</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Paste this in the Chrome extension setup (Railway API host)
+        </p>
+        <code className="mt-3 block truncate rounded-md bg-neutral-100 px-4 py-3 font-mono text-sm">
+          {extensionApiUrl}
+        </code>
       </section>
 
       <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { resolveUser } from "@/lib/auth";
 import { getUsageSummary, hasActiveSubscription } from "@/lib/subscription";
 import { getPostAuthRedirect } from "@/lib/user-flow";
 
-export async function GET() {
-  const user = await getCurrentUser();
+export async function GET(request: NextRequest) {
+  const user = await resolveUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

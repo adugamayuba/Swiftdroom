@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api-client";
 
 interface AdminUser {
   id: string;
@@ -21,7 +22,7 @@ export default function AdminUsersPage() {
   const [pages, setPages] = useState(1);
 
   useEffect(() => {
-    fetch(`/api/admin/users?page=${page}`)
+    apiFetch(`/api/admin/users?page=${page}`)
       .then((r) => r.json())
       .then((data) => {
         setUsers(data.users || []);

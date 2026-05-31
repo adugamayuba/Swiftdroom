@@ -1,47 +1,84 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { ArrowRight, Globe, FileText, Users, Briefcase } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 
-export default async function DashboardOverview() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+interface OverviewData {
+  name: string | null;
+  profileComplete: boolean;
+  personaCount: number;
+  applicationCount: number;
+}
 
-  const applicationCount = await db.application.count({
-    where: { userId: user.id },
-  });
+export default function DashboardOverview() {
+  const [data, setData] = useState<OverviewData | null>(null);
 
-  const profileComplete = Boolean(
-    user.profile?.fullName && user.profile?.email && user.profile?.resumeText
-  );
+  useEffect(() => {
+    async function load() {
+      const [meRes, profileRes, personasRes, appsRes] = await Promise.all([
+        apiFetch("/api/me"),
+        apiFetch("/api/profile"),
+        apiFetch("/api/personas"),
+        apiFetch("/api/applications"),
+      ]);
+
+      if (!meRes.ok) return;
+
+      const me = await meRes.json();
+      const profile = profileRes.ok
+        ? (await profileRes.json()).profile
+        : null;
+      const personas = personasRes.ok
+        ? (await personasRes.json()).personas
+        : [];
+      const apps = appsRes.ok ? await appsRes.json() : { applications: [] };
+
+      const profileComplete = Boolean(
+        profile?.fullName && profile?.email && profile?.resumeText
+      );
+
+      setData({
+        name: me.name,
+        profileComplete,
+        personaCount: personas.length,
+        applicationCount: apps.applications?.length ?? 0,
+      });
+    }
+
+    load();
+  }, []);
+
+  if (!data) {
+    return <p className="text-slate-500">Loading overview...</p>;
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900">
-        Welcome{user.name ? `, ${user.name.split(" ")[0]}` : ""}
+        Welcome{data.name ? `, ${data.name.split(" ")[0]}` : ""}
       </h1>
-      <p className="mt-1 text-slate-500">
-        Your job application command center
-      </p>
+      <p className="mt-1 text-slate-500">Your job application command center</p>
 
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <StatCard
           icon={FileText}
           label="Profile"
-          value={profileComplete ? "Complete" : "Incomplete"}
+          value={data.profileComplete ? "Complete" : "Incomplete"}
           href="/dashboard/profile"
-          accent={profileComplete ? "green" : "amber"}
+          accent={data.profileComplete ? "green" : "amber"}
         />
         <StatCard
           icon={Users}
           label="Personas"
-          value={`${user.personas.length} configured`}
+          value={`${data.personaCount} configured`}
           href="/dashboard/personas"
         />
         <StatCard
           icon={Briefcase}
           label="Applications tracked"
-          value={String(applicationCount)}
+          value={String(data.applicationCount)}
           href="/dashboard/applications"
         />
       </div>
@@ -73,12 +110,12 @@ export default async function DashboardOverview() {
         </div>
       </div>
 
-      {!profileComplete && (
+      {!data.profileComplete && (
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm text-amber-800">
-            <strong>Next step:</strong> Complete your profile with baseline
-            info and paste your resume text so the extension can autofill and
-            generate tailored answers.
+            <strong>Next step:</strong> Complete your profile with baseline info
+            and paste your resume text so the extension can autofill and generate
+            tailored answers.
           </p>
           <Link
             href="/dashboard/profile"

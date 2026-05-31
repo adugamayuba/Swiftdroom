@@ -6,7 +6,8 @@ AI-powered job application co-pilot with Stripe billing, Neon PostgreSQL, Fireba
 
 | Service | Purpose |
 |---------|---------|
-| **Railway** | Hosts the Next.js dashboard + API |
+| **Vercel** | Frontend (landing, dashboard UI) |
+| **Railway** | API routes + server logic |
 | **Neon** | PostgreSQL database |
 | **Stripe** | Subscriptions ($9.99 / $19.99 / $39.99) |
 | **Firebase** | Resume file storage |
@@ -96,24 +97,57 @@ NEXT_PUBLIC_APP_URL=https://your-domain.com
 - `DATABASE_URL` = Neon **Pooled** (`-pooler` in hostname) — app runtime  
 - `DIRECT_URL` = Neon **Direct** (no `-pooler`) — migrations  
 
-Migrations run **automatically**:
-- **Railway**: `preDeployCommand` before each deploy  
-- **Vercel**: `vercel-build` script during deploy (needs `DIRECT_URL` in Vercel env)  
+Migrations run **automatically** on **Railway** via `preDeployCommand`. Vercel frontend builds skip migrations.
 
 Local `.env` is **optional** — only if you run the app on your machine.
 
-## Vercel deployment
+## Split deployment (recommended)
+
+| Platform | Role | Root directory |
+|----------|------|----------------|
+| **Vercel** | Frontend (pages only) | `dashboard` |
+| **Railway** | API + database | repo root |
+
+### Vercel (frontend)
+
+1. Import repo → Root Directory: `dashboard`
+2. Environment variables:
+   ```env
+   NEXT_PUBLIC_API_URL=https://YOUR-SERVICE.up.railway.app
+   NEXT_PUBLIC_APP_URL=https://YOUR-APP.vercel.app
+   ```
+3. No `DATABASE_URL` needed — Vercel build runs `next build` only (no migrations)
+
+### Railway (API)
+
+1. Connect repo → deploy from **repo root** (uses `railway.toml`)
+2. Environment variables (full set from `dashboard/.env.example`):
+   ```env
+   DATABASE_URL=postgresql://...@ep-xxx-pooler....neon.tech/neondb?sslmode=require
+   DIRECT_URL=postgresql://...@ep-xxx....neon.tech/neondb?sslmode=require
+   JWT_SECRET=...
+   ADMIN_EMAIL=...
+   NEXT_PUBLIC_APP_URL=https://YOUR-APP.vercel.app
+   ```
+3. Stripe webhook: `https://YOUR-SERVICE.up.railway.app/api/webhooks/stripe`
+4. Migrations run via `preDeployCommand` on each deploy
+
+Auth uses **Bearer tokens** stored in the browser — the Vercel frontend calls the Railway API cross-origin with CORS.
+
+## Single-host deployment
+
+You can still deploy everything on **Railway only** or **Vercel only** — leave `NEXT_PUBLIC_API_URL` empty for same-origin `/api` calls.
+
+## Vercel (full app — legacy)
 
 1. Import the GitHub repo in Vercel
 2. Set **Root Directory** to `dashboard`
-3. Add all environment variables above in Vercel (Production + Preview)
-4. Deploy — migrations run automatically via `vercel-build`
+3. Add all environment variables (including `DATABASE_URL`, `DIRECT_URL`)
+4. Use `npm run db:migrate:deploy` separately or restore migrate in `vercel-build`
 
 Set `NEXT_PUBLIC_APP_URL` to your Vercel URL, e.g. `https://swiftdroom.vercel.app`
 
-**Use Railway OR Vercel for the app**, not both (same Neon DB is fine).
-
-## Railway deployment
+## Railway deployment (API or full app)
 
 1. Create a Railway project and connect the **Swiftdroom** GitHub repo
 2. Leave **Root Directory** empty (deploy from repo root — `package.json` at root handles the monorepo)
@@ -136,7 +170,7 @@ See `dashboard/.env.example` for the full list. Critical ones:
 
 1. Create 3 recurring products in Stripe Dashboard (Starter, Pro, Business)
 2. Copy price IDs to `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_BUSINESS`
-3. Add webhook endpoint: `https://your-app.up.railway.app/api/webhooks/stripe`
+3. Add webhook endpoint: `https://your-api.up.railway.app/api/webhooks/stripe`
 4. Listen for: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`
 5. Copy webhook signing secret to `STRIPE_WEBHOOK_SECRET`
 
@@ -159,15 +193,15 @@ Admin panel at `/admin`:
 
 ## Extension (production)
 
-1. Update API URL in extension setup to your Railway domain
-2. Users paste API token from Dashboard → Settings
-3. Manifest includes `https://*.up.railway.app/*` host permissions
+1. Set **API URL** in extension setup to your **Railway** domain
+2. Users paste API token from Dashboard → Settings (on Vercel)
+3. Manifest includes `https://*.up.railway.app/*` and `https://*.vercel.app/*`
 
 ## Project structure
 
 ```
 Swiftdroom/
-├── dashboard/     Next.js app (deploy to Railway)
+├── dashboard/     Next.js app (Vercel frontend + Railway API)
 ├── extension/     Chrome MV3 extension
 └── README.md
 ```

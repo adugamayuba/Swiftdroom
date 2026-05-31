@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Save, Upload } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 
 interface Profile {
   fullName: string;
@@ -38,7 +39,7 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch("/api/profile")
+    apiFetch("/api/profile")
       .then((r) => r.json())
       .then((data) => {
         if (data.profile) setProfile({ ...emptyProfile, ...data.profile });
@@ -51,7 +52,7 @@ export default function ProfilePage() {
     setSaving(true);
     setSaved(false);
 
-    await fetch("/api/profile", {
+    await apiFetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(profile),

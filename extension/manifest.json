@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "AI-powered job application co-pilot. Autofill forms and generate tailored answers.",
   "permissions": ["storage", "activeTab", "sidePanel", "scripting"],
-  "host_permissions": ["<all_urls>", "http://localhost:3000/*", "https://*.up.railway.app/*"],
+  "host_permissions": ["<all_urls>", "http://localhost:3000/*", "https://*.up.railway.app/*", "https://*.vercel.app/*"],
   "background": {
     "service_worker": "background.js"
   },

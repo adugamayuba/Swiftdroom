@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getCurrentUser, getUserFromApiToken } from "@/lib/auth";
-
-async function resolveUserId(request: NextRequest) {
-  const token = request.headers.get("x-api-token");
-  if (token) {
-    const user = await getUserFromApiToken(token);
-    return user?.id ?? null;
-  }
-  const user = await getCurrentUser();
-  return user?.id ?? null;
-}
+import { resolveUser } from "@/lib/auth";
 
 const updateSchema = z.object({
   status: z.string().optional(),
@@ -22,11 +12,12 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await resolveUserId(request);
-  if (!userId) {
+  const user = await resolveUser(request);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userId = user.id;
   const { id } = await params;
 
   try {
@@ -52,11 +43,12 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await resolveUserId(request);
-  if (!userId) {
+  const user = await resolveUser(request);
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userId = user.id;
   const { id } = await params;
 
   const existing = await db.application.findFirst({ where: { id, userId } });

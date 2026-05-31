@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PLANS, type PlanId } from "@/lib/plans";
+import { apiFetch } from "@/lib/api-client";
 
 export default function SubscribePageContent() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function SubscribePageContent() {
   } | null>(null);
 
   useEffect(() => {
-    fetch("/api/me")
+    apiFetch("/api/me")
       .then((r) => {
         if (!r.ok) {
           router.push("/login");
@@ -39,9 +40,8 @@ export default function SubscribePageContent() {
 
   async function handleSubscribe(planId: PlanId) {
     setLoading(planId);
-    const res = await fetch("/api/stripe/checkout", {
+    const res = await apiFetch("/api/stripe/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ planId }),
     });
     const data = await res.json();

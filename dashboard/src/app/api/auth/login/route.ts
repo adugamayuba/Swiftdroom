@@ -21,13 +21,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await createSession(user.id);
+    const sessionToken = await createSession(user.id);
 
     const { getPostAuthRedirect } = await import("@/lib/user-flow");
 
     return NextResponse.json({
       user: { id: user.id, email: user.email, name: user.name },
       apiToken: user.apiToken,
+      sessionToken,
       redirectTo: getPostAuthRedirect(user),
     });
   } catch (error) {

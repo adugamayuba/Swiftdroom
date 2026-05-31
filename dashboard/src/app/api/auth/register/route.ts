@@ -84,8 +84,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    let sessionToken: string | undefined;
     try {
-      await createSession(user.id);
+      sessionToken = await createSession(user.id);
     } catch (sessionError) {
       console.error("Session creation failed after register:", sessionError);
     }
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       user: { id: user.id, email: user.email, name: user.name },
       apiToken: user.apiToken,
+      sessionToken,
       redirectTo: getPostAuthRedirect(user),
     });
   } catch (error) {

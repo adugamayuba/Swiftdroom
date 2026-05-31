@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch, setSessionToken } from "@/lib/api-client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,13 +18,18 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/register", {
+    const res = await apiFetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
     });
 
-    let data: { error?: string; apiToken?: string; redirectTo?: string } = {};
+    let data: {
+      error?: string;
+      apiToken?: string;
+      sessionToken?: string;
+      redirectTo?: string;
+    } = {};
     try {
       data = await res.json();
     } catch {
@@ -39,6 +45,9 @@ export default function RegisterPage() {
       return;
     }
 
+    if (data.sessionToken) {
+      setSessionToken(data.sessionToken);
+    }
     if (data.apiToken) {
       localStorage.setItem("swiftdroom_api_token", data.apiToken);
     }
