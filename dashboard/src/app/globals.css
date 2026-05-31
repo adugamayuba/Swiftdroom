@@ -33,3 +33,26 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translateY(-18px) rotate(6deg);
+    opacity: 0.35;
+  }
+}
+
+.hero-float {
+  animation: hero-float ease-in-out infinite;
+}
+
+.footer-outline-text {
+  font-size: clamp(4rem, 18vw, 12rem);
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(163, 163, 163, 0.45);
+  text-stroke: 1.5px rgba(163, 163, 163, 0.45);
+}

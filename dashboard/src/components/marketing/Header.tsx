@@ -11,6 +11,12 @@ export function MarketingHeader() {
           <Link href="#features" className="text-sm text-neutral-600 hover:text-neutral-900">
             Features
           </Link>
+          <Link href="#testimonials" className="text-sm text-neutral-600 hover:text-neutral-900">
+            Testimonials
+          </Link>
+          <Link href="#blog" className="text-sm text-neutral-600 hover:text-neutral-900">
+            Blog
+          </Link>
           <Link href="#pricing" className="text-sm text-neutral-600 hover:text-neutral-900">
             Pricing
           </Link>
@@ -34,18 +40,3 @@ export function MarketingHeader() {
   );
 }
 
-export function MarketingFooter() {
-  return (
-    <footer className="border-t border-neutral-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-10 md:flex-row">
-        <p className="text-sm text-neutral-500">
-          Swiftdroom. Job applications, without the repetition.
-        </p>
-        <div className="flex gap-6 text-sm text-neutral-500">
-          <Link href="/login" className="hover:text-neutral-900">Log in</Link>
-          <Link href="/register" className="hover:text-neutral-900">Sign up</Link>
-        </div>
-      </div>
-    </footer>
-  );
-}

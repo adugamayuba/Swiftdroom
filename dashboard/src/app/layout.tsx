@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import {
+  buildPageMetadata,
+  DEFAULT_DESCRIPTION,
+  DEFAULT_TITLE,
+  SITE_NAME,
+} from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +19,37 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Swiftdroom — Job Application Co-Pilot",
-  description:
-    "Fill job applications faster with AI-powered autofill and personalized answers.",
+  ...buildPageMetadata(),
+  title: {
+    default: DEFAULT_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  applicationName: SITE_NAME,
+  category: "technology",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    ...buildPageMetadata().openGraph,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} — AI job application autofill`,
+      },
+    ],
+  },
+  twitter: {
+    ...buildPageMetadata().twitter,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
   other: {
     // Read by the extension content-connect.js to auto-configure the API URL
     "swiftdroom-api-url": process.env.NEXT_PUBLIC_API_URL || "",

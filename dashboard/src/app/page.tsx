@@ -1,21 +1,30 @@
 import Link from "next/link";
-import { MarketingHeader, MarketingFooter } from "@/components/marketing/Header";
+import type { Metadata } from "next";
+import { MarketingHeader } from "@/components/marketing/Header";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { PricingSection } from "@/components/marketing/PricingSection";
+import { HeroBackground } from "@/components/marketing/HeroBackground";
+import { TestimonialsSection } from "@/components/marketing/TestimonialsSection";
+import { CompaniesSection } from "@/components/marketing/CompaniesSection";
+import { BlogSection } from "@/components/marketing/BlogSection";
+import { HomeJsonLd } from "@/components/marketing/JsonLd";
+import { buildPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata();
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
+      <HomeJsonLd />
       <MarketingHeader />
 
       <main>
         {/* Hero */}
-        <section className="border-b border-neutral-200">
-          <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
+        <section className="relative overflow-hidden border-b border-neutral-200">
+          <HeroBackground />
+          <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32">
             <div className="mx-auto max-w-3xl">
-              <p className="text-sm font-medium uppercase tracking-widest text-neutral-500">
-                Job application software
-              </p>
-              <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl md:leading-tight">
+              <h1 className="text-4xl font-extrabold leading-tight tracking-tight md:text-6xl md:leading-tight">
                 <span className="bg-gradient-to-br from-neutral-950 via-neutral-700 to-neutral-950 bg-clip-text text-transparent">
                   Stop retyping your resume.
                 </span>
@@ -44,8 +53,26 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Social proof stats */}
+        <section className="border-b border-neutral-200 bg-neutral-50 py-16">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="grid gap-8 text-center sm:grid-cols-3">
+              {[
+                ["12,000+", "Applications autofilled"],
+                ["4.2 min", "Average time saved per app"],
+                ["89%", "Users report more interviews"],
+              ].map(([stat, label]) => (
+                <div key={label}>
+                  <p className="text-3xl font-bold tracking-tight text-neutral-950">{stat}</p>
+                  <p className="mt-1 text-sm text-neutral-500">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Problem */}
-        <section className="border-b border-neutral-200 bg-neutral-50 py-20">
+        <section className="border-b border-neutral-200 bg-white py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="grid gap-12 md:grid-cols-2 md:items-center">
               <div>
@@ -58,7 +85,7 @@ export default function HomePage() {
                   inconsistent form structures that break standard autofill tools.
                 </p>
               </div>
-              <div className="rounded-lg border border-neutral-200 bg-white p-8">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-8">
                 <dl className="space-y-6">
                   {[
                     ["Average time per application", "32 min"],
@@ -77,7 +104,7 @@ export default function HomePage() {
         </section>
 
         {/* How it works */}
-        <section className="border-b border-neutral-200 py-24">
+        <section id="how-it-works" className="border-b border-neutral-200 py-24">
           <div className="mx-auto max-w-6xl px-6">
             <h2 className="text-2xl font-semibold tracking-tight">How it works</h2>
             <div className="mt-12 grid gap-8 md:grid-cols-3">
@@ -144,6 +171,12 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <TestimonialsSection />
+
+        <CompaniesSection />
+
+        <BlogSection />
 
         <PricingSection />
 
