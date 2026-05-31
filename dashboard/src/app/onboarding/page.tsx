@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Upload, CheckCircle, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
+import { Upload, CheckCircle, ArrowRight, AlertCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 
 type ExtractedContact = {
@@ -112,7 +112,11 @@ export default function OnboardingPage() {
 
     const res = await apiFetch("/api/profile", {
       method: "PUT",
-      body: JSON.stringify(profile),
+      body: JSON.stringify({
+        ...profile,
+        // Always include resumeText explicitly so the PUT never clears it
+        resumeText: profile.resumeText || undefined,
+      }),
     });
     const data = await res.json();
     setSaving(false);
@@ -121,7 +125,14 @@ export default function OnboardingPage() {
     if (data.onboardingComplete) {
       router.push("/subscribe");
     } else {
-      setError("Full name, email, and a resume are all required to continue.");
+      const missing: string[] = data.missing || [];
+      if (missing.includes("resume text")) {
+        setError("Your resume text wasn't saved — go back and re-upload your PDF.");
+      } else if (missing.length > 0) {
+        setError(`Please fill in: ${missing.join(", ")}.`);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     }
   }
 
@@ -141,8 +152,8 @@ export default function OnboardingPage() {
             )}
           </label>
           {autoExtracted && value && (
-            <span className="flex items-center gap-1 text-xs text-emerald-600">
-              <Sparkles className="h-3 w-3" /> auto-filled
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              from resume
             </span>
           )}
         </div>
@@ -234,11 +245,10 @@ export default function OnboardingPage() {
               />
             </label>
 
-            <div className="mt-6 flex items-start gap-3 rounded-lg bg-neutral-100 px-4 py-3 text-sm text-neutral-500">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
+            <p className="mt-4 text-sm text-neutral-400">
               We extract your name, email, phone, location, and links automatically.
-              You'll confirm everything before we save it.
-            </div>
+              You'll review everything before we save it.
+            </p>
           </div>
         )}
 

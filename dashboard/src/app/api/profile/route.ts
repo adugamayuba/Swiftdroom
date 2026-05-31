@@ -11,10 +11,23 @@ function isProfileComplete(profile: {
 } | null): boolean {
   if (!profile) return false;
   return Boolean(
-    profile.fullName.trim() &&
-      profile.email.trim() &&
-      profile.resumeText.trim().length > 0
+    profile.fullName?.trim() &&
+      profile.email?.trim() &&
+      profile.resumeText?.trim()
   );
+}
+
+function completionErrors(profile: {
+  fullName: string;
+  email: string;
+  resumeText: string;
+} | null): string[] {
+  if (!profile) return ["profile not found"];
+  const missing: string[] = [];
+  if (!profile.fullName?.trim()) missing.push("full name");
+  if (!profile.email?.trim()) missing.push("email");
+  if (!profile.resumeText?.trim()) missing.push("resume text");
+  return missing;
 }
 
 const profileSchema = z.object({
@@ -63,7 +76,12 @@ export async function PUT(request: NextRequest) {
       update: data,
     });
 
-    const complete = isProfileComplete(profile);
+    // Re-read from DB so we get the full merged state (including resumeText
+    // saved by the upload route, which may not be in this request body)
+    const fresh = await db.profile.findUnique({ where: { userId: user.id } });
+    const complete = isProfileComplete(fresh);
+    const missing = completionErrors(fresh);
+
     if (complete !== user.onboardingComplete) {
       await db.user.update({
         where: { id: user.id },
@@ -71,7 +89,7 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ profile, onboardingComplete: complete });
+    return NextResponse.json({ profile: fresh, onboardingComplete: complete, missing });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
