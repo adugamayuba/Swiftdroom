@@ -1,45 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Check, Globe } from "lucide-react";
-import { apiFetch, getApiBaseUrl } from "@/lib/api-client";
+import { Check, ExternalLink, RefreshCw } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 import { PLANS } from "@/lib/plans";
 
+// Chrome Web Store link — update once the extension is published
+const CWS_URL = "https://chromewebstore.google.com/detail/swiftdroom";
+
 export default function SettingsPage() {
-  const [apiToken, setApiToken] = useState("");
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [extensionConnected, setExtensionConnected] = useState(false);
   const [usage, setUsage] = useState({
     used: 0,
     limit: 0,
-    remaining: 0,
     plan: "NONE",
     status: "NONE",
     periodEnd: null as string | null,
   });
 
   useEffect(() => {
-    async function load() {
-      const res = await apiFetch("/api/me");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.apiToken) {
-          setApiToken(data.apiToken);
-          localStorage.setItem("swiftdroom_api_token", data.apiToken);
-        }
-        if (data.usage) setUsage(data.usage);
-      }
+    apiFetch("/api/me").then(async (r) => {
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.apiToken) localStorage.setItem("swiftdroom_api_token", data.apiToken);
+      if (data.usage) setUsage(data.usage);
       setLoading(false);
-    }
-    load();
-  }, []);
+    });
 
-  function copyToken() {
-    navigator.clipboard.writeText(apiToken);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
+    // Listen for the extension auto-connect event
+    const handler = () => setExtensionConnected(true);
+    window.addEventListener("swiftdroom:connected", handler);
+
+    // If already connected (e.g. page re-load after connect), check via message
+    try {
+      // @ts-ignore — chrome is injected by the extension
+      chrome.runtime?.sendMessage?.({ type: "PING" }, (res: unknown) => {
+        if (res) setExtensionConnected(true);
+      });
+    } catch {}
+
+    return () => window.removeEventListener("swiftdroom:connected", handler);
+  }, []);
 
   async function openBillingPortal() {
     setBillingLoading(true);
@@ -50,106 +53,82 @@ export default function SettingsPage() {
   }
 
   const planName =
-    usage.plan !== "NONE"
-      ? PLANS[usage.plan as keyof typeof PLANS]?.name
-      : "No plan";
+    usage.plan !== "NONE" ? PLANS[usage.plan as keyof typeof PLANS]?.name : "No active plan";
 
-  const extensionApiUrl = getApiBaseUrl() || "(same as dashboard — local dev)";
+  const usagePct = usage.limit
+    ? Math.min(100, Math.round((usage.used / usage.limit) * 100))
+    : 0;
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold text-neutral-900">Settings</h1>
-      <p className="mt-1 text-neutral-500">Account, billing, and extension setup</p>
+    <div className="max-w-xl">
+      <h1 className="text-2xl font-bold text-neutral-900">Settings</h1>
+      <p className="mt-1 text-sm text-neutral-500">Manage your subscription and Chrome extension.</p>
 
-      <section className="mt-8 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="font-medium text-neutral-900">Subscription</h2>
-        <div className="mt-4 flex items-center justify-between">
+      {/* Subscription */}
+      <section className="mt-8 rounded-xl border border-neutral-200 bg-white p-6">
+        <div className="flex items-start justify-between">
           <div>
-            <p className="font-medium text-neutral-900">{planName}</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">Plan</p>
+            <p className="mt-1 text-lg font-bold text-neutral-900">{planName}</p>
             <p className="text-sm capitalize text-neutral-500">
               {usage.status.toLowerCase()}
               {usage.periodEnd &&
-                ` · Renews ${new Date(usage.periodEnd).toLocaleDateString()}`}
+                ` · renews ${new Date(usage.periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
             </p>
           </div>
           <button
             onClick={openBillingPortal}
-            disabled={billingLoading}
-            className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50"
+            disabled={billingLoading || loading}
+            className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40"
           >
-            {billingLoading ? "Loading..." : "Manage billing"}
+            {billingLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Manage billing"}
           </button>
         </div>
-        <div className="mt-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-neutral-600">Applications this period</span>
-            <span className="font-medium text-neutral-900">
-              {usage.used} / {usage.limit}
-            </span>
+
+        {usage.limit > 0 && (
+          <div className="mt-5">
+            <div className="flex justify-between text-sm">
+              <span className="text-neutral-500">Applications used</span>
+              <span className="font-semibold text-neutral-900">{usage.used} / {usage.limit}</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-100">
+              <div
+                className="h-full rounded-full bg-neutral-900 transition-all"
+                style={{ width: `${usagePct}%` }}
+              />
+            </div>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-100">
-            <div
-              className="h-full rounded-full bg-neutral-900"
-              style={{
-                width: `${usage.limit ? Math.min(100, (usage.used / usage.limit) * 100) : 0}%`,
-              }}
-            />
-          </div>
-        </div>
+        )}
       </section>
 
-      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="font-medium text-neutral-900">Extension API URL</h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          Paste this in the Chrome extension setup (Railway API host)
-        </p>
-        <code className="mt-3 block truncate rounded-md bg-neutral-100 px-4 py-3 font-mono text-sm">
-          {extensionApiUrl}
-        </code>
-      </section>
+      {/* Chrome Extension */}
+      <section className="mt-5 rounded-xl border border-neutral-200 bg-white p-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">Chrome Extension</p>
 
-      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <div className="flex items-center gap-3">
-          <Globe className="h-5 w-5 text-neutral-600" />
-          <div>
-            <h2 className="font-medium text-neutral-900">Extension API token</h2>
-            <p className="text-sm text-neutral-500">
-              Paste this in the Chrome extension to connect your account
+        {extensionConnected ? (
+          <div className="mt-3 flex items-center gap-2 text-emerald-700">
+            <Check className="h-5 w-5" />
+            <span className="font-semibold">Extension connected</span>
+          </div>
+        ) : (
+          <>
+            <p className="mt-2 text-sm text-neutral-600">
+              Install the extension, then visit any page on your dashboard — it connects automatically. No API keys needed.
             </p>
-          </div>
-        </div>
-        <div className="mt-4 flex items-center gap-2">
-          <code className="flex-1 truncate rounded-md bg-neutral-100 px-4 py-3 font-mono text-sm">
-            {loading ? "Loading..." : apiToken}
-          </code>
-          <button
-            onClick={copyToken}
-            disabled={!apiToken}
-            className="inline-flex items-center gap-1 rounded-md border border-neutral-300 px-4 py-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50"
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4" />
-                Copied
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4" />
-                Copy
-              </>
-            )}
-          </button>
-        </div>
-      </section>
-
-      <section className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
-        <h2 className="font-medium text-neutral-900">Install extension</h2>
-        <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-neutral-600">
-          <li>Open chrome://extensions and enable Developer mode</li>
-          <li>Load unpacked and select the extension/ folder</li>
-          <li>Open the side panel and paste your API token</li>
-          <li>Navigate to a job application and click Scan & Autofill</li>
-        </ol>
+            <a
+              href={CWS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
+            >
+              Add to Chrome
+              <ExternalLink className="h-4 w-4" />
+            </a>
+            <p className="mt-3 text-xs text-neutral-400">
+              After installing, come back to this page and it will auto-connect.
+            </p>
+          </>
+        )}
       </section>
     </div>
   );

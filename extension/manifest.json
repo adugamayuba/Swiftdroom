@@ -1,10 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Swiftdroom",
+  "name": "Swiftdroom — Job Application Co-pilot",
   "version": "1.0.0",
-  "description": "AI-powered job application co-pilot. Autofill forms and generate tailored answers.",
+  "description": "Autofill Workday, Greenhouse, and Lever job applications from your profile. Generate tailored AI answers in one click.",
   "permissions": ["storage", "activeTab", "sidePanel", "scripting"],
-  "host_permissions": ["<all_urls>", "http://localhost:3000/*", "https://*.up.railway.app/*", "https://*.vercel.app/*"],
+  "host_permissions": [
+    "<all_urls>",
+    "https://swiftdroom.vercel.app/*",
+    "https://*.up.railway.app/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -24,6 +28,15 @@
       "matches": ["<all_urls>"],
       "js": ["lib/form-detector.js", "content.js"],
       "all_frames": true,
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://swiftdroom.vercel.app/*",
+        "https://*.up.railway.app/*",
+        "http://localhost:3000/*"
+      ],
+      "js": ["content-connect.js"],
       "run_at": "document_idle"
     }
   ],
