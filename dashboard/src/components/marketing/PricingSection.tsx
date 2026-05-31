@@ -5,61 +5,58 @@ export function PricingSection() {
   const plans = [PLANS.STARTER, PLANS.PRO, PLANS.BUSINESS];
 
   return (
-    <section id="pricing" className="py-24 border-b border-neutral-100">
-      <div className="mx-auto max-w-5xl px-6">
-        <h2 className="text-4xl font-black tracking-tight text-neutral-950">Pricing</h2>
-        <p className="mt-3 max-w-lg text-neutral-500">
-          Every plan includes the Chrome extension, AI answer generation, and application tracking.
-          Pay only for what you use.
-        </p>
+    <section id="pricing" className="border-t border-neutral-200 bg-neutral-50 py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-semibold tracking-tight text-neutral-900">
+            Simple, transparent pricing
+          </h2>
+          <p className="mt-4 text-neutral-600">
+            Pay for applications you actually use. Every plan includes the Chrome extension,
+            AI answer generation, and application tracking.
+          </p>
+        </div>
 
-        <div className="mt-12 grid gap-4 lg:grid-cols-3">
+        <div className="mt-16 grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative rounded-2xl border p-8 ${
+              className={`relative rounded-lg border bg-white p-8 ${
                 plan.popular
-                  ? "border-violet-600 bg-violet-600 text-white"
-                  : "border-neutral-200 bg-white"
+                  ? "border-neutral-900 shadow-sm"
+                  : "border-neutral-200"
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 right-6">
-                  <span className="rounded-full bg-violet-900 px-3 py-1 text-xs font-bold text-white">
-                    Most popular
-                  </span>
-                </div>
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white">
+                  Most popular
+                </span>
               )}
-
-              <h3 className={`font-bold ${plan.popular ? "text-white" : "text-neutral-950"}`}>
-                {plan.name}
-              </h3>
-
-              <div className="mt-4 flex items-end gap-1">
-                <span className={`text-5xl font-black tracking-tight ${plan.popular ? "text-white" : "text-neutral-950"}`}>
+              <h3 className="text-lg font-semibold text-neutral-900">{plan.name}</h3>
+              <p className="mt-1 text-sm text-neutral-500">{plan.description}</p>
+              <div className="mt-6 flex items-baseline gap-1">
+                <span className="text-4xl font-semibold tracking-tight text-neutral-900">
                   {plan.priceLabel}
                 </span>
-                <span className={`mb-1 text-sm ${plan.popular ? "text-violet-200" : "text-neutral-400"}`}>/mo</span>
+                <span className="text-sm text-neutral-500">/month</span>
               </div>
-              <p className={`mt-1 text-sm font-semibold ${plan.popular ? "text-violet-200" : "text-violet-600"}`}>
-                {plan.applicationsLimit} applications / month
+              <p className="mt-2 text-sm font-medium text-neutral-700">
+                {plan.applicationsLimit} applications per month
               </p>
-
-              <ul className="mt-7 space-y-2.5">
-                {plan.features.map((f) => (
-                  <li key={f} className={`flex items-start gap-2.5 text-sm ${plan.popular ? "text-violet-100" : "text-neutral-600"}`}>
-                    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${plan.popular ? "bg-violet-300" : "bg-violet-600"}`} />
-                    {f}
+              <ul className="mt-8 space-y-3">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex gap-2 text-sm text-neutral-600">
+                    <span className="text-neutral-400">—</span>
+                    {feature}
                   </li>
                 ))}
               </ul>
-
               <Link
                 href="/register"
-                className={`mt-8 block w-full rounded-xl py-3 text-center text-sm font-bold transition ${
+                className={`mt-8 block w-full rounded-md py-2.5 text-center text-sm font-medium ${
                   plan.popular
-                    ? "bg-white text-violet-700 hover:bg-violet-50"
-                    : "border border-neutral-300 text-neutral-950 hover:border-violet-600 hover:text-violet-600"
+                    ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                    : "border border-neutral-300 text-neutral-900 hover:bg-neutral-50"
                 }`}
               >
                 Get started
