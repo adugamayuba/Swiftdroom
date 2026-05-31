@@ -47,6 +47,10 @@ export default function SubscribePageContent() {
     const data = await res.json();
     setLoading(null);
 
+    if (data.activated) {
+      router.push("/dashboard");
+      return;
+    }
     if (data.url) {
       window.location.href = data.url;
     }

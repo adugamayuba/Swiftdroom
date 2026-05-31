@@ -17,10 +17,29 @@ export async function POST(request: NextRequest) {
   }
 
   if (!isStripeConfigured()) {
-    return NextResponse.json(
-      { error: "Payments are not configured yet" },
-      { status: 503 }
-    );
+    // Stripe not yet configured — activate the plan directly so the user
+    // can access the dashboard. Replace with real Stripe when keys are added.
+    const body = await request.json();
+    const parsed = checkoutSchema.safeParse(body);
+    const planId = parsed.success ? parsed.data.planId : "STARTER";
+
+    const periodStart = new Date();
+    const periodEnd = new Date();
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        plan: planId,
+        subscriptionStatus: "ACTIVE",
+        applicationsLimit:
+          planId === "STARTER" ? 50 : planId === "PRO" ? 150 : 500,
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
+      },
+    });
+
+    return NextResponse.json({ url: null, activated: true });
   }
 
   try {

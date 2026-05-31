@@ -20,7 +20,7 @@ export default function HomePage() {
                   Stop retyping your resume.
                 </span>
                 <br />
-                <span className="bg-gradient-to-br from-neutral-950 via-neutral-700 to-neutral-950 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-br from-neutral-500 via-neutral-400 to-neutral-500 bg-clip-text text-transparent">
                   Start getting interviews.
                 </span>
               </h1>
