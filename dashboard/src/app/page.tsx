@@ -4,193 +4,193 @@ import { PricingSection } from "@/components/marketing/PricingSection";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white text-neutral-900">
       <MarketingHeader />
 
-      {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section className="pt-32 pb-20 border-b border-neutral-100">
-        <div className="mx-auto max-w-5xl px-6">
-
-          {/* Pill */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
-            Chrome extension + dashboard
-          </div>
-
-          {/* Headline */}
-          <h1 className="mt-5 text-[3.5rem] font-black leading-[1.08] tracking-tight text-neutral-950 md:text-7xl">
-            Apply to jobs<br />
-            <span className="text-violet-600">in minutes</span>,<br />
-            not hours.
-          </h1>
-
-          <p className="mt-6 max-w-xl text-lg text-neutral-500 leading-relaxed">
-            Upload your resume once. Swiftdroom autofills Workday, Greenhouse, and Lever
-            forms and writes tailored answers to every open-ended question — using your
-            actual resume and the job description.
-          </p>
-
-          <div className="mt-10 flex flex-wrap items-center gap-4">
-            <Link
-              href="/register"
-              className="rounded-lg bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700"
-            >
-              Start free — no card needed
-            </Link>
-            <a href="#how-it-works" className="text-sm font-medium text-neutral-400 transition hover:text-neutral-700">
-              How it works →
-            </a>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-16 flex flex-wrap gap-10">
-            {[
-              { n: "32 min", t: "saved per application" },
-              { n: "40+",    t: "form fields autofilled" },
-              { n: "3 ATS",  t: "Workday · Greenhouse · Lever" },
-            ].map(({ n, t }) => (
-              <div key={t}>
-                <p className="text-3xl font-black text-neutral-950">{n}</p>
-                <p className="mt-0.5 text-sm text-neutral-400">{t}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Problem band ────────────────────────────────────────────── */}
-      <section className="bg-neutral-950 py-14">
-        <div className="mx-auto max-w-5xl px-6">
-          <p className="text-center text-base font-semibold text-neutral-400">
-            You&apos;ve filled in your name, email, and work history{" "}
-            <span className="text-white">hundreds of times</span>.
-            Swiftdroom makes it the last time.
-          </p>
-        </div>
-      </section>
-
-      {/* ── How it works ────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-24 border-b border-neutral-100">
-        <div className="mx-auto max-w-5xl px-6">
-          <h2 className="text-4xl font-black tracking-tight text-neutral-950">
-            How it works
-          </h2>
-
-          <div className="mt-14 grid gap-8 md:grid-cols-3">
-            {[
-              {
-                n: "01",
-                title: "Upload your resume",
-                body: "We pull your name, contact info, and links automatically. You confirm the details — takes 60 seconds.",
-              },
-              {
-                n: "02",
-                title: "Subscribe and install",
-                body: "Pick a plan, install the Chrome extension, paste your API token. Done in two minutes.",
-              },
-              {
-                n: "03",
-                title: "Open the co-pilot and apply",
-                body: "Open the Swiftdroom sidebar on any job page. Scan, autofill, generate answers, then submit yourself.",
-              },
-            ].map(({ n, title, body }) => (
-              <div key={n} className="border-l-2 border-violet-600 pl-5">
-                <p className="text-xs font-bold uppercase tracking-widest text-violet-600">{n}</p>
-                <h3 className="mt-2 text-lg font-bold text-neutral-950">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-500">{body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ─────────────────────────────────────────────────── */}
-      <section id="features" className="py-24 bg-neutral-50 border-b border-neutral-100">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="grid gap-16 md:grid-cols-2 md:items-start">
-            <div>
-              <h2 className="text-4xl font-black tracking-tight text-neutral-950">
-                Works where browser<br />autofill doesn&apos;t
-              </h2>
-              <p className="mt-5 text-neutral-500 leading-relaxed">
-                Workday, Greenhouse, and Lever use dynamic field names and shadow DOM that
-                break standard autofill. Swiftdroom reads the labels you see on screen and
-                maps them to your profile — no fragile attribute matching.
+      <main>
+        {/* Hero */}
+        <section className="border-b border-neutral-200">
+          <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
+            <div className="mx-auto max-w-3xl">
+              <p className="text-sm font-medium uppercase tracking-widest text-neutral-500">
+                Job application software
               </p>
-              <ul className="mt-8 space-y-4">
-                {[
-                  ["Visual label detection", "Reads what's on screen, not broken HTML attributes"],
-                  ["Persona switching", "Different profiles for engineering, management, or domain-specific roles"],
-                  ["AI answer generation", "Open-ended questions answered from your resume + the job description"],
-                  ["Co-pilot, not autopilot", "You review everything. You click submit."],
-                ].map(([title, desc]) => (
-                  <li key={title} className="flex gap-3">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-600" />
-                    <span>
-                      <span className="font-semibold text-neutral-900">{title} — </span>
-                      <span className="text-sm text-neutral-500">{desc}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight md:text-5xl md:leading-tight">
+                Fill applications in minutes, not hours.
+              </h1>
+              <p className="mt-6 text-lg leading-relaxed text-neutral-600">
+                Swiftdroom is a Chrome extension and dashboard that autofills Workday,
+                Greenhouse, and Lever forms from your profile — and writes tailored answers
+                to open-ended questions using your resume and the job description.
+              </p>
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-sm font-medium text-white hover:bg-neutral-800"
+                >
+                  Create your account
+                </Link>
+                <p className="text-sm text-neutral-500">
+                  Set up your profile first. Subscribe when you are ready to apply.
+                </p>
+              </div>
             </div>
+          </div>
+        </section>
 
-            <div className="grid grid-cols-2 gap-3">
+        {/* Problem */}
+        <section className="border-b border-neutral-200 bg-neutral-50 py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="grid gap-12 md:grid-cols-2 md:items-center">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  The same fields. Every single time.
+                </h2>
+                <p className="mt-4 leading-relaxed text-neutral-600">
+                  Job seekers spend 20–40 minutes per application re-entering contact info,
+                  work history, and writing custom answers — often on platforms with
+                  inconsistent form structures that break standard autofill tools.
+                </p>
+              </div>
+              <div className="rounded-lg border border-neutral-200 bg-white p-8">
+                <dl className="space-y-6">
+                  {[
+                    ["Average time per application", "32 min"],
+                    ["Fields re-entered manually", "40+"],
+                    ["Custom written answers per week", "15–30"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex justify-between border-b border-neutral-100 pb-4 last:border-0 last:pb-0">
+                      <dt className="text-sm text-neutral-500">{label}</dt>
+                      <dd className="text-sm font-semibold text-neutral-900">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="border-b border-neutral-200 py-24">
+          <div className="mx-auto max-w-6xl px-6">
+            <h2 className="text-2xl font-semibold tracking-tight">How it works</h2>
+            <div className="mt-12 grid gap-8 md:grid-cols-3">
               {[
-                { label: "Contact autofill",  desc: "Name, email, phone, address across any form" },
-                { label: "Work history",      desc: "Roles, companies, dates — mapped automatically" },
-                { label: "AI ghostwriter",    desc: "Tailored answers in seconds, not minutes" },
-                { label: "App tracking",      desc: "Every application logged and searchable" },
-              ].map(({ label, desc }) => (
-                <div key={label} className="rounded-xl border border-neutral-200 bg-white p-5">
-                  <p className="text-sm font-bold text-neutral-950">{label}</p>
-                  <p className="mt-2 text-xs leading-relaxed text-neutral-400">{desc}</p>
+                {
+                  step: "01",
+                  title: "Build your profile",
+                  desc: "Upload your resume and enter your details once. Swiftdroom uses this as the source of truth for every application.",
+                },
+                {
+                  step: "02",
+                  title: "Subscribe and install",
+                  desc: "Choose a plan based on how many applications you need. Install the Chrome extension and connect your account.",
+                },
+                {
+                  step: "03",
+                  title: "Apply with the sidebar",
+                  desc: "Open the side panel on any application page. Scan the form, review autofilled fields, and insert AI-written answers before you submit.",
+                },
+              ].map(({ step, title, desc }) => (
+                <div key={step}>
+                  <span className="text-sm font-medium text-neutral-400">{step}</span>
+                  <h3 className="mt-2 text-lg font-semibold">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-600">{desc}</p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <PricingSection />
+        {/* Features */}
+        <section id="features" className="border-b border-neutral-200 bg-neutral-50 py-24">
+          <div className="mx-auto max-w-6xl px-6">
+            <h2 className="text-2xl font-semibold tracking-tight">Built for real ATS platforms</h2>
+            <p className="mt-4 max-w-2xl text-neutral-600">
+              Modern applicant tracking systems use dynamic DOM structures, iframes, and
+              obfuscated field names. Swiftdroom reads visual labels on the page — not HTML
+              attributes — so it works where basic autofill fails.
+            </p>
+            <div className="mt-12 grid gap-6 md:grid-cols-2">
+              {[
+                {
+                  title: "Label-based field detection",
+                  desc: "Maps fields by what they say on screen, including Workday, Greenhouse, and Lever layouts.",
+                },
+                {
+                  title: "Persona-based AI answers",
+                  desc: "Maintain multiple focus profiles — full-stack, management, domain-specific — and switch per application.",
+                },
+                {
+                  title: "Click-to-insert ghostwriter",
+                  desc: "Generate answers to open-ended questions from the job description and your resume. You review before inserting.",
+                },
+                {
+                  title: "Co-pilot, never autopilot",
+                  desc: "Swiftdroom fills fields and highlights uncertain mappings. You click submit yourself.",
+                },
+              ].map(({ title, desc }) => (
+                <div key={title} className="rounded-lg border border-neutral-200 bg-white p-6">
+                  <h3 className="font-semibold text-neutral-900">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-600">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
-      {/* ── FAQ ───────────────────────────────────────────────────────── */}
-      <section id="faq" className="py-24 border-b border-neutral-100">
-        <div className="mx-auto max-w-3xl px-6">
-          <h2 className="text-4xl font-black tracking-tight text-neutral-950">Questions</h2>
-          <dl className="mt-12 divide-y divide-neutral-100">
-            {[
-              { q: "Does Swiftdroom submit applications for me?", a: "No. It fills fields and generates drafts — you review and submit yourself." },
-              { q: "What counts as one application?", a: "Each time you log an application or use AI generation through the extension." },
-              { q: "Can I use it before paying?", a: "Yes. Create an account and set up your profile for free. The extension requires an active plan." },
-              { q: "Which job boards work?", a: "Workday, Greenhouse, Lever, and most standard web application forms." },
-              { q: "Can I cancel anytime?", a: "Yes — from your dashboard. Access continues until the billing period ends." },
-            ].map(({ q, a }) => (
-              <div key={q} className="py-6">
-                <dt className="font-bold text-neutral-950">{q}</dt>
-                <dd className="mt-2 text-sm text-neutral-500 leading-relaxed">{a}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+        <PricingSection />
 
-      {/* ── CTA ───────────────────────────────────────────────────────── */}
-      <section className="py-24 bg-violet-600">
-        <div className="mx-auto max-w-3xl px-6 text-center">
-          <h2 className="text-4xl font-black tracking-tight text-white">
-            Ready to apply smarter?
-          </h2>
-          <p className="mt-4 text-violet-200">
-            Set up your profile in five minutes. Use the extension to apply in five seconds.
-          </p>
-          <Link
-            href="/register"
-            className="mt-10 inline-block rounded-lg bg-white px-8 py-3.5 text-sm font-bold text-violet-700 transition hover:bg-violet-50"
-          >
-            Get started free
-          </Link>
-        </div>
-      </section>
+        {/* FAQ */}
+        <section id="faq" className="py-24">
+          <div className="mx-auto max-w-3xl px-6">
+            <h2 className="text-2xl font-semibold tracking-tight">Common questions</h2>
+            <dl className="mt-10 space-y-8">
+              {[
+                {
+                  q: "Does Swiftdroom submit applications for me?",
+                  a: "No. Swiftdroom is a co-pilot. It fills fields and generates draft answers, but you review everything and submit manually.",
+                },
+                {
+                  q: "What counts as an application?",
+                  a: "Each time you log an application or generate an AI answer through the extension counts toward your monthly limit.",
+                },
+                {
+                  q: "Can I use Swiftdroom without subscribing?",
+                  a: "You can create an account and set up your profile for free. The Chrome extension requires an active subscription.",
+                },
+                {
+                  q: "Which job boards are supported?",
+                  a: "Swiftdroom works on most web-based application forms, including Workday, Greenhouse, Lever, and company career pages.",
+                },
+              ].map(({ q, a }) => (
+                <div key={q}>
+                  <dt className="font-medium text-neutral-900">{q}</dt>
+                  <dd className="mt-2 text-sm leading-relaxed text-neutral-600">{a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="border-t border-neutral-200 bg-neutral-900 py-20 text-white">
+          <div className="mx-auto max-w-3xl px-6 text-center">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Ready to spend less time on forms?
+            </h2>
+            <p className="mt-4 text-neutral-400">
+              Create your profile in five minutes. Start applying when you subscribe.
+            </p>
+            <Link
+              href="/register"
+              className="mt-8 inline-block rounded-md bg-white px-6 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-100"
+            >
+              Create your account
+            </Link>
+          </div>
+        </section>
+      </main>
 
       <MarketingFooter />
     </div>
