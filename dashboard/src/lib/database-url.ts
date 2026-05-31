@@ -24,6 +24,9 @@ export function getDatabaseUrl(): string {
 
   url = url.replace(/^["']|["']$/g, "").trim();
 
+  // channel_binding=require conflicts with PgBouncer — strip it
+  url = url.replace(/[&?]channel_binding=[^&]*/g, "");
+
   if (url.includes("-pooler")) {
     url = ensureQueryParam(url, "sslmode", "require");
     url = ensureQueryParam(url, "pgbouncer", "true");
