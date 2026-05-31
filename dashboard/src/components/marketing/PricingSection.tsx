@@ -1,70 +1,67 @@
 import Link from "next/link";
 import { PLANS } from "@/lib/plans";
-import { CheckCircle } from "lucide-react";
 
 export function PricingSection() {
   const plans = [PLANS.STARTER, PLANS.PRO, PLANS.BUSINESS];
 
   return (
-    <section id="pricing" className="border-y border-white/10 bg-white/[0.02] py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-indigo-400">Pricing</p>
-          <h2 className="mt-3 text-4xl font-bold tracking-tight text-white">
-            Simple, transparent pricing
-          </h2>
-          <p className="mt-4 text-white/50">
-            Pay for applications you actually use. Every plan includes the Chrome extension,
-            AI answer generation, and application tracking.
-          </p>
-        </div>
+    <section id="pricing" className="py-24 border-b border-neutral-100">
+      <div className="mx-auto max-w-5xl px-6">
+        <h2 className="text-3xl font-extrabold tracking-tight text-neutral-950">Pricing</h2>
+        <p className="mt-3 text-neutral-500">
+          Pay for applications you use. Every plan includes the Chrome extension,
+          AI generation, and application tracking.
+        </p>
 
-        <div className="mt-16 grid gap-6 lg:grid-cols-3">
+        <div className="mt-12 grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative rounded-2xl border p-8 transition ${
+              className={`relative rounded-xl border p-8 ${
                 plan.popular
-                  ? "border-indigo-500/50 bg-indigo-600/10 shadow-xl shadow-indigo-600/10"
-                  : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
+                  ? "border-neutral-950 bg-neutral-950 text-white"
+                  : "border-neutral-200 bg-white"
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-lg shadow-indigo-600/30">
-                    Most popular
-                  </span>
-                </div>
+                <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white">
+                  Most popular
+                </span>
               )}
+              <h3 className={`font-bold ${plan.popular ? "text-white" : "text-neutral-950"}`}>
+                {plan.name}
+              </h3>
+              <p className={`mt-1 text-sm ${plan.popular ? "text-neutral-400" : "text-neutral-500"}`}>
+                {plan.description}
+              </p>
 
-              <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-              <p className="mt-1 text-sm text-white/40">{plan.description}</p>
-
-              <div className="mt-6 flex items-baseline gap-1">
-                <span className="text-5xl font-extrabold tracking-tight text-white">
+              <div className="mt-6 flex items-end gap-1">
+                <span className={`text-5xl font-extrabold tracking-tight ${plan.popular ? "text-white" : "text-neutral-950"}`}>
                   {plan.priceLabel}
                 </span>
-                <span className="text-sm text-white/40">/month</span>
+                <span className={`mb-1 text-sm ${plan.popular ? "text-neutral-400" : "text-neutral-400"}`}>
+                  /mo
+                </span>
               </div>
-              <p className="mt-1 text-sm font-medium text-indigo-400">
+              <p className={`mt-1 text-sm font-medium ${plan.popular ? "text-indigo-400" : "text-indigo-600"}`}>
                 {plan.applicationsLimit} applications / month
               </p>
 
-              <ul className="mt-8 space-y-3">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm text-white/60">
-                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                    {feature}
+              <ul className="mt-7 space-y-2.5">
+                {plan.features.map((f) => (
+                  <li key={f} className={`flex items-start gap-2 text-sm ${plan.popular ? "text-neutral-300" : "text-neutral-600"}`}>
+                    <span className={`mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full ${plan.popular ? "bg-indigo-400" : "bg-neutral-400"}`} />
+                    {f}
                   </li>
                 ))}
               </ul>
 
               <Link
                 href="/register"
-                className={`mt-8 block w-full rounded-xl py-3 text-center text-sm font-bold transition ${
+                className={`mt-8 block w-full rounded-lg py-2.5 text-center text-sm font-bold transition ${
                   plan.popular
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 hover:bg-indigo-500"
-                    : "border border-white/20 text-white hover:border-white/40 hover:bg-white/10"
+                    ? "bg-white text-neutral-950 hover:bg-neutral-100"
+                    : "border border-neutral-300 text-neutral-950 hover:bg-neutral-50"
                 }`}
               >
                 Get started

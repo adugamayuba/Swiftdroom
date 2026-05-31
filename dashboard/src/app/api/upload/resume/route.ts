@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseName } from "@/lib/utils";
-import {
-  uploadResume,
-  extractTextFromBuffer,
-  isFirebaseConfigured,
-} from "@/lib/firebase";
+import { uploadResume, extractTextFromBuffer, isFirebaseConfigured } from "@/lib/firebase";
+import { extractContactFromResume } from "@/lib/resume-parser";
 
 export async function POST(request: NextRequest) {
   const user = await resolveUser(request);
@@ -24,6 +21,16 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const text = await extractTextFromBuffer(buffer, file.name);
 
+    if (!text.trim()) {
+      return NextResponse.json(
+        { error: "Could not extract text from this file. Try a text-based PDF or a .txt file." },
+        { status: 422 }
+      );
+    }
+
+    // Extract contact details from resume text
+    const extracted = extractContactFromResume(text);
+
     let resumeUrl = "";
     if (isFirebaseConfigured()) {
       resumeUrl = await uploadResume(
@@ -34,15 +41,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { firstName, lastName } = parseName(user.name || "");
+    // Seed the profile with extracted data — don't overwrite fields already set by user
+    const existing = user.profile;
+    const fullName = existing?.fullName || extracted.fullName || user.name || "";
+    const { firstName, lastName } = parseName(fullName);
+
     await db.profile.upsert({
       where: { userId: user.id },
       create: {
         userId: user.id,
-        email: user.email,
-        fullName: user.name || "",
+        email: existing?.email || extracted.email || user.email,
+        fullName,
         firstName,
         lastName,
+        phone: existing?.phone || extracted.phone || "",
+        location: existing?.location || extracted.location || "",
+        linkedinUrl: existing?.linkedinUrl || extracted.linkedinUrl || "",
+        githubUrl: existing?.githubUrl || extracted.githubUrl || "",
+        portfolioUrl: existing?.portfolioUrl || extracted.portfolioUrl || "",
         resumeText: text,
         resumeFileName: file.name,
         resumeUrl,
@@ -51,6 +67,14 @@ export async function POST(request: NextRequest) {
         resumeText: text,
         resumeFileName: file.name,
         resumeUrl,
+        // Only update contact fields if they were empty before
+        ...((!existing?.fullName && extracted.fullName) ? { fullName: extracted.fullName, firstName, lastName } : {}),
+        ...((!existing?.email && extracted.email) ? { email: extracted.email } : {}),
+        ...((!existing?.phone && extracted.phone) ? { phone: extracted.phone } : {}),
+        ...((!existing?.location && extracted.location) ? { location: extracted.location } : {}),
+        ...((!existing?.linkedinUrl && extracted.linkedinUrl) ? { linkedinUrl: extracted.linkedinUrl } : {}),
+        ...((!existing?.githubUrl && extracted.githubUrl) ? { githubUrl: extracted.githubUrl } : {}),
+        ...((!existing?.portfolioUrl && extracted.portfolioUrl) ? { portfolioUrl: extracted.portfolioUrl } : {}),
       },
     });
 
@@ -58,6 +82,7 @@ export async function POST(request: NextRequest) {
       resumeText: text,
       resumeFileName: file.name,
       resumeUrl,
+      extracted,
     });
   } catch (error) {
     console.error("Upload error:", error);
