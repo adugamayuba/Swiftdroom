@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "node scripts/migrate-deploy.mjs",
     "db:push": "prisma db push",
     "postinstall": "prisma generate"
   },
