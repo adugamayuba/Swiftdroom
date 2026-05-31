@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
- * Run prisma migrate deploy using DIRECT_URL (or DATABASE_URL) from .env
- * Usage: npm run db:migrate:deploy
+ * Run prisma migrate deploy using env vars from Railway, Vercel, or shell.
+ * No local .env file required.
+ *
+ * Railway/Vercel: set DIRECT_URL and DATABASE_URL in the dashboard Variables UI.
+ * One-off local run:
+ *   DIRECT_URL="postgresql://..." npm run db:migrate:deploy
  */
 import { spawnSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
@@ -11,6 +15,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const envPath = join(root, "..", ".env");
 
+// Optional: load .env only for local dev if it exists (never required)
 function loadEnvFile() {
   if (!existsSync(envPath)) return;
   const content = readFileSync(envPath, "utf-8");
@@ -33,15 +38,17 @@ function loadEnvFile() {
 
 loadEnvFile();
 
-const migrateUrl =
-  process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim();
+let migrateUrl = process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim();
+if (migrateUrl) migrateUrl = migrateUrl.replace(/^["']|["']$/g, "");
 
 if (!migrateUrl) {
-  console.error("\nMissing DIRECT_URL or DATABASE_URL in dashboard/.env\n");
-  console.error("Add your Neon direct connection string, e.g.:");
-  console.error(
-    '  DIRECT_URL="postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require"\n'
-  );
+  console.error("\nMissing DIRECT_URL or DATABASE_URL.\n");
+  console.error("Set these in your hosting dashboard (not a local .env file):");
+  console.error("  Railway → Swiftdroom service → Variables");
+  console.error("  Vercel  → Project → Settings → Environment Variables\n");
+  console.error("Required:");
+  console.error("  DIRECT_URL  = Neon direct connection (no -pooler)");
+  console.error("  DATABASE_URL = Neon pooled connection (-pooler in hostname)\n");
   process.exit(1);
 }
 
@@ -49,17 +56,16 @@ if (
   !migrateUrl.startsWith("postgresql://") &&
   !migrateUrl.startsWith("postgres://")
 ) {
-  console.error("\nInvalid database URL in .env");
-  console.error(`Got: ${migrateUrl.slice(0, 20)}...`);
+  console.error("\nInvalid database URL.");
+  console.error(`Got: ${migrateUrl.slice(0, 30)}...`);
   console.error("Must start with postgresql:// or postgres://");
-  console.error("\nYour .env still has the old SQLite URL (file:./dev.db).");
-  console.error("Replace it with your Neon connection strings from neon.tech\n");
+  console.error("Check DIRECT_URL in Railway or Vercel Variables.\n");
   process.exit(1);
 }
 
 if (migrateUrl.includes("-pooler")) {
-  console.error("\nUse the DIRECT connection (no -pooler) for migrations.");
-  console.error("Set DIRECT_URL in dashboard/.env\n");
+  console.error("\nMigrations need the DIRECT Neon URL (no -pooler in hostname).");
+  console.error("Set DIRECT_URL in Railway/Vercel to the direct connection string.\n");
   process.exit(1);
 }
 

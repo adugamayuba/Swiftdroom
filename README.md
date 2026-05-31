@@ -74,30 +74,44 @@ Add Stripe, Firebase, and OpenAI keys from `dashboard/.env.example` when ready.
 
 After saving variables, Railway redeploys automatically. Migrations run on startup via `prisma migrate deploy`.
 
-## Vercel deployment
+## Environment variables (Railway / Vercel only)
 
-1. Import the GitHub repo in Vercel
-2. Set **Root Directory** to `dashboard`
-3. Add environment variables (Settings → Environment Variables) — same as Railway:
+You do **not** need a local `.env` file for production. Set all variables in your hosting dashboard:
+
+| Platform | Where |
+|----------|--------|
+| **Railway** | Service → **Variables** → Raw Editor |
+| **Vercel** | Project → **Settings** → **Environment Variables** |
+
+### Required variables
 
 ```env
 DATABASE_URL=postgresql://...@ep-xxx-pooler....neon.tech/neondb?sslmode=require
 DIRECT_URL=postgresql://...@ep-xxx....neon.tech/neondb?sslmode=require
-JWT_SECRET=...
-ADMIN_EMAIL=...
-NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+JWT_SECRET=long-random-string
+ADMIN_EMAIL=you@company.com
+NEXT_PUBLIC_APP_URL=https://your-domain.com
 ```
 
-4. After first deploy, run migrations once from your machine:
+- `DATABASE_URL` = Neon **Pooled** (`-pooler` in hostname) — app runtime  
+- `DIRECT_URL` = Neon **Direct** (no `-pooler`) — migrations  
 
-```bash
-cd dashboard
-DATABASE_URL="your-direct-url" npx prisma migrate deploy
-```
+Migrations run **automatically**:
+- **Railway**: `preDeployCommand` before each deploy  
+- **Vercel**: `vercel-build` script during deploy (needs `DIRECT_URL` in Vercel env)  
 
-Or add `DATABASE_URL` and `DIRECT_URL` in Vercel before deploy — migrations run via Railway's preDeploy if you use Railway instead.
+Local `.env` is **optional** — only if you run the app on your machine.
 
-**Use Railway OR Vercel for the app, not both** (same Neon database is fine).
+## Vercel deployment
+
+1. Import the GitHub repo in Vercel
+2. Set **Root Directory** to `dashboard`
+3. Add all environment variables above in Vercel (Production + Preview)
+4. Deploy — migrations run automatically via `vercel-build`
+
+Set `NEXT_PUBLIC_APP_URL` to your Vercel URL, e.g. `https://swiftdroom.vercel.app`
+
+**Use Railway OR Vercel for the app**, not both (same Neon DB is fine).
 
 ## Railway deployment
 
