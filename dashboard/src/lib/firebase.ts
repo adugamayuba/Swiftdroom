@@ -61,25 +61,5 @@ export async function uploadResume(
   return signedUrl;
 }
 
-export async function extractTextFromBuffer(
-  buffer: Buffer,
-  fileName: string
-): Promise<string> {
-  const ext = fileName.split(".").pop()?.toLowerCase();
-
-  if (ext === "txt" || ext === "md") {
-    return buffer.toString("utf-8").slice(0, 50000);
-  }
-
-  if (ext === "pdf") {
-    try {
-      const pdfParse = (await import("pdf-parse")).default;
-      const data = await pdfParse(buffer);
-      return (data.text || "").slice(0, 50000);
-    } catch {
-      return "";
-    }
-  }
-
-  return buffer.toString("utf-8").slice(0, 50000);
-}
+// Re-export from the dedicated extractor for backwards compat
+export { extractTextFromBuffer } from "./pdf-extract";

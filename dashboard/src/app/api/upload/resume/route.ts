@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseName } from "@/lib/utils";
-import { uploadResume, extractTextFromBuffer, isFirebaseConfigured } from "@/lib/firebase";
+import { uploadResume, isFirebaseConfigured } from "@/lib/firebase";
+import { extractTextFromBuffer } from "@/lib/pdf-extract";
 import { extractContactFromResume } from "@/lib/resume-parser";
 
 export async function POST(request: NextRequest) {
@@ -22,8 +23,13 @@ export async function POST(request: NextRequest) {
     const text = await extractTextFromBuffer(buffer, file.name);
 
     if (!text.trim()) {
+      const hasOpenAi = Boolean(process.env.OPENAI_API_KEY);
       return NextResponse.json(
-        { error: "Could not extract text from this file. Try a text-based PDF or a .txt file." },
+        {
+          error: hasOpenAi
+            ? "Could not extract text from this PDF even with AI assistance. This may be a fully scanned/image PDF. Try exporting your resume as a .txt or .docx-converted-to-txt."
+            : "Could not extract text from this PDF. This looks like a scanned or image-only PDF. Try exporting from Google Docs, Word, or a resume builder as a standard PDF. Or add your OPENAI_API_KEY on Railway to enable AI-assisted extraction.",
+        },
         { status: 422 }
       );
     }
