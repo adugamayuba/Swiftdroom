@@ -19,10 +19,10 @@ export default function HomePage() {
       <MarketingHeader />
 
       <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden border-b border-neutral-200">
+        {/* Hero — fills viewport below header; stats appear on scroll */}
+        <section className="relative flex min-h-[calc(100dvh-5rem)] items-center overflow-hidden border-b border-neutral-200">
           <HeroBackground />
-          <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32">
+          <div className="relative z-10 mx-auto w-full max-w-6xl px-6 py-16 md:py-20">
             <div className="mx-auto max-w-3xl">
               <h1 className="text-4xl font-extrabold leading-tight tracking-tight md:text-6xl md:leading-tight">
                 <span className="bg-gradient-to-br from-neutral-950 via-neutral-700 to-neutral-950 bg-clip-text text-transparent">

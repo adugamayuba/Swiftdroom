@@ -51,13 +51,30 @@ export function MarketingFooter() {
           ))}
         </div>
 
-        <div className="mt-16 overflow-hidden">
-          <p
-            className="footer-outline-text select-none text-center font-extrabold uppercase leading-none tracking-tighter"
+        <div className="mt-16 px-2">
+          <svg
+            viewBox="0 0 1000 140"
+            className="mx-auto block h-auto w-full max-w-5xl select-none"
             aria-hidden
+            role="img"
           >
-            Swiftdroom
-          </p>
+            <text
+              x="500"
+              y="95"
+              textAnchor="middle"
+              fill="none"
+              stroke="#d4d4d4"
+              strokeWidth="2.5"
+              style={{
+                fontSize: "110px",
+                fontWeight: 800,
+                fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                letterSpacing: "-0.03em",
+              }}
+            >
+              Swiftdroom
+            </text>
+          </svg>
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-neutral-100 pt-8 sm:flex-row">

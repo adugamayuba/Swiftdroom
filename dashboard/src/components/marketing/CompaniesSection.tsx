@@ -3,7 +3,7 @@ const COMPANIES = [
   { name: "Meta", color: "text-[#0668E1]" },
   { name: "Amazon", color: "text-[#FF9900]" },
   { name: "Microsoft", color: "text-[#00A4EF]" },
-  { name: "Apple", color: "text-neutral-900" },
+  { name: "Apple", color: "text-[#f5f5f7]" },
   { name: "Stripe", color: "text-[#635BFF]" },
   { name: "Salesforce", color: "text-[#00A1E0]" },
   { name: "Netflix", color: "text-[#E50914]" },

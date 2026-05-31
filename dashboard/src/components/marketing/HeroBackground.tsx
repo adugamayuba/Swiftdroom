@@ -28,11 +28,11 @@ const ICONS = [
 
 export function HeroBackground() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
       {ICONS.map(({ Icon, top, left, delay, duration }, i) => (
         <div
           key={i}
-          className="hero-float absolute text-neutral-300/40"
+          className="hero-float absolute text-neutral-300"
           style={{
             top,
             left,
@@ -40,7 +40,12 @@ export function HeroBackground() {
             animationDuration: duration,
           }}
         >
-          <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} />
+          <Icon
+            className="h-6 w-6 md:h-7 md:w-7"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            aria-hidden
+          />
         </div>
       ))}
     </div>
