@@ -34,17 +34,17 @@ export function buildPageMetadata({
   path?: string;
   noIndex?: boolean;
 } = {}): Metadata {
-  const url = `${getSiteUrl()}${path}`;
+  const siteUrl = getSiteUrl();
+  const url = `${siteUrl}${path}`;
   const pageTitle = title ?? DEFAULT_TITLE;
 
-  return {
+  const metadata: Metadata = {
     title: title ? { absolute: title } : DEFAULT_TITLE,
     description,
     keywords: DEFAULT_KEYWORDS,
-    authors: [{ name: SITE_NAME, url: getSiteUrl() }],
+    authors: [{ name: SITE_NAME, url: siteUrl }],
     creator: SITE_NAME,
     publisher: SITE_NAME,
-    metadataBase: new URL(getSiteUrl()),
     alternates: {
       canonical: path || "/",
     },
@@ -75,4 +75,12 @@ export function buildPageMetadata({
           },
         },
   };
+
+  try {
+    metadata.metadataBase = new URL(siteUrl);
+  } catch {
+    // Skip metadataBase if env URL is misconfigured; relative OG paths still work
+  }
+
+  return metadata;
 }
