@@ -74,6 +74,31 @@ Add Stripe, Firebase, and OpenAI keys from `dashboard/.env.example` when ready.
 
 After saving variables, Railway redeploys automatically. Migrations run on startup via `prisma migrate deploy`.
 
+## Vercel deployment
+
+1. Import the GitHub repo in Vercel
+2. Set **Root Directory** to `dashboard`
+3. Add environment variables (Settings → Environment Variables) — same as Railway:
+
+```env
+DATABASE_URL=postgresql://...@ep-xxx-pooler....neon.tech/neondb?sslmode=require
+DIRECT_URL=postgresql://...@ep-xxx....neon.tech/neondb?sslmode=require
+JWT_SECRET=...
+ADMIN_EMAIL=...
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+```
+
+4. After first deploy, run migrations once from your machine:
+
+```bash
+cd dashboard
+DATABASE_URL="your-direct-url" npx prisma migrate deploy
+```
+
+Or add `DATABASE_URL` and `DIRECT_URL` in Vercel before deploy — migrations run via Railway's preDeploy if you use Railway instead.
+
+**Use Railway OR Vercel for the app, not both** (same Neon database is fine).
+
 ## Railway deployment
 
 1. Create a Railway project and connect the **Swiftdroom** GitHub repo

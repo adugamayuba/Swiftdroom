@@ -1,14 +1,27 @@
 /**
- * Normalize DATABASE_URL for Neon + Prisma on Railway.
+ * Normalize DATABASE_URL for Neon + Prisma.
  * @see https://www.prisma.io/docs/orm/overview/databases/neon
  */
+
+const BUILD_PLACEHOLDER =
+  "postgresql://build:build@127.0.0.1:5432/build?schema=public";
+
+function isBuildPhase(): boolean {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.NEXT_PHASE === "phase-export"
+  );
+}
+
 export function getDatabaseUrl(): string {
   let url = process.env.DATABASE_URL?.trim();
+
   if (!url) {
+    // Vercel/Railway build runs `next build` without DB access — placeholder only
+    if (isBuildPhase()) return BUILD_PLACEHOLDER;
     throw new Error("DATABASE_URL is not set");
   }
 
-  // Strip accidental quotes from Railway paste
   url = url.replace(/^["']|["']$/g, "").trim();
 
   if (url.includes("-pooler")) {
