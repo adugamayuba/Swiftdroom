@@ -1,35 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-
-const POSTS = [
-  {
-    slug: "workday-autofill-guide",
-    category: "Guides",
-    title: "How to autofill Workday applications without losing your mind",
-    excerpt:
-      "Workday forms are notoriously painful. Here is exactly how label-based detection beats browser autofill every time.",
-    date: "May 28, 2026",
-    readTime: "6 min read",
-  },
-  {
-    slug: "ai-cover-letter-tips",
-    category: "AI",
-    title: "Writing better open-ended answers with your resume as context",
-    excerpt:
-      "Generic AI answers get ignored. Learn how to generate responses that actually reference your experience and the job description.",
-    date: "May 22, 2026",
-    readTime: "4 min read",
-  },
-  {
-    slug: "job-search-2026",
-    category: "Career",
-    title: "The 2026 job search playbook: volume vs. quality",
-    excerpt:
-      "Should you apply to 100 roles or 20 tailored ones? Data from 500+ Swiftdroom users on what actually moves the needle.",
-    date: "May 15, 2026",
-    readTime: "8 min read",
-  },
-];
+import { BLOG_POSTS } from "@/lib/blog-posts";
+import { BlogCard } from "@/components/marketing/BlogCard";
 
 export function BlogSection() {
   return (
@@ -48,7 +20,7 @@ export function BlogSection() {
             </p>
           </div>
           <Link
-            href="#blog"
+            href="/blog"
             className="inline-flex items-center gap-1 text-sm font-semibold text-neutral-900 hover:underline"
           >
             View all posts
@@ -57,33 +29,8 @@ export function BlogSection() {
         </div>
 
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {POSTS.map(({ slug, category, title, excerpt, date, readTime }) => (
-            <article
-              key={slug}
-              className="group flex flex-col rounded-xl border border-neutral-200 bg-white p-6 transition hover:border-neutral-300 hover:shadow-sm"
-            >
-              <div className="flex items-center gap-2 text-xs text-neutral-500">
-                <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 font-medium text-neutral-700">
-                  {category}
-                </span>
-                <span>{date}</span>
-                <span>·</span>
-                <span>{readTime}</span>
-              </div>
-              <h3 className="mt-4 text-lg font-bold leading-snug text-neutral-950 group-hover:underline">
-                {title}
-              </h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-neutral-600">
-                {excerpt}
-              </p>
-              <Link
-                href="#blog"
-                className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-neutral-900"
-              >
-                Read more
-                <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-              </Link>
-            </article>
+          {BLOG_POSTS.map((post) => (
+            <BlogCard key={post.slug} post={post} />
           ))}
         </div>
       </div>

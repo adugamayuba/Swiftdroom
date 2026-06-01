@@ -8,7 +8,7 @@ const FOOTER_LINKS = {
     { label: "How it works", href: "#how-it-works" },
   ],
   Resources: [
-    { label: "Blog", href: "#blog" },
+    { label: "Blog", href: "/blog" },
     { label: "FAQ", href: "#faq" },
     { label: "Testimonials", href: "#testimonials" },
   ],

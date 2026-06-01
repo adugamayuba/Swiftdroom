@@ -14,7 +14,7 @@ export function MarketingHeader() {
           <Link href="#testimonials" className="text-sm text-neutral-600 hover:text-neutral-900">
             Testimonials
           </Link>
-          <Link href="#blog" className="text-sm text-neutral-600 hover:text-neutral-900">
+          <Link href="/blog" className="text-sm text-neutral-600 hover:text-neutral-900">
             Blog
           </Link>
           <Link href="#pricing" className="text-sm text-neutral-600 hover:text-neutral-900">
