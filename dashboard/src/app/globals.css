@@ -1,16 +1,22 @@
 @import "tailwindcss";
 
+/* AngelList-inspired palette — https://www.angellist.com/ */
 :root {
-  --background: #fafafa;
-  --foreground: #0f172a;
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --accent: #8b5cf6;
-  --muted: #64748b;
-  --border: #e2e8f0;
+  --al-black: #0a0a0a;
+  --al-black-soft: #1a1a1a;
+  --al-green: #00a86b;
+  --al-green-soft: #e6f7f0;
+  --al-surface: #f6f6f4;
+  --al-surface-dark: #0a0a0a;
+  --al-border: #e5e5e0;
+  --al-muted: #6b6b66;
+  --al-foreground: #0a0a0a;
+  --background: #ffffff;
+  --foreground: var(--al-foreground);
+  --primary: var(--al-green);
+  --primary-dark: #008f5c;
+  --border: var(--al-border);
   --card: #ffffff;
-  --success: #10b981;
-  --warning: #f59e0b;
 }
 
 @theme inline {
@@ -18,13 +24,10 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);
-  --color-accent: var(--accent);
-  --color-muted: var(--muted);
   --color-border: var(--border);
   --color-card: var(--card);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
   --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-instrument-serif);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -34,15 +37,19 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+.font-serif {
+  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+}
+
 @keyframes hero-float {
   0%,
   100% {
     transform: translateY(0) rotate(0deg);
-    opacity: 0.35;
+    opacity: 0.2;
   }
   50% {
     transform: translateY(-18px) rotate(6deg);
-    opacity: 0.65;
+    opacity: 0.45;
   }
 }
 
