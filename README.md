@@ -62,7 +62,7 @@ Open your Railway service → **Variables** tab → add these (Raw Editor is fas
 ```env
 DATABASE_URL=postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
 JWT_SECRET=your-long-random-secret-here
-NEXT_PUBLIC_APP_URL=https://YOUR-SERVICE.up.railway.app
+NEXT_PUBLIC_APP_URL=https://swiftdroom.com
 ADMIN_EMAIL=you@company.com
 NODE_ENV=production
 ```
@@ -91,7 +91,7 @@ DATABASE_URL=postgresql://...@ep-xxx-pooler....neon.tech/neondb?sslmode=require
 DIRECT_URL=postgresql://...@ep-xxx....neon.tech/neondb?sslmode=require
 JWT_SECRET=long-random-string
 ADMIN_EMAIL=you@company.com
-NEXT_PUBLIC_APP_URL=https://your-domain.com
+NEXT_PUBLIC_APP_URL=https://swiftdroom.com
 ```
 
 - `DATABASE_URL` = Neon **Pooled** (`-pooler` in hostname) — app runtime  
@@ -114,7 +114,7 @@ Local `.env` is **optional** — only if you run the app on your machine.
 2. Environment variables:
    ```env
    NEXT_PUBLIC_API_URL=https://YOUR-SERVICE.up.railway.app
-   NEXT_PUBLIC_APP_URL=https://YOUR-APP.vercel.app
+   NEXT_PUBLIC_APP_URL=https://swiftdroom.com
    ```
 3. No `DATABASE_URL` needed — Vercel build runs `next build` only (no migrations)
 
@@ -127,7 +127,7 @@ Local `.env` is **optional** — only if you run the app on your machine.
    DIRECT_URL=postgresql://...@ep-xxx....neon.tech/neondb?sslmode=require
    JWT_SECRET=...
    ADMIN_EMAIL=...
-   NEXT_PUBLIC_APP_URL=https://YOUR-APP.vercel.app
+   NEXT_PUBLIC_APP_URL=https://swiftdroom.com
    ```
 3. Stripe webhook: `https://YOUR-SERVICE.up.railway.app/api/webhooks/stripe`
 4. Migrations run via `preDeployCommand` on each deploy
@@ -145,7 +145,7 @@ You can still deploy everything on **Railway only** or **Vercel only** — leave
 3. Add all environment variables (including `DATABASE_URL`, `DIRECT_URL`)
 4. Use `npm run db:migrate:deploy` separately or restore migrate in `vercel-build`
 
-Set `NEXT_PUBLIC_APP_URL` to your Vercel URL, e.g. `https://swiftdroom.vercel.app`
+Set `NEXT_PUBLIC_APP_URL` to `https://swiftdroom.com` (and `https://www.swiftdroom.com` if you use www)
 
 ## Railway deployment (API or full app)
 
@@ -161,7 +161,7 @@ See `dashboard/.env.example` for the full list. Critical ones:
 - `DATABASE_URL` — Neon PostgreSQL connection string
 - `JWT_SECRET` — Random 32+ char secret
 - `ADMIN_EMAIL` — First admin account email
-- `NEXT_PUBLIC_APP_URL` — Your Railway URL
+- `NEXT_PUBLIC_APP_URL` — `https://swiftdroom.com` (frontend origin for CORS and Stripe redirects)
 - `STRIPE_*` — Secret key, webhook secret, and 3 price IDs
 - `FIREBASE_*` — Service account for resume storage
 - `OPENAI_API_KEY` — For AI generation
@@ -193,9 +193,9 @@ Admin panel at `/admin`:
 
 ## Extension (production)
 
-1. Set **API URL** in extension setup to your **Railway** domain
-2. Users paste API token from Dashboard → Settings (on Vercel)
-3. Manifest includes `https://*.up.railway.app/*` and `https://*.vercel.app/*`
+1. Extension auto-connects on **https://swiftdroom.com** (no manual API key entry)
+2. Manifest allows `https://swiftdroom.com/*`, `https://www.swiftdroom.com/*`, and Railway API hosts
+3. Republish to Chrome Web Store after manifest URL changes
 
 ## Project structure
 

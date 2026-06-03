@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAppUrl } from "@/lib/app-url";
+import { PRODUCTION_SITE_ORIGINS } from "@/lib/site";
 
 function getAllowedOrigins(): string[] {
-  const origins = new Set<string>();
+  const origins = new Set<string>(PRODUCTION_SITE_ORIGINS);
 
   for (const value of [
     process.env.NEXT_PUBLIC_APP_URL,

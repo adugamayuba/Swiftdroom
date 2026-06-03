@@ -1,3 +1,5 @@
+import { PRODUCTION_SITE_URL } from "@/lib/site";
+
 /**
  * Resolve the public app URL from env vars.
  * Railway auto-injects RAILWAY_PUBLIC_DOMAIN; Vercel auto-injects VERCEL_URL.
@@ -42,6 +44,10 @@ export function getAppUrl() {
 
   if (process.env.RAILWAY_PUBLIC_DOMAIN?.trim()) {
     return normalizeUrl(process.env.RAILWAY_PUBLIC_DOMAIN);
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_SITE_URL;
   }
 
   return "http://localhost:3000";
