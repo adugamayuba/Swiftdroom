@@ -32,7 +32,7 @@ export function HeroBackground() {
       {ICONS.map(({ Icon, top, left, delay, duration }, i) => (
         <div
           key={i}
-          className="hero-float absolute text-neutral-300"
+          className="hero-float absolute text-white/20"
           style={{
             top,
             left,
@@ -42,7 +42,7 @@ export function HeroBackground() {
         >
           <Icon
             className="h-6 w-6 md:h-7 md:w-7"
-            strokeWidth={1.5}
+            strokeWidth={1.25}
             stroke="currentColor"
             aria-hidden
           />

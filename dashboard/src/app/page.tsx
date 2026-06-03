@@ -14,38 +14,31 @@ export const metadata: Metadata = buildPageMetadata();
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
+    <div className="min-h-screen bg-white text-[var(--brand-header)]">
       <HomeJsonLd />
       <MarketingHeader />
 
       <main>
         {/* Hero — fills viewport below header; stats appear on scroll */}
-        <section className="relative flex min-h-[calc(100dvh-5rem)] items-center overflow-hidden border-b border-neutral-200">
+        <section className="relative flex min-h-[calc(100dvh-4.25rem)] items-center overflow-hidden bg-[var(--brand-dark)]">
           <HeroBackground />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-6 py-16 md:py-20">
             <div className="mx-auto max-w-3xl">
-              <h1 className="text-4xl font-extrabold leading-tight tracking-tight md:text-6xl md:leading-tight">
-                <span className="bg-gradient-to-br from-neutral-950 via-neutral-700 to-neutral-950 bg-clip-text text-transparent">
-                  Stop retyping your resume.
-                </span>
+              <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--brand-hero-accent)] md:text-6xl md:leading-[1.05]">
+                Stop retyping your resume.
                 <br />
-                <span className="bg-gradient-to-br from-neutral-500 via-neutral-400 to-neutral-500 bg-clip-text text-transparent">
-                  Start getting interviews.
-                </span>
+                <span className="text-white">Start getting interviews.</span>
               </h1>
-              <p className="mt-6 text-lg leading-relaxed text-neutral-600">
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
                 Swiftdroom is a Chrome extension and dashboard that autofills Workday,
                 Greenhouse, and Lever forms from your profile — and writes tailored answers
                 to open-ended questions using your resume and the job description.
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-sm font-medium text-white hover:bg-neutral-800"
-                >
+                <Link href="/register" className="al-btn-white">
                   Create your account
                 </Link>
-                <p className="text-sm text-neutral-500">
+                <p className="text-sm text-white/50">
                   Set up your profile first. Subscribe when you are ready to apply.
                 </p>
               </div>
@@ -54,17 +47,19 @@ export default function HomePage() {
         </section>
 
         {/* Social proof stats */}
-        <section className="border-b border-neutral-200 bg-neutral-50 py-16">
+        <section className="bg-[var(--brand-olive)] py-20">
           <div className="mx-auto max-w-6xl px-6">
-            <div className="grid gap-8 text-center sm:grid-cols-3">
+            <div className="grid gap-12 sm:grid-cols-3">
               {[
                 ["12,000+", "Applications autofilled"],
                 ["4.2 min", "Average time saved per app"],
                 ["89%", "Users report more interviews"],
               ].map(([stat, label]) => (
                 <div key={label}>
-                  <p className="text-3xl font-bold tracking-tight text-neutral-950">{stat}</p>
-                  <p className="mt-1 text-sm text-neutral-500">{label}</p>
+                  <p className="text-4xl font-semibold tracking-tight text-[var(--brand-mint-stat)] md:text-5xl">
+                    {stat}
+                  </p>
+                  <p className="mt-2 text-sm text-[var(--brand-cream)]/80">{label}</p>
                 </div>
               ))}
             </div>
@@ -72,29 +67,32 @@ export default function HomePage() {
         </section>
 
         {/* Problem */}
-        <section className="border-b border-neutral-200 bg-white py-20">
+        <section className="bg-[var(--brand-mint)] py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="grid gap-12 md:grid-cols-2 md:items-center">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight">
+                <h2 className="text-2xl font-semibold tracking-tight text-[var(--brand-header)]">
                   The same fields. Every single time.
                 </h2>
-                <p className="mt-4 leading-relaxed text-neutral-600">
+                <p className="mt-4 leading-relaxed text-[var(--brand-header)]/70">
                   Job seekers spend 20–40 minutes per application re-entering contact info,
                   work history, and writing custom answers — often on platforms with
                   inconsistent form structures that break standard autofill tools.
                 </p>
               </div>
-              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-8">
+              <div className="rounded-lg border border-[var(--brand-header)]/10 bg-white/60 p-8 backdrop-blur-sm">
                 <dl className="space-y-6">
                   {[
                     ["Average time per application", "32 min"],
                     ["Fields re-entered manually", "40+"],
                     ["Custom written answers per week", "15–30"],
                   ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between border-b border-neutral-100 pb-4 last:border-0 last:pb-0">
-                      <dt className="text-sm text-neutral-500">{label}</dt>
-                      <dd className="text-sm font-semibold text-neutral-900">{value}</dd>
+                    <div
+                      key={label}
+                      className="flex justify-between border-b border-[var(--brand-header)]/10 pb-4 last:border-0 last:pb-0"
+                    >
+                      <dt className="text-sm text-[var(--brand-header)]/60">{label}</dt>
+                      <dd className="text-sm font-semibold text-[var(--brand-header)]">{value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -104,10 +102,10 @@ export default function HomePage() {
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="border-b border-neutral-200 py-24">
+        <section id="how-it-works" className="bg-[var(--brand-dark)] py-24 text-white">
           <div className="mx-auto max-w-6xl px-6">
             <h2 className="text-2xl font-semibold tracking-tight">How it works</h2>
-            <div className="mt-12 grid gap-8 md:grid-cols-3">
+            <div className="mt-12 grid gap-10 md:grid-cols-3">
               {[
                 {
                   step: "01",
@@ -125,10 +123,10 @@ export default function HomePage() {
                   desc: "Open the side panel on any application page. Scan the form, review autofilled fields, and insert AI-written answers before you submit.",
                 },
               ].map(({ step, title, desc }) => (
-                <div key={step}>
-                  <span className="text-sm font-medium text-neutral-400">{step}</span>
-                  <h3 className="mt-2 text-lg font-semibold">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-600">{desc}</p>
+                <div key={step} className="border-t border-white/20 pt-6">
+                  <span className="text-sm font-medium text-white/40">{step}</span>
+                  <h3 className="mt-3 text-lg font-semibold">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/65">{desc}</p>
                 </div>
               ))}
             </div>
@@ -136,10 +134,12 @@ export default function HomePage() {
         </section>
 
         {/* Features */}
-        <section id="features" className="border-b border-neutral-200 bg-neutral-50 py-24">
+        <section id="features" className="bg-white py-24">
           <div className="mx-auto max-w-6xl px-6">
-            <h2 className="text-2xl font-semibold tracking-tight">Built for real ATS platforms</h2>
-            <p className="mt-4 max-w-2xl text-neutral-600">
+            <h2 className="text-2xl font-semibold tracking-tight text-[var(--brand-header)]">
+              Built for real ATS platforms
+            </h2>
+            <p className="mt-4 max-w-2xl text-[var(--brand-header)]/65">
               Modern applicant tracking systems use dynamic DOM structures, iframes, and
               obfuscated field names. Swiftdroom reads visual labels on the page — not HTML
               attributes — so it works where basic autofill fails.
@@ -163,9 +163,12 @@ export default function HomePage() {
                   desc: "Swiftdroom fills fields and highlights uncertain mappings. You click submit yourself.",
                 },
               ].map(({ title, desc }) => (
-                <div key={title} className="rounded-lg border border-neutral-200 bg-white p-6">
-                  <h3 className="font-semibold text-neutral-900">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-600">{desc}</p>
+                <div
+                  key={title}
+                  className="rounded-lg border border-[var(--border)] bg-white p-6 shadow-sm"
+                >
+                  <h3 className="font-semibold text-[var(--brand-header)]">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--brand-header)]/65">{desc}</p>
                 </div>
               ))}
             </div>
@@ -173,17 +176,16 @@ export default function HomePage() {
         </section>
 
         <TestimonialsSection />
-
         <CompaniesSection />
-
         <BlogSection />
-
         <PricingSection />
 
         {/* FAQ */}
-        <section id="faq" className="py-24">
+        <section id="faq" className="bg-white py-24">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-2xl font-semibold tracking-tight">Common questions</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-[var(--brand-header)]">
+              Common questions
+            </h2>
             <dl className="mt-10 space-y-8">
               {[
                 {
@@ -203,9 +205,9 @@ export default function HomePage() {
                   a: "Swiftdroom works on most web-based application forms, including Workday, Greenhouse, Lever, and company career pages.",
                 },
               ].map(({ q, a }) => (
-                <div key={q}>
-                  <dt className="font-medium text-neutral-900">{q}</dt>
-                  <dd className="mt-2 text-sm leading-relaxed text-neutral-600">{a}</dd>
+                <div key={q} className="border-b border-[var(--border)] pb-8 last:border-0">
+                  <dt className="font-medium text-[var(--brand-header)]">{q}</dt>
+                  <dd className="mt-2 text-sm leading-relaxed text-[var(--brand-header)]/65">{a}</dd>
                 </div>
               ))}
             </dl>
@@ -213,18 +215,15 @@ export default function HomePage() {
         </section>
 
         {/* Final CTA */}
-        <section className="border-t border-neutral-200 bg-neutral-900 py-20 text-white">
+        <section className="bg-[var(--brand-dark)] py-20 text-white">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="text-2xl font-semibold tracking-tight">
               Ready to spend less time on forms?
             </h2>
-            <p className="mt-4 text-neutral-400">
+            <p className="mt-4 text-white/60">
               Create your profile in five minutes. Start applying when you subscribe.
             </p>
-            <Link
-              href="/register"
-              className="mt-8 inline-block rounded-md bg-white px-6 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-100"
-            >
+            <Link href="/register" className="al-btn-white mt-8">
               Create your account
             </Link>
           </div>

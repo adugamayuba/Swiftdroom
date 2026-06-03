@@ -51,16 +51,17 @@ const TESTIMONIALS = [
 
 export function TestimonialsSection() {
   return (
-    <section id="testimonials" className="border-b border-neutral-200 bg-white py-24">
-      <div className="mx-auto max-w-6xl px-6">
+    <section id="testimonials" className="relative overflow-hidden bg-[var(--brand-dark)] py-24">
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand-dark-elevated)] to-[var(--brand-dark)]" />
+      <div className="relative mx-auto max-w-6xl px-6">
         <div className="max-w-2xl">
-          <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">
+          <p className="text-sm font-medium uppercase tracking-widest text-white/50">
             Testimonials
           </p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-neutral-950 md:text-4xl">
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">
             Real people. Real offers.
           </h2>
-          <p className="mt-4 text-neutral-600">
+          <p className="mt-4 text-white/65">
             Job seekers using Swiftdroom across engineering, product, marketing, and ops.
           </p>
         </div>
@@ -69,18 +70,18 @@ export function TestimonialsSection() {
           {TESTIMONIALS.map(({ quote, name, role, location, hiredAt }) => (
             <figure
               key={name}
-              className="flex flex-col rounded-xl border border-neutral-200 bg-neutral-50 p-6"
+              className="flex flex-col rounded-lg border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
             >
-              <blockquote className="flex-1 text-sm leading-relaxed text-neutral-700">
+              <blockquote className="flex-1 text-sm leading-relaxed text-white/85">
                 &ldquo;{quote}&rdquo;
               </blockquote>
-              <figcaption className="mt-6 border-t border-neutral-200 pt-4">
-                <p className="font-semibold text-neutral-900">{name}</p>
-                <p className="text-xs text-neutral-500">
+              <figcaption className="mt-6 border-t border-white/10 pt-4">
+                <p className="font-semibold text-white">{name}</p>
+                <p className="text-xs text-white/50">
                   {role} · {location}
                 </p>
-                <p className="mt-2 text-xs font-medium text-neutral-700">
-                  Now at <span className="text-neutral-900">{hiredAt}</span>
+                <p className="mt-2 text-xs font-medium text-[var(--brand-lavender)]">
+                  Now at {hiredAt}
                 </p>
               </figcaption>
             </figure>
