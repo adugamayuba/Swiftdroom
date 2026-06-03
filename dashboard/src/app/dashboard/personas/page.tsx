@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Star } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import {
+  DashboardCard,
+  DashboardEmpty,
+  DashboardPageHeader,
+  DashboardSpinner,
+  inputClass,
+} from "@/components/dashboard/ui";
 
 interface Persona {
   id: string;
@@ -64,45 +71,41 @@ export default function PersonasPage() {
     loadPersonas();
   }
 
-  if (loading) return <p className="text-slate-500">Loading personas...</p>;
+  if (loading) return <DashboardSpinner />;
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Personas</h1>
-          <p className="mt-1 text-slate-500">
-            Context vectors for AI — switch focus per application
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
-        >
-          <Plus className="h-4 w-4" />
-          Add persona
-        </button>
-      </div>
+      <DashboardPageHeader
+        title="Personas"
+        subtitle="Context vectors for AI — switch focus per application"
+        action={
+          <button
+            type="button"
+            onClick={() => setShowForm(!showForm)}
+            className="app-btn-primary"
+          >
+            <Plus className="h-4 w-4" />
+            Add persona
+          </button>
+        }
+      />
 
       {showForm && (
-        <form
-          onSubmit={handleCreate}
-          className="mt-6 rounded-xl border border-slate-200 bg-white p-6"
-        >
-          <h2 className="font-semibold text-slate-900">New persona</h2>
+        <form onSubmit={handleCreate} className="app-card mt-6 p-6">
+          <h2 className="font-semibold text-[var(--brand-header)]">New persona</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <input
               required
               placeholder="Name (e.g. Full-Stack Focus)"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className={inputClass}
             />
             <input
               placeholder="Focus (e.g. React, Node, AWS)"
               value={form.focus}
               onChange={(e) => setForm({ ...form, focus: e.target.value })}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className={inputClass}
             />
           </div>
           <textarea
@@ -110,26 +113,19 @@ export default function PersonasPage() {
             value={form.summary}
             onChange={(e) => setForm({ ...form, summary: e.target.value })}
             rows={4}
-            className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={`${inputClass} mt-4`}
           />
           <input
             placeholder="Key skills (comma-separated)"
             value={form.skills}
             onChange={(e) => setForm({ ...form, skills: e.target.value })}
-            className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={`${inputClass} mt-4`}
           />
           <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
-            >
+            <button type="submit" className="app-btn-primary">
               Create
             </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm"
-            >
+            <button type="button" onClick={() => setShowForm(false)} className="app-btn-secondary">
               Cancel
             </button>
           </div>
@@ -138,30 +134,25 @@ export default function PersonasPage() {
 
       <div className="mt-8 space-y-4">
         {personas.map((persona) => (
-          <div
-            key={persona.id}
-            className="rounded-xl border border-slate-200 bg-white p-5"
-          >
+          <DashboardCard key={persona.id} className="p-5">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-slate-900">
-                    {persona.name}
-                  </h3>
+                  <h3 className="font-semibold text-[var(--brand-header)]">{persona.name}</h3>
                   {persona.isDefault && (
-                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                    <span className="rounded-sm bg-[var(--brand-lavender)] px-2 py-0.5 text-xs font-medium text-[var(--brand-header)]">
                       Default
                     </span>
                   )}
                 </div>
                 {persona.focus && (
-                  <p className="mt-1 text-sm text-indigo-600">{persona.focus}</p>
+                  <p className="mt-1 text-sm text-[var(--brand-tag-text)]">{persona.focus}</p>
                 )}
                 {persona.summary && (
-                  <p className="mt-2 text-sm text-slate-600">{persona.summary}</p>
+                  <p className="mt-2 text-sm text-[var(--brand-header)]/65">{persona.summary}</p>
                 )}
                 {persona.skills && (
-                  <p className="mt-2 text-xs text-slate-400">
+                  <p className="mt-2 text-xs text-[var(--brand-header)]/45">
                     Skills: {persona.skills}
                   </p>
                 )}
@@ -169,28 +160,28 @@ export default function PersonasPage() {
               <div className="flex gap-1">
                 {!persona.isDefault && (
                   <button
+                    type="button"
                     onClick={() => setDefault(persona.id)}
                     title="Set as default"
-                    className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-amber-500"
+                    className="rounded-md p-2 text-[var(--brand-header)]/45 hover:bg-[var(--brand-mint)] hover:text-[var(--brand-header)]"
                   >
                     <Star className="h-4 w-4" />
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleDelete(persona.id)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  className="rounded-md p-2 text-[var(--brand-header)]/45 hover:bg-red-50 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
-          </div>
+          </DashboardCard>
         ))}
 
         {personas.length === 0 && (
-          <p className="text-center text-slate-500">
-            No personas yet. Create one to tailor AI answers per role type.
-          </p>
+          <DashboardEmpty message="No personas yet. Create one to tailor AI answers per role type." />
         )}
       </div>
     </div>

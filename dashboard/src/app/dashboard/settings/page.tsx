@@ -4,8 +4,12 @@ import { useEffect, useState } from "react";
 import { Check, ExternalLink, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { PLANS } from "@/lib/plans";
+import {
+  DashboardCard,
+  DashboardPageHeader,
+  DashboardSpinner,
+} from "@/components/dashboard/ui";
 
-// Chrome Web Store link — update once the extension is published
 const CWS_URL = "https://chromewebstore.google.com/detail/swiftdroom";
 
 export default function SettingsPage() {
@@ -29,13 +33,11 @@ export default function SettingsPage() {
       setLoading(false);
     });
 
-    // Listen for the extension auto-connect event
     const handler = () => setExtensionConnected(true);
     window.addEventListener("swiftdroom:connected", handler);
 
-    // If already connected (e.g. page re-load after connect), check via message
     try {
-      // @ts-ignore — chrome is injected by the extension
+      // @ts-expect-error chrome injected by extension
       chrome.runtime?.sendMessage?.({ type: "PING" }, (res: unknown) => {
         if (res) setExtensionConnected(true);
       });
@@ -59,18 +61,21 @@ export default function SettingsPage() {
     ? Math.min(100, Math.round((usage.used / usage.limit) * 100))
     : 0;
 
+  if (loading) return <DashboardSpinner />;
+
   return (
     <div className="max-w-xl">
-      <h1 className="text-2xl font-bold text-neutral-900">Settings</h1>
-      <p className="mt-1 text-sm text-neutral-500">Manage your subscription and Chrome extension.</p>
+      <DashboardPageHeader
+        title="Settings"
+        subtitle="Manage your subscription and Chrome extension."
+      />
 
-      {/* Subscription */}
-      <section className="mt-8 rounded-xl border border-neutral-200 bg-white p-6">
-        <div className="flex items-start justify-between">
+      <DashboardCard className="mt-8 p-6">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">Plan</p>
-            <p className="mt-1 text-lg font-bold text-neutral-900">{planName}</p>
-            <p className="text-sm capitalize text-neutral-500">
+            <p className="al-section-tag">Plan</p>
+            <p className="mt-2 text-lg font-semibold text-[var(--brand-header)]">{planName}</p>
+            <p className="text-sm capitalize text-[var(--brand-header)]/55">
               {usage.status.toLowerCase()}
               {usage.periodEnd &&
                 ` · renews ${new Date(usage.periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
@@ -78,8 +83,8 @@ export default function SettingsPage() {
           </div>
           <button
             onClick={openBillingPortal}
-            disabled={billingLoading || loading}
-            className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40"
+            disabled={billingLoading}
+            className="app-btn-secondary shrink-0"
           >
             {billingLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Manage billing"}
           </button>
@@ -88,22 +93,23 @@ export default function SettingsPage() {
         {usage.limit > 0 && (
           <div className="mt-5">
             <div className="flex justify-between text-sm">
-              <span className="text-neutral-500">Applications used</span>
-              <span className="font-semibold text-neutral-900">{usage.used} / {usage.limit}</span>
+              <span className="text-[var(--brand-header)]/55">Applications used</span>
+              <span className="font-semibold text-[var(--brand-header)]">
+                {usage.used} / {usage.limit}
+              </span>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-100">
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--brand-mint)]">
               <div
-                className="h-full rounded-full bg-neutral-900 transition-all"
+                className="h-full rounded-full bg-[var(--brand-header)] transition-all"
                 style={{ width: `${usagePct}%` }}
               />
             </div>
           </div>
         )}
-      </section>
+      </DashboardCard>
 
-      {/* Chrome Extension */}
-      <section className="mt-5 rounded-xl border border-neutral-200 bg-white p-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">Chrome Extension</p>
+      <DashboardCard className="mt-5 p-6">
+        <p className="al-section-tag">Chrome Extension</p>
 
         {extensionConnected ? (
           <div className="mt-3 flex items-center gap-2 text-emerald-700">
@@ -112,24 +118,25 @@ export default function SettingsPage() {
           </div>
         ) : (
           <>
-            <p className="mt-2 text-sm text-neutral-600">
-              Install the extension, then visit any page on your dashboard — it connects automatically. No API keys needed.
+            <p className="mt-2 text-sm text-[var(--brand-header)]/65">
+              Install the extension, then visit any page on your dashboard — it connects
+              automatically. No API keys needed.
             </p>
             <a
               href={CWS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              className="app-btn-primary mt-4"
             >
               Add to Chrome
               <ExternalLink className="h-4 w-4" />
             </a>
-            <p className="mt-3 text-xs text-neutral-400">
+            <p className="mt-3 text-xs text-[var(--brand-header)]/45">
               After installing, come back to this page and it will auto-connect.
             </p>
           </>
         )}
-      </section>
+      </DashboardCard>
     </div>
   );
 }

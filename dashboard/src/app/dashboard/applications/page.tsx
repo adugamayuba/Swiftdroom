@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { ExternalLink, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import {
+  DashboardCard,
+  DashboardEmpty,
+  DashboardPageHeader,
+  DashboardSpinner,
+} from "@/components/dashboard/ui";
 
 interface Application {
   id: string;
@@ -24,12 +30,12 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  applied: "bg-blue-100 text-blue-700",
-  screening: "bg-purple-100 text-purple-700",
-  interview: "bg-amber-100 text-amber-700",
-  offer: "bg-emerald-100 text-emerald-700",
+  applied: "bg-[var(--brand-tag-bg)] text-[var(--brand-tag-text)]",
+  screening: "bg-purple-100 text-purple-800",
+  interview: "bg-amber-100 text-amber-800",
+  offer: "bg-emerald-100 text-emerald-800",
   rejected: "bg-red-100 text-red-700",
-  withdrawn: "bg-slate-100 text-slate-600",
+  withdrawn: "bg-neutral-100 text-neutral-600",
 };
 
 export default function ApplicationsPage() {
@@ -64,41 +70,39 @@ export default function ApplicationsPage() {
     loadApplications();
   }
 
-  if (loading) return <p className="text-slate-500">Loading applications...</p>;
+  if (loading) return <DashboardSpinner />;
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold text-slate-900">Applications</h1>
-      <p className="mt-1 text-slate-500">
-        Track where you&apos;ve applied — logged automatically by the extension
-      </p>
+      <DashboardPageHeader
+        title="Applications"
+        subtitle="Track where you've applied — logged automatically by the extension"
+      />
 
       {applications.length === 0 ? (
-        <div className="mt-12 rounded-xl border border-dashed border-slate-300 p-12 text-center">
-          <p className="text-slate-500">
-            No applications tracked yet. When you use the extension to fill a
-            form, applications are logged here automatically.
-          </p>
-        </div>
+        <DashboardEmpty
+          className="mt-12"
+          message="No applications tracked yet. When you use the extension to fill a form, applications are logged here automatically."
+        />
       ) : (
-        <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <DashboardCard className="mt-8 overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50">
+            <thead className="border-b border-[var(--border)] bg-[var(--brand-mint)]/40">
               <tr>
-                <th className="px-4 py-3 font-medium text-slate-600">Company</th>
-                <th className="px-4 py-3 font-medium text-slate-600">Role</th>
-                <th className="px-4 py-3 font-medium text-slate-600">Status</th>
-                <th className="px-4 py-3 font-medium text-slate-600">Applied</th>
-                <th className="px-4 py-3 font-medium text-slate-600"></th>
+                <th className="px-4 py-3 font-medium text-[var(--brand-header)]/65">Company</th>
+                <th className="px-4 py-3 font-medium text-[var(--brand-header)]/65">Role</th>
+                <th className="px-4 py-3 font-medium text-[var(--brand-header)]/65">Status</th>
+                <th className="px-4 py-3 font-medium text-[var(--brand-header)]/65">Applied</th>
+                <th className="px-4 py-3 font-medium text-[var(--brand-header)]/65"></th>
               </tr>
             </thead>
             <tbody>
               {applications.map((app) => (
-                <tr key={app.id} className="border-b border-slate-100">
-                  <td className="px-4 py-3 font-medium text-slate-900">
+                <tr key={app.id} className="border-b border-[var(--border)] last:border-0">
+                  <td className="px-4 py-3 font-medium text-[var(--brand-header)]">
                     {app.company}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{app.role}</td>
+                  <td className="px-4 py-3 text-[var(--brand-header)]/65">{app.role}</td>
                   <td className="px-4 py-3">
                     <select
                       value={app.status}
@@ -112,7 +116,7 @@ export default function ApplicationsPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">
+                  <td className="px-4 py-3 text-[var(--brand-header)]/55">
                     {new Date(app.appliedAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
@@ -121,13 +125,14 @@ export default function ApplicationsPage() {
                         href={app.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-400 hover:text-indigo-600"
+                        className="text-[var(--brand-header)]/45 hover:text-[var(--brand-header)]"
                       >
                         <ExternalLink className="h-4 w-4" />
                       </a>
                       <button
+                        type="button"
                         onClick={() => handleDelete(app.id)}
-                        className="text-slate-400 hover:text-red-600"
+                        className="text-[var(--brand-header)]/45 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -137,7 +142,7 @@ export default function ApplicationsPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </DashboardCard>
       )}
     </div>
   );

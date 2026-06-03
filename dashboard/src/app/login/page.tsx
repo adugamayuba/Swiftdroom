@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
 
 export default function LoginPage() {
@@ -42,66 +43,51 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <Link href="/" className="text-xl font-semibold text-neutral-900">
-            Swiftdroom
-          </Link>
+    <AuthLayout>
+      <form onSubmit={handleSubmit} className="app-card p-8 shadow-sm">
+        <h1 className="text-xl font-semibold text-[var(--brand-header)]">Log in</h1>
+        <p className="mt-1 text-sm text-[var(--brand-header)]/55">Access your dashboard</p>
+
+        {error && (
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-6 space-y-4">
+          <div>
+            <label className="app-label">Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="app-input"
+            />
+          </div>
+          <div>
+            <label className="app-label">Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="app-input"
+            />
+          </div>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-lg border border-neutral-200 bg-white p-8"
-        >
-          <h1 className="text-xl font-semibold text-neutral-900">Log in</h1>
-          <p className="mt-1 text-sm text-neutral-500">Access your dashboard</p>
+        <button type="submit" disabled={loading} className="app-btn-primary mt-6 w-full">
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
 
-          {error && (
-            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <div className="mt-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 w-full rounded-md bg-neutral-900 py-2.5 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-
-          <p className="mt-4 text-center text-sm text-neutral-500">
-            No account?{" "}
-            <Link href="/register" className="font-medium text-neutral-900">
-              Create one
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
+        <p className="mt-4 text-center text-sm text-[var(--brand-header)]/55">
+          No account?{" "}
+          <Link href="/register" className="font-medium text-[var(--brand-header)] hover:underline">
+            Create one
+          </Link>
+        </p>
+      </form>
+    </AuthLayout>
   );
 }
