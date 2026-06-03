@@ -16,29 +16,40 @@ export default function OpenGraphImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "72px",
-          background: "#f6f6f4",
-          fontFamily: "Georgia, serif",
+          background: "linear-gradient(135deg, #fafafa 0%, #f5f5f5 50%, #ffffff 100%)",
+          fontFamily: "system-ui, sans-serif",
         }}
       >
         <div
           style={{
-            fontSize: 72,
-            fontWeight: 400,
-            letterSpacing: "-0.03em",
+            fontSize: 64,
+            fontWeight: 800,
+            letterSpacing: "-0.04em",
             color: "#0a0a0a",
-            lineHeight: 1.05,
+            lineHeight: 1.1,
           }}
         >
-          Built to apply at scale
+          Stop retyping your resume.
         </div>
         <div
           style={{
-            marginTop: 32,
-            fontSize: 22,
-            color: "#6b6b66",
+            marginTop: 16,
+            fontSize: 40,
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            color: "#737373",
+            lineHeight: 1.2,
+          }}
+        >
+          Start getting interviews.
+        </div>
+        <div
+          style={{
+            marginTop: 40,
+            fontSize: 24,
+            color: "#525252",
             maxWidth: 820,
             lineHeight: 1.5,
-            fontFamily: "system-ui, sans-serif",
           }}
         >
           {DEFAULT_DESCRIPTION}
@@ -49,13 +60,23 @@ export default function OpenGraphImage() {
             display: "flex",
             alignItems: "center",
             gap: 16,
-            fontFamily: "system-ui, sans-serif",
           }}
         >
-          <div style={{ fontSize: 24, fontWeight: 600, color: "#0a0a0a" }}>
+          <div
+            style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: "#0a0a0a",
+            }}
+          >
             {SITE_NAME}
           </div>
-          <div style={{ fontSize: 16, color: "#00a86b" }}>
+          <div
+            style={{
+              fontSize: 18,
+              color: "#a3a3a3",
+            }}
+          >
             Workday · Greenhouse · Lever
           </div>
         </div>

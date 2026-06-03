@@ -9,59 +9,62 @@ import { CompaniesSection } from "@/components/marketing/CompaniesSection";
 import { BlogSection } from "@/components/marketing/BlogSection";
 import { HomeJsonLd } from "@/components/marketing/JsonLd";
 import { buildPageMetadata } from "@/lib/seo";
-import { BtnPrimary, SectionLabel, SectionTitle } from "@/components/marketing/marketing-ui";
 
 export const metadata: Metadata = buildPageMetadata();
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white text-[var(--al-black)]">
+    <div className="min-h-screen bg-white text-neutral-900">
       <HomeJsonLd />
       <MarketingHeader />
 
       <main>
-        {/* Hero */}
-        <section className="relative flex min-h-[calc(100dvh-4.25rem)] items-center overflow-hidden border-b border-[var(--al-border)] bg-white">
+        {/* Hero — fills viewport below header; stats appear on scroll */}
+        <section className="relative flex min-h-[calc(100dvh-5rem)] items-center overflow-hidden border-b border-neutral-200">
           <HeroBackground />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-6 py-16 md:py-20">
-            <div className="mx-auto max-w-4xl">
-              <h1 className="font-serif text-5xl font-normal leading-[1.05] tracking-tight text-[var(--al-black)] md:text-6xl lg:text-7xl">
-                Built to apply
+            <div className="mx-auto max-w-3xl">
+              <h1 className="text-4xl font-extrabold leading-tight tracking-tight md:text-6xl md:leading-tight">
+                <span className="bg-gradient-to-br from-neutral-950 via-neutral-700 to-neutral-950 bg-clip-text text-transparent">
+                  Stop retyping your resume.
+                </span>
                 <br />
-                <span className="text-[var(--al-muted)]">at scale</span>
+                <span className="bg-gradient-to-br from-neutral-500 via-neutral-400 to-neutral-500 bg-clip-text text-transparent">
+                  Start getting interviews.
+                </span>
               </h1>
-              <p className="mt-8 max-w-2xl text-lg leading-relaxed text-[var(--al-muted)] md:text-xl">
-                Swiftdroom provides job seekers with the tools to autofill Workday,
-                Greenhouse, and Lever — and write tailored answers from your resume.
+              <p className="mt-6 text-lg leading-relaxed text-neutral-600">
+                Swiftdroom is a Chrome extension and dashboard that autofills Workday,
+                Greenhouse, and Lever forms from your profile — and writes tailored answers
+                to open-ended questions using your resume and the job description.
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <BtnPrimary href="/register">Get started</BtnPrimary>
                 <Link
-                  href="#how-it-works"
-                  className="text-sm font-medium text-[var(--al-black)] underline-offset-4 hover:underline"
+                  href="/register"
+                  className="inline-flex items-center justify-center rounded-md bg-neutral-900 px-6 py-3 text-sm font-medium text-white hover:bg-neutral-800"
                 >
-                  See how it works
+                  Create your account
                 </Link>
+                <p className="text-sm text-neutral-500">
+                  Set up your profile first. Subscribe when you are ready to apply.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Stats — AngelList "By the numbers" */}
-        <section className="border-b border-[var(--al-border)] bg-[var(--al-surface)] py-20">
+        {/* Social proof stats */}
+        <section className="border-b border-neutral-200 bg-neutral-50 py-16">
           <div className="mx-auto max-w-6xl px-6">
-            <SectionLabel>By the numbers</SectionLabel>
-            <div className="mt-12 grid gap-12 sm:grid-cols-3">
+            <div className="grid gap-8 text-center sm:grid-cols-3">
               {[
                 ["12,000+", "Applications autofilled"],
                 ["4.2 min", "Average time saved per app"],
                 ["89%", "Users report more interviews"],
               ].map(([stat, label]) => (
                 <div key={label}>
-                  <p className="font-serif text-4xl tracking-tight text-[var(--al-black)] md:text-5xl">
-                    {stat}
-                  </p>
-                  <p className="mt-2 text-sm text-[var(--al-muted)]">{label}</p>
+                  <p className="text-3xl font-bold tracking-tight text-neutral-950">{stat}</p>
+                  <p className="mt-1 text-sm text-neutral-500">{label}</p>
                 </div>
               ))}
             </div>
@@ -69,35 +72,29 @@ export default function HomePage() {
         </section>
 
         {/* Problem */}
-        <section className="border-b border-[var(--al-border)] bg-white py-24">
+        <section className="border-b border-neutral-200 bg-white py-20">
           <div className="mx-auto max-w-6xl px-6">
-            <div className="grid gap-16 md:grid-cols-2 md:items-center">
+            <div className="grid gap-12 md:grid-cols-2 md:items-center">
               <div>
-                <SectionLabel>The problem</SectionLabel>
-                <SectionTitle className="mt-3">
-                  The same fields.
-                  <br />
-                  Every single time.
-                </SectionTitle>
-                <p className="mt-6 leading-relaxed text-[var(--al-muted)]">
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  The same fields. Every single time.
+                </h2>
+                <p className="mt-4 leading-relaxed text-neutral-600">
                   Job seekers spend 20–40 minutes per application re-entering contact info,
                   work history, and writing custom answers — often on platforms with
                   inconsistent form structures that break standard autofill tools.
                 </p>
               </div>
-              <div className="rounded-sm border border-[var(--al-border)] bg-[var(--al-surface)] p-8">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-8">
                 <dl className="space-y-6">
                   {[
                     ["Average time per application", "32 min"],
                     ["Fields re-entered manually", "40+"],
                     ["Custom written answers per week", "15–30"],
                   ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="flex justify-between border-b border-[var(--al-border)] pb-4 last:border-0 last:pb-0"
-                    >
-                      <dt className="text-sm text-[var(--al-muted)]">{label}</dt>
-                      <dd className="text-sm font-semibold text-[var(--al-black)]">{value}</dd>
+                    <div key={label} className="flex justify-between border-b border-neutral-100 pb-4 last:border-0 last:pb-0">
+                      <dt className="text-sm text-neutral-500">{label}</dt>
+                      <dd className="text-sm font-semibold text-neutral-900">{value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -106,38 +103,32 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* How it works — product cards */}
-        <section id="how-it-works" className="border-b border-[var(--al-border)] py-24">
+        {/* How it works */}
+        <section id="how-it-works" className="border-b border-neutral-200 py-24">
           <div className="mx-auto max-w-6xl px-6">
-            <SectionLabel>How it works</SectionLabel>
-            <SectionTitle className="mt-3">Three steps to faster applications</SectionTitle>
-            <div className="mt-14 grid gap-6 md:grid-cols-3">
+            <h2 className="text-2xl font-semibold tracking-tight">How it works</h2>
+            <div className="mt-12 grid gap-8 md:grid-cols-3">
               {[
                 {
+                  step: "01",
                   title: "Build your profile",
                   desc: "Upload your resume and enter your details once. Swiftdroom uses this as the source of truth for every application.",
                 },
                 {
+                  step: "02",
                   title: "Subscribe and install",
                   desc: "Choose a plan based on how many applications you need. Install the Chrome extension and connect your account.",
                 },
                 {
+                  step: "03",
                   title: "Apply with the sidebar",
-                  desc: "Open the side panel on any application page. Scan the form, review autofilled fields, and insert AI-written answers.",
+                  desc: "Open the side panel on any application page. Scan the form, review autofilled fields, and insert AI-written answers before you submit.",
                 },
-              ].map(({ title, desc }) => (
-                <div
-                  key={title}
-                  className="rounded-sm border border-[var(--al-border)] bg-white p-8 transition hover:border-[var(--al-black)]"
-                >
-                  <h3 className="text-lg font-semibold text-[var(--al-black)]">{title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--al-muted)]">{desc}</p>
-                  <Link
-                    href="/register"
-                    className="mt-6 inline-block text-sm font-medium text-[var(--al-green)] hover:underline"
-                  >
-                    Learn more →
-                  </Link>
+              ].map(({ step, title, desc }) => (
+                <div key={step}>
+                  <span className="text-sm font-medium text-neutral-400">{step}</span>
+                  <h3 className="mt-2 text-lg font-semibold">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-600">{desc}</p>
                 </div>
               ))}
             </div>
@@ -145,15 +136,15 @@ export default function HomePage() {
         </section>
 
         {/* Features */}
-        <section id="features" className="border-b border-[var(--al-border)] bg-[var(--al-surface)] py-24">
+        <section id="features" className="border-b border-neutral-200 bg-neutral-50 py-24">
           <div className="mx-auto max-w-6xl px-6">
-            <SectionLabel>Features</SectionLabel>
-            <SectionTitle className="mt-3">Built for real ATS platforms</SectionTitle>
-            <p className="mt-4 max-w-2xl text-[var(--al-muted)]">
-              Swiftdroom reads visual labels on the page — not HTML attributes — so it works
-              where basic autofill fails.
+            <h2 className="text-2xl font-semibold tracking-tight">Built for real ATS platforms</h2>
+            <p className="mt-4 max-w-2xl text-neutral-600">
+              Modern applicant tracking systems use dynamic DOM structures, iframes, and
+              obfuscated field names. Swiftdroom reads visual labels on the page — not HTML
+              attributes — so it works where basic autofill fails.
             </p>
-            <div className="mt-14 grid gap-6 md:grid-cols-2">
+            <div className="mt-12 grid gap-6 md:grid-cols-2">
               {[
                 {
                   title: "Label-based field detection",
@@ -161,23 +152,20 @@ export default function HomePage() {
                 },
                 {
                   title: "Persona-based AI answers",
-                  desc: "Maintain multiple focus profiles and switch per application.",
+                  desc: "Maintain multiple focus profiles — full-stack, management, domain-specific — and switch per application.",
                 },
                 {
                   title: "Click-to-insert ghostwriter",
-                  desc: "Generate answers from the job description and your resume. You review before inserting.",
+                  desc: "Generate answers to open-ended questions from the job description and your resume. You review before inserting.",
                 },
                 {
                   title: "Co-pilot, never autopilot",
                   desc: "Swiftdroom fills fields and highlights uncertain mappings. You click submit yourself.",
                 },
               ].map(({ title, desc }) => (
-                <div
-                  key={title}
-                  className="rounded-sm border border-[var(--al-border)] bg-white p-8"
-                >
-                  <h3 className="font-semibold text-[var(--al-black)]">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--al-muted)]">{desc}</p>
+                <div key={title} className="rounded-lg border border-neutral-200 bg-white p-6">
+                  <h3 className="font-semibold text-neutral-900">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-600">{desc}</p>
                 </div>
               ))}
             </div>
@@ -185,16 +173,18 @@ export default function HomePage() {
         </section>
 
         <TestimonialsSection />
+
         <CompaniesSection />
+
         <BlogSection />
+
         <PricingSection />
 
         {/* FAQ */}
-        <section id="faq" className="border-b border-[var(--al-border)] py-24">
+        <section id="faq" className="py-24">
           <div className="mx-auto max-w-3xl px-6">
-            <SectionLabel>FAQ</SectionLabel>
-            <SectionTitle className="mt-3">Common questions</SectionTitle>
-            <dl className="mt-12 space-y-10">
+            <h2 className="text-2xl font-semibold tracking-tight">Common questions</h2>
+            <dl className="mt-10 space-y-8">
               {[
                 {
                   q: "Does Swiftdroom submit applications for me?",
@@ -213,9 +203,9 @@ export default function HomePage() {
                   a: "Swiftdroom works on most web-based application forms, including Workday, Greenhouse, Lever, and company career pages.",
                 },
               ].map(({ q, a }) => (
-                <div key={q} className="border-b border-[var(--al-border)] pb-10 last:border-0">
-                  <dt className="font-medium text-[var(--al-black)]">{q}</dt>
-                  <dd className="mt-3 text-sm leading-relaxed text-[var(--al-muted)]">{a}</dd>
+                <div key={q}>
+                  <dt className="font-medium text-neutral-900">{q}</dt>
+                  <dd className="mt-2 text-sm leading-relaxed text-neutral-600">{a}</dd>
                 </div>
               ))}
             </dl>
@@ -223,9 +213,9 @@ export default function HomePage() {
         </section>
 
         {/* Final CTA */}
-        <section className="bg-[var(--al-black)] py-24 text-white">
+        <section className="border-t border-neutral-200 bg-neutral-900 py-20 text-white">
           <div className="mx-auto max-w-3xl px-6 text-center">
-            <h2 className="font-serif text-3xl font-normal tracking-tight md:text-4xl">
+            <h2 className="text-2xl font-semibold tracking-tight">
               Ready to spend less time on forms?
             </h2>
             <p className="mt-4 text-neutral-400">
@@ -233,9 +223,9 @@ export default function HomePage() {
             </p>
             <Link
               href="/register"
-              className="mt-8 inline-block rounded-sm bg-white px-6 py-3 text-sm font-medium text-[var(--al-black)] transition hover:bg-neutral-100"
+              className="mt-8 inline-block rounded-md bg-white px-6 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-100"
             >
-              Get started
+              Create your account
             </Link>
           </div>
         </section>
