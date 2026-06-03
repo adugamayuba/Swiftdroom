@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import { Check, ExternalLink, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { PLANS } from "@/lib/plans";
+import { CHROME_WEB_STORE_URL } from "@/lib/chrome-store";
 import {
   DashboardCard,
   DashboardPageHeader,
   DashboardSpinner,
 } from "@/components/dashboard/ui";
-
-const CWS_URL = "https://chromewebstore.google.com/detail/swiftdroom";
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -123,7 +122,7 @@ export default function SettingsPage() {
               automatically. No API keys needed.
             </p>
             <a
-              href={CWS_URL}
+              href={CHROME_WEB_STORE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="app-btn-primary mt-4"

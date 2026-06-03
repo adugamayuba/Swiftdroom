@@ -194,8 +194,9 @@ Admin panel at `/admin`:
 ## Extension (production)
 
 1. Extension auto-connects on **https://swiftdroom.com** (no manual API key entry)
-2. Manifest allows `https://swiftdroom.com/*`, `https://www.swiftdroom.com/*`, and Railway API hosts
-3. Republish to Chrome Web Store after manifest URL changes
+2. Privacy policy: **https://swiftdroom.com/privacy** (required for Chrome Web Store)
+3. Package for upload: `npm run package-extension` → uploads `swiftdroom-extension.zip`
+4. Full publish guide: **[docs/CHROME_WEB_STORE.md](docs/CHROME_WEB_STORE.md)**
 
 ## Project structure
 

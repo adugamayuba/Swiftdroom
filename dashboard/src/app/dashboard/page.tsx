@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Circle, ExternalLink } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { CHROME_WEB_STORE_URL } from "@/lib/chrome-store";
 import { DashboardCard, DashboardSpinner } from "@/components/dashboard/ui";
-
-const CWS_URL = "https://chromewebstore.google.com/detail/swiftdroom";
 
 interface DashboardData {
   name: string | null;
@@ -74,7 +73,7 @@ export default function DashboardOverview() {
       done: extensionConnected,
       label: "Install the Chrome extension",
       sub: "Add it from the Chrome Web Store — it connects automatically.",
-      href: CWS_URL,
+      href: CHROME_WEB_STORE_URL,
       external: true,
       cta: "Add to Chrome",
     },

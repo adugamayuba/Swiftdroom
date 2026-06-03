@@ -109,7 +109,18 @@ export default function RegisterPage() {
           {loading ? "Creating account..." : "Continue"}
         </button>
 
-        <p className="mt-4 text-center text-sm text-[var(--brand-header)]/55">
+        <p className="mt-4 text-center text-xs text-[var(--brand-header)]/50">
+          By creating an account, you agree to our{" "}
+          <Link href="/terms" className="underline hover:text-[var(--brand-header)]">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline hover:text-[var(--brand-header)]">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+        <p className="mt-3 text-center text-sm text-[var(--brand-header)]/55">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-[var(--brand-header)] hover:underline">
             Log in
