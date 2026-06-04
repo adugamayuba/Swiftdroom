@@ -9,9 +9,31 @@ let state = {
   selectedPersonaId: null,
   usage: null,
   apiUrl: DEFAULT_APP_URL,
+  currentPageUrl: null,
+  recordedApplicationUrl: null,
 };
 
 const listenersBound = { connect: false, main: false };
+let recordApplicationTimer = null;
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function getSelectedPersona() {
+  return SwiftdroomFieldMapper.getPersona(
+    { personas: state.personas },
+    state.selectedPersonaId
+  );
+}
+
+function getDomainFromTab(tab) {
+  try {
+    return new URL(tab.url).hostname;
+  } catch {
+    return "";
+  }
+}
 
 async function init() {
   const config = await SwiftdroomAPI.getConfig();
@@ -51,9 +73,7 @@ function updateDashboardLinks(apiUrl) {
 function showConnectScreen(message) {
   showScreen("connect");
   const msgEl = document.getElementById("connect-message");
-  if (msgEl && message) {
-    msgEl.textContent = message;
-  }
+  if (msgEl && message) msgEl.textContent = message;
   const errorEl = document.getElementById("connect-error");
   if (errorEl) errorEl.classList.add("hidden");
   bindConnect();
@@ -122,13 +142,19 @@ function bindMain() {
   if (listenersBound.main) return;
   listenersBound.main = true;
 
-  document.getElementById("persona-select").addEventListener("change", (e) => {
+  document.getElementById("persona-select").addEventListener("change", async (e) => {
     state.selectedPersonaId = e.target.value;
+    if (state.fields.length) {
+      applySuggestionsToFields(getDomainFromTab(await getActiveTab()));
+      renderFields();
+      renderGhostwriter((await getActiveTab())?.id);
+    }
   });
 
-  document.getElementById("scan-btn").addEventListener("click", scanAndAutofill);
-  document.getElementById("rescan-btn").addEventListener("click", scanFields);
-  document.getElementById("log-application-btn").addEventListener("click", logApplication);
+  document.getElementById("scan-btn").addEventListener("click", scanForm);
+  document.getElementById("rescan-btn").addEventListener("click", scanForm);
+  document.getElementById("fill-form-btn").addEventListener("click", fillApplicationMagic);
+  document.getElementById("generate-all-btn").addEventListener("click", generateAllGhostwriter);
 }
 
 async function getActiveTab() {
@@ -195,8 +221,137 @@ async function scanFields() {
     state.pageContext = {};
   }
 
-  renderFields();
   return state.fields;
+}
+
+function applySuggestionsToFields(domain) {
+  const persona = getSelectedPersona();
+
+  for (const field of state.fields) {
+    if (SwiftdroomFieldMapper.isOpenEndedField(field)) {
+      if (field._draftValue == null) field._draftValue = "";
+      field._status = "essay";
+      continue;
+    }
+
+    const { value, source } = SwiftdroomFieldMapper.suggestValue(
+      field.label,
+      state.profile,
+      persona,
+      state.fieldMappings,
+      domain
+    );
+
+    field._draftValue = value || field.value || "";
+    field._source = source;
+    field._status = field._draftValue ? (source === "empty" ? "empty" : "suggested") : "empty";
+  }
+}
+
+function allAnswersComplete() {
+  if (!state.fields.length) return false;
+  return state.fields.every((f) => (f._draftValue || "").trim().length > 0);
+}
+
+function scheduleRecordApplicationCheck() {
+  clearTimeout(recordApplicationTimer);
+  recordApplicationTimer = setTimeout(() => {
+    maybeRecordApplication();
+  }, 600);
+}
+
+async function maybeRecordApplication() {
+  if (!allAnswersComplete()) return;
+
+  const tab = await getActiveTab();
+  if (!tab?.url || !isInjectableUrl(tab.url)) return;
+  if (state.recordedApplicationUrl === tab.url) return;
+
+  const meta = state.pageContext?.meta || {};
+  const statusEl = document.getElementById("uncertain-count");
+
+  try {
+    if (statusEl) statusEl.textContent = "Saving application…";
+
+    await SwiftdroomAPI.logApplication({
+      company: meta.company || "Unknown company",
+      role: meta.role || meta.title || "Unknown role",
+      url: tab.url,
+      personaId: state.selectedPersonaId,
+      status: "submitted",
+      notes: "All sidebar answers completed in extension",
+    });
+
+    state.recordedApplicationUrl = tab.url;
+
+    if (state.usage) {
+      state.usage.used += 1;
+      state.usage.remaining = Math.max(0, state.usage.remaining - 1);
+      const badge = document.getElementById("usage-badge");
+      if (badge) badge.textContent = `${state.usage.remaining} left`;
+    }
+
+    updateStats();
+  } catch (err) {
+    if (err.code === "QUOTA_EXCEEDED" && statusEl) {
+      statusEl.textContent = "Monthly limit reached";
+    } else if (statusEl) {
+      updateStats();
+    }
+  }
+}
+
+function updateStats() {
+  const stats = document.getElementById("stats");
+  if (!stats) return;
+
+  const shortFields = state.fields.filter((f) => !SwiftdroomFieldMapper.isOpenEndedField(f));
+  const essays = state.fields.filter((f) => SwiftdroomFieldMapper.isOpenEndedField(f));
+  const ready = [...shortFields, ...essays].filter((f) => (f._draftValue || "").trim()).length;
+  const total = shortFields.length + essays.length;
+  const needs = total - ready;
+
+  stats.classList.remove("hidden");
+  document.getElementById("filled-count").textContent = `${ready} ready`;
+
+  const statusEl = document.getElementById("uncertain-count");
+  if (state.recordedApplicationUrl && state.recordedApplicationUrl === state.currentPageUrl) {
+    statusEl.textContent = "✓ Application counted";
+    statusEl.style.color = "#059669";
+  } else if (needs > 0) {
+    statusEl.textContent = `${needs} to review`;
+    statusEl.style.color = "";
+  } else if (allAnswersComplete()) {
+    statusEl.textContent = "Counting application…";
+    statusEl.style.color = "";
+  } else {
+    statusEl.textContent = "all set";
+    statusEl.style.color = "";
+  }
+}
+
+async function scanForm() {
+  const tab = await getActiveTab();
+  if (!tab?.id) return;
+
+  const scanBtn = document.getElementById("scan-btn");
+  scanBtn.disabled = true;
+  scanBtn.textContent = "Scanning…";
+
+  if (state.currentPageUrl !== tab.url) {
+    state.recordedApplicationUrl = null;
+  }
+  state.currentPageUrl = tab.url;
+
+  await scanFields();
+  applySuggestionsToFields(getDomainFromTab(tab));
+  updateStats();
+  renderFields();
+  renderGhostwriter(tab.id);
+  scheduleRecordApplicationCheck();
+
+  scanBtn.disabled = false;
+  scanBtn.textContent = "Scan form";
 }
 
 async function runInFrame(tabId, frameId, func, args = []) {
@@ -208,73 +363,79 @@ async function runInFrame(tabId, frameId, func, args = []) {
   return result?.result;
 }
 
-async function fillFieldInFrame(tabId, field) {
+async function scrollToFieldInFrame(tabId, field) {
   await runInFrame(
     tabId,
     field.frameId ?? 0,
-    (fieldId, value) => {
+    (fieldId) => {
+      if (!window.SwiftdroomFormDetector) return false;
+      return window.SwiftdroomFormDetector.scrollToField(fieldId);
+    },
+    [field.id]
+  );
+}
+
+async function setFieldValueInFrame(tabId, field, value) {
+  await runInFrame(
+    tabId,
+    field.frameId ?? 0,
+    (fieldId, val) => {
       const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
       if (!el || !window.SwiftdroomFormDetector) return false;
-      window.SwiftdroomFormDetector.setElementValue(el, value);
+      window.SwiftdroomFormDetector.setElementValue(el, val);
       return true;
     },
-    [field.id, field.value]
+    [field.id, value]
   );
 }
 
-async function highlightFieldInFrame(tabId, field, color) {
+async function typeFieldMagically(tabId, field, text) {
+  const value = text || "";
+  if (!value.trim()) return;
+
+  await scrollToFieldInFrame(tabId, field);
+  await sleep(280);
+
   await runInFrame(
     tabId,
     field.frameId ?? 0,
-    (fieldId, highlightColor) => {
-      if (!window.SwiftdroomFormDetector) return false;
-      window.SwiftdroomFormDetector.clearHighlights();
-      window.SwiftdroomFormDetector.highlightField(fieldId, highlightColor);
-      return true;
+    (fieldId) => {
+      const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+      if (el && window.SwiftdroomFormDetector) {
+        window.SwiftdroomFormDetector.setElementValue(el, "");
+      }
     },
-    [field.id, color]
+    [field.id]
   );
-}
 
-async function scanAndAutofill() {
-  const tab = await getActiveTab();
-  if (!tab?.id) return;
+  let built = "";
+  const chunk = field.isLongForm ? 4 : 1;
 
-  await scanFields();
-  const domain = new URL(tab.url).hostname;
-
-  let filled = 0;
-  let uncertain = 0;
-
-  for (const field of state.fields) {
-    if (SwiftdroomFieldMapper.isOpenEndedField(field)) continue;
-
-    const value = SwiftdroomFieldMapper.resolveWithMappings(
-      field.label,
-      state.profile,
-      state.fieldMappings,
-      domain
-    );
-
-    if (value) {
-      field.value = value;
-      await fillFieldInFrame(tab.id, field);
-      field._status = "filled";
-      field._value = value;
-      filled++;
-    } else if (field.label) {
-      field._status = "uncertain";
-      uncertain++;
-      await highlightFieldInFrame(tab.id, field, "#f59e0b");
-    }
+  for (let i = 0; i < value.length; i += chunk) {
+    built = value.slice(0, Math.min(i + chunk, value.length));
+    await setFieldValueInFrame(tabId, field, built);
+    const delay = field.isLongForm ? 18 : 28 + Math.random() * 22;
+    await sleep(delay);
   }
 
-  document.getElementById("stats").classList.remove("hidden");
-  document.getElementById("filled-count").textContent = `${filled} filled`;
-  document.getElementById("uncertain-count").textContent = `${uncertain} need mapping`;
+  await runInFrame(
+    tabId,
+    field.frameId ?? 0,
+    (fieldId) => {
+      const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+      if (el && window.SwiftdroomFormDetector) {
+        window.SwiftdroomFormDetector.highlightField(fieldId, "#8b5cf6");
+      }
+    },
+    [field.id]
+  );
+  await sleep(200);
+}
 
-  renderFields();
-  renderGhostwriter(tab.id);
+function sourceLabel(source) {
+  if (source === "profile") return "From your profile";
+  if (source === "resume") return "Suggested from resume";
+  return "Add your answer";
 }
 
 function renderFields() {
@@ -283,89 +444,52 @@ function renderFields() {
 
   if (state.fields.length === 0) {
     section.classList.add("hidden");
-    const hint = document.getElementById("scan-hint");
-    if (hint) hint.classList.remove("hidden");
+    document.getElementById("scan-hint")?.classList.remove("hidden");
     return;
   }
 
-  const hint = document.getElementById("scan-hint");
-  if (hint) hint.classList.add("hidden");
-
+  document.getElementById("scan-hint")?.classList.add("hidden");
   section.classList.remove("hidden");
 
-  list.innerHTML = state.fields
-    .filter((f) => !SwiftdroomFieldMapper.isOpenEndedField(f))
+  const shortFields = state.fields.filter((f) => !SwiftdroomFieldMapper.isOpenEndedField(f));
+
+  list.innerHTML = shortFields
     .map((field) => {
+      const draft = field._draftValue ?? "";
       const statusClass =
-        field._status === "filled"
-          ? "filled"
-          : field._status === "uncertain"
-            ? "uncertain"
-            : "";
+        draft.trim() ? (field._source === "resume" ? "guessed" : "filled") : "uncertain";
 
-      const mappingSelect =
-        field._status === "uncertain"
-          ? `<div class="field-mapping">
-              <select data-field-id="${field.id}" data-label="${escapeHtml(field.label)}" class="mapping-select">
-                <option value="">Map to profile field...</option>
-                ${SwiftdroomFieldMapper.FIELD_KEYS.map(
-                  (k) => `<option value="${k}">${k}</option>`
-                ).join("")}
-              </select>
-            </div>`
-          : "";
-
-      return `<div class="field-item ${statusClass}">
-        <div class="field-label-text">${escapeHtml(field.label || "Unknown field")}</div>
-        <div class="field-status">${
-          field._status === "filled"
-            ? `✓ ${escapeHtml(field._value?.slice(0, 40) || "")}${field._value?.length > 40 ? "..." : ""}`
-            : field._status === "uncertain"
-              ? "⚠ Needs manual mapping"
-              : "Not scanned"
-        }</div>
-        ${mappingSelect}
+      return `<div class="field-item ${statusClass}" data-field-id="${field.id}">
+        <div class="field-label-text">${escapeHtml(field.label || "Field")}</div>
+        <div class="field-source">${sourceLabel(field._source)}</div>
+        <textarea class="field-draft" rows="${draft.length > 80 ? 3 : 2}" data-field-id="${field.id}" placeholder="Type or edit answer…">${escapeHtml(draft)}</textarea>
       </div>`;
     })
     .join("");
 
-  list.querySelectorAll(".mapping-select").forEach((select) => {
-    select.addEventListener("change", async (e) => {
-      const fieldId = e.target.dataset.fieldId;
-      const label = e.target.dataset.label;
-      const fieldKey = e.target.value;
-      if (!fieldKey) return;
-
-      const tab = await getActiveTab();
-      const hostname = new URL(tab.url).hostname;
-
-      await SwiftdroomAPI.saveFieldMapping({
-        domain: hostname,
-        labelPattern: label.toLowerCase(),
-        fieldKey,
-      });
-
-      state.fieldMappings.push({
-        domain: hostname,
-        labelPattern: label.toLowerCase(),
-        fieldKey,
-      });
-
-      const value = SwiftdroomFieldMapper.resolveFieldValue(state.profile, fieldKey);
-      const target = state.fields.find((f) => f.id === fieldId);
-      if (value && tab?.id && target) {
-        target.value = value;
-        await fillFieldInFrame(tab.id, target);
+  list.querySelectorAll(".field-draft").forEach((el) => {
+    el.addEventListener("input", (e) => {
+      const field = state.fields.find((f) => f.id === e.target.dataset.fieldId);
+      if (!field) return;
+      field._draftValue = e.target.value;
+      field._status = field._draftValue.trim() ? "edited" : "empty";
+      field._source = "edited";
+      updateStats();
+      scheduleRecordApplicationCheck();
+      const card = e.target.closest(".field-item");
+      if (card) {
+        card.classList.toggle("filled", Boolean(field._draftValue.trim()));
+        card.classList.toggle("uncertain", !field._draftValue.trim());
+        card.classList.toggle("guessed", field._source === "resume");
       }
-
-      await scanAndAutofill();
     });
   });
 }
 
-async function renderGhostwriter(tabId) {
+function renderGhostwriter(tabId) {
   const section = document.getElementById("ghostwriter-section");
   const list = document.getElementById("ghostwriter-list");
+  const generateAllBtn = document.getElementById("generate-all-btn");
 
   const openFields = state.fields.filter(SwiftdroomFieldMapper.isOpenEndedField);
 
@@ -375,98 +499,154 @@ async function renderGhostwriter(tabId) {
   }
 
   section.classList.remove("hidden");
+  if (generateAllBtn) generateAllBtn.classList.remove("hidden");
+
   list.innerHTML = openFields
     .map(
       (field) => `
     <div class="ghostwriter-item" data-field-id="${field.id}">
-      <div class="ghostwriter-question">${escapeHtml(field.label || "Open-ended question")}</div>
-      <div class="ghostwriter-answer ghostwriter-loading">Click Generate to write an answer...</div>
-      <button class="btn btn-sm btn-generate" data-field-id="${field.id}" data-question="${escapeHtml(field.label)}">Generate</button>
+      <div class="ghostwriter-question">${escapeHtml(field.label || "Question")}</div>
+      <textarea class="ghostwriter-draft" rows="4" data-field-id="${field.id}" placeholder="Write your answer or generate below…">${escapeHtml(field._draftValue || "")}</textarea>
+      <button type="button" class="btn btn-sm btn-generate" data-field-id="${field.id}">Generate</button>
     </div>`
     )
     .join("");
 
-  list.querySelectorAll(".btn-generate").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const fieldId = btn.dataset.fieldId;
-      const question = btn.dataset.question;
-      const item = btn.closest(".ghostwriter-item");
-      const answerEl = item.querySelector(".ghostwriter-answer");
-
-      answerEl.textContent = "Generating...";
-      answerEl.classList.add("ghostwriter-loading");
-      btn.disabled = true;
-
-      try {
-        const data = await SwiftdroomAPI.generate({
-          question,
-          jobDescription: state.pageContext?.jobDescription || "",
-          personaId: state.selectedPersonaId,
-          company: state.pageContext?.meta?.company || "",
-        });
-
-        if (state.usage) {
-          state.usage.used += 1;
-          state.usage.remaining = Math.max(0, state.usage.remaining - 1);
-          const badge = document.getElementById("usage-badge");
-          if (badge) badge.textContent = `${state.usage.remaining} left`;
-        }
-
-        answerEl.textContent = data.answer;
-        answerEl.classList.remove("ghostwriter-loading");
-
-        const insertBtn = document.createElement("button");
-        insertBtn.className = "btn btn-sm btn-insert btn-block";
-        insertBtn.textContent = "Click to Insert";
-        insertBtn.addEventListener("click", async () => {
-          const target = state.fields.find((f) => f.id === fieldId);
-          if (target) {
-            target.value = data.answer;
-            await fillFieldInFrame(tabId, target);
-          }
-          insertBtn.textContent = "✓ Inserted";
-          insertBtn.disabled = true;
-        });
-
-        item.appendChild(insertBtn);
-      } catch (err) {
-        if (err.code === "QUOTA_EXCEEDED") {
-          answerEl.textContent = "Monthly application limit reached. Upgrade your plan in the dashboard.";
-        } else {
-          answerEl.textContent = `Error: ${err.message}`;
-        }
+  list.querySelectorAll(".ghostwriter-draft").forEach((el) => {
+    el.addEventListener("input", (e) => {
+      const field = state.fields.find((f) => f.id === e.target.dataset.fieldId);
+      if (field) {
+        field._draftValue = e.target.value;
+        updateStats();
+        scheduleRecordApplicationCheck();
       }
-
-      btn.disabled = false;
     });
+  });
+
+  list.querySelectorAll(".btn-generate").forEach((btn) => {
+    btn.addEventListener("click", () => generateOneAnswer(btn.dataset.fieldId, tabId, btn));
   });
 }
 
-async function logApplication() {
-  const tab = await getActiveTab();
-  if (!tab?.url) return;
+async function generateOneAnswer(fieldId, tabId, btn) {
+  const field = state.fields.find((f) => f.id === fieldId);
+  if (!field) return;
 
-  const meta = state.pageContext?.meta || {};
-  const btn = document.getElementById("log-application-btn");
-  btn.textContent = "Logging...";
-  btn.disabled = true;
+  const item = btn?.closest(".ghostwriter-item");
+  const textarea = item?.querySelector(".ghostwriter-draft");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+  }
+  if (textarea) textarea.classList.add("ghostwriter-loading");
 
   try {
-    await SwiftdroomAPI.logApplication({
-      company: meta.company || "Unknown company",
-      role: meta.role || meta.title || "Unknown role",
-      url: tab.url,
+    const data = await SwiftdroomAPI.generate({
+      question: field.label,
+      jobDescription: state.pageContext?.jobDescription || "",
       personaId: state.selectedPersonaId,
+      company: state.pageContext?.meta?.company || "",
     });
-    btn.textContent = "✓ Application logged";
+
+    if (state.usage) {
+      state.usage.used += 1;
+      state.usage.remaining = Math.max(0, state.usage.remaining - 1);
+      const badge = document.getElementById("usage-badge");
+      if (badge) badge.textContent = `${state.usage.remaining} left`;
+    }
+
+    field._draftValue = data.answer;
+    if (textarea) {
+      textarea.value = data.answer;
+      textarea.classList.remove("ghostwriter-loading");
+    }
+    updateStats();
+    scheduleRecordApplicationCheck();
+  } catch (err) {
+    if (textarea) {
+      textarea.value =
+        err.code === "QUOTA_EXCEEDED"
+          ? "Monthly limit reached — upgrade in dashboard."
+          : `Error: ${err.message}`;
+      textarea.classList.remove("ghostwriter-loading");
+    }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "Generate";
+  }
+}
+
+async function generateAllGhostwriter() {
+  const tab = await getActiveTab();
+  const openFields = state.fields.filter(SwiftdroomFieldMapper.isOpenEndedField);
+  const btn = document.getElementById("generate-all-btn");
+
+  if (!openFields.length) return;
+
+  btn.disabled = true;
+  btn.textContent = "Generating all…";
+
+  for (let i = 0; i < openFields.length; i++) {
+    const field = openFields[i];
+    btn.textContent = `Generating ${i + 1}/${openFields.length}…`;
+    const itemBtn = document.querySelector(
+      `.ghostwriter-item[data-field-id="${field.id}"] .btn-generate`
+    );
+    await generateOneAnswer(field.id, tab?.id, itemBtn);
+    await sleep(400);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Generate all answers";
+  scheduleRecordApplicationCheck();
+}
+
+async function fillApplicationMagic() {
+  const tab = await getActiveTab();
+  if (!tab?.id) return;
+
+  const btn = document.getElementById("fill-form-btn");
+  const toFill = state.fields.filter((f) => (f._draftValue || "").trim());
+
+  if (!toFill.length) {
+    btn.textContent = "Add answers first";
+    setTimeout(() => {
+      btn.textContent = "Fill application ✨";
+    }, 2000);
+    return;
+  }
+
+  btn.disabled = true;
+
+  const ordered = [
+    ...toFill.filter((f) => !SwiftdroomFieldMapper.isOpenEndedField(f) && !f.isLongForm),
+    ...toFill.filter((f) => !SwiftdroomFieldMapper.isOpenEndedField(f) && f.isLongForm),
+    ...toFill.filter((f) => SwiftdroomFieldMapper.isOpenEndedField(f)),
+  ];
+
+  try {
+    await injectDetectorAllFrames(tab.id);
+
+    for (let i = 0; i < ordered.length; i++) {
+      const field = ordered[i];
+      btn.textContent = `Filling ${i + 1}/${ordered.length}…`;
+      await typeFieldMagically(tab.id, field, field._draftValue.trim());
+      await sleep(350);
+    }
+
+    btn.textContent = "✨ Done — review & submit";
+    await maybeRecordApplication();
   } catch (err) {
     btn.textContent = `Error: ${err.message}`;
   }
 
   setTimeout(() => {
-    btn.textContent = "Log this application";
+    btn.textContent = "Fill application ✨";
     btn.disabled = false;
-  }, 3000);
+  }, 4000);
 }
 
 function escapeHtml(str) {

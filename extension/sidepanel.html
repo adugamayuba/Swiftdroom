@@ -56,33 +56,40 @@
 
         <div class="actions">
           <button id="scan-btn" class="btn btn-primary btn-block">
-            Scan & Autofill
+            Scan form
           </button>
           <button id="rescan-btn" class="btn btn-secondary btn-block">
-            Rescan Fields
+            Rescan
           </button>
         </div>
 
         <div id="stats" class="stats hidden">
-          <span id="filled-count">0 filled</span>
-          <span id="uncertain-count">0 need mapping</span>
+          <span id="filled-count">0 ready</span>
+          <span id="uncertain-count">0 to review</span>
         </div>
 
         <section id="fields-section" class="section hidden">
-          <h2>Fields</h2>
+          <h2>Your answers</h2>
+          <p class="hint">Edit any answer below before filling the form.</p>
           <div id="fields-list"></div>
         </section>
 
         <section id="ghostwriter-section" class="section hidden">
-          <h2>Ghostwriter</h2>
-          <p class="hint">Open-ended questions on this page</p>
+          <div class="section-head">
+            <h2>Ghostwriter</h2>
+            <button type="button" id="generate-all-btn" class="btn btn-sm btn-generate hidden">
+              Generate all
+            </button>
+          </div>
+          <p class="hint">Open-ended questions — edit or generate drafts.</p>
           <div id="ghostwriter-list"></div>
         </section>
 
-        <section id="log-section" class="section">
-          <button id="log-application-btn" class="btn btn-secondary btn-block">
-            Log this application
+        <section id="fill-section" class="section">
+          <button id="fill-form-btn" class="btn btn-magic btn-block">
+            Fill application ✨
           </button>
+          <p class="fill-note">Types each answer into the form so you can review before submitting.</p>
         </section>
 
         <footer class="footer">

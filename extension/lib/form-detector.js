@@ -151,15 +151,7 @@ const SwiftdroomFormDetector = (() => {
     return element.value || "";
   }
 
-  function setElementValue(element, value) {
-    element.focus();
-
-    if (element.isContentEditable) {
-      element.textContent = value;
-      element.dispatchEvent(new InputEvent("input", { bubbles: true }));
-      return;
-    }
-
+  function setNativeValue(element, value) {
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       "value"
@@ -176,9 +168,58 @@ const SwiftdroomFormDetector = (() => {
     } else {
       element.value = value;
     }
+  }
+
+  function setSelectValue(element, value) {
+    const target = (value || "").toLowerCase().trim();
+    let matched = false;
+    for (const opt of element.options) {
+      const text = (opt.textContent || "").toLowerCase();
+      const val = (opt.value || "").toLowerCase();
+      if (
+        text === target ||
+        val === target ||
+        text.includes(target) ||
+        target.includes(text)
+      ) {
+        element.value = opt.value;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && element.options.length) {
+      for (const opt of element.options) {
+        if (opt.value && opt.value !== "") {
+          element.value = opt.value;
+          break;
+        }
+      }
+    }
+  }
+
+  function setElementValue(element, value) {
+    element.focus();
+
+    if (element.isContentEditable) {
+      element.textContent = value;
+      element.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      return;
+    }
+
+    if (element.tagName === "SELECT") {
+      setSelectValue(element, value);
+    } else {
+      setNativeValue(element, value);
+    }
 
     element.dispatchEvent(new Event("input", { bubbles: true }));
     element.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function scrollToField(fieldId) {
+    const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    return Boolean(el);
   }
 
   function highlightField(fieldId, color) {
@@ -244,6 +285,7 @@ const SwiftdroomFormDetector = (() => {
     getElementByFieldId(fieldId) {
       return document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
     },
+    scrollToField,
   };
 })();
 

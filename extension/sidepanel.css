@@ -227,9 +227,84 @@ input[type="password"] {
   background: #fffbeb;
 }
 
-.field-item.filled {
+.field-item.filled,
+.field-item.guessed {
   border-color: #34d399;
   background: #ecfdf5;
+}
+
+.field-item.guessed {
+  border-color: #a7f3d0;
+  background: #f0fdf9;
+}
+
+.field-source {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.field-draft,
+.ghostwriter-draft {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 44px;
+}
+
+.field-draft:focus,
+.ghostwriter-draft:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.section-head h2 {
+  margin-bottom: 0;
+}
+
+.btn-magic {
+  background: linear-gradient(135deg, #031414 0%, #1e3a3a 50%, #4c1d95 100%);
+  color: white;
+  font-weight: 700;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 14px rgba(76, 29, 149, 0.35);
+}
+
+.btn-magic:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(76, 29, 149, 0.45);
+}
+
+.btn-magic:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.fill-note {
+  font-size: 10px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 8px;
+  line-height: 1.4;
 }
 
 .field-label-text {
