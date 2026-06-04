@@ -77,29 +77,16 @@ After saving variables, Railway redeploys automatically. Migrations run on start
 
 ## Environment variables (Railway / Vercel only)
 
-You do **not** need a local `.env` file for production. Set all variables in your hosting dashboard:
+**Full guide:** [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)
 
-| Platform | Where |
-|----------|--------|
-| **Railway** | Service → **Variables** → Raw Editor |
-| **Vercel** | Project → **Settings** → **Environment Variables** |
+| Platform | Template | Set in dashboard |
+|----------|----------|------------------|
+| **Railway** | [`env/railway.env.example`](env/railway.env.example) | All secrets + `APP_URL` |
+| **Vercel** | [`env/vercel.env.example`](env/vercel.env.example) | `APP_URL`, `API_URL`, `CHROME_WEB_STORE_URL` only |
 
-### Required variables
+Do **not** put database keys, JWT, Stripe, or OpenAI on Vercel. Do **not** commit production `.env` to git.
 
-```env
-DATABASE_URL=postgresql://...@ep-xxx-pooler....neon.tech/neondb?sslmode=require
-DIRECT_URL=postgresql://...@ep-xxx....neon.tech/neondb?sslmode=require
-JWT_SECRET=long-random-string
-ADMIN_EMAIL=you@company.com
-NEXT_PUBLIC_APP_URL=https://swiftdroom.com
-```
-
-- `DATABASE_URL` = Neon **Pooled** (`-pooler` in hostname) — app runtime  
-- `DIRECT_URL` = Neon **Direct** (no `-pooler`) — migrations  
-
-Migrations run **automatically** on **Railway** via `preDeployCommand`. Vercel frontend builds skip migrations.
-
-Local `.env` is **optional** — only if you run the app on your machine.
+Local dev: copy `dashboard/.env.example` → `dashboard/.env`.
 
 ## Split deployment (recommended)
 
@@ -111,10 +98,11 @@ Local `.env` is **optional** — only if you run the app on your machine.
 ### Vercel (frontend)
 
 1. Import repo → Root Directory: `dashboard`
-2. Environment variables:
+2. Environment variables (see [`env/vercel.env.example`](env/vercel.env.example)):
    ```env
-   NEXT_PUBLIC_API_URL=https://YOUR-SERVICE.up.railway.app
-   NEXT_PUBLIC_APP_URL=https://swiftdroom.com
+   APP_URL=https://swiftdroom.com
+   API_URL=https://YOUR-SERVICE.up.railway.app
+   CHROME_WEB_STORE_URL=https://chromewebstore.google.com/detail/ficlpmiflbjkgegelneegohcbimjhnnb
    ```
 3. No `DATABASE_URL` needed — Vercel build runs `next build` only (no migrations)
 
@@ -127,7 +115,8 @@ Local `.env` is **optional** — only if you run the app on your machine.
    DIRECT_URL=postgresql://...@ep-xxx....neon.tech/neondb?sslmode=require
    JWT_SECRET=...
    ADMIN_EMAIL=...
-   NEXT_PUBLIC_APP_URL=https://swiftdroom.com
+   APP_URL=https://swiftdroom.com
+   ALLOWED_ORIGINS=https://swiftdroom.com,https://www.swiftdroom.com
    ```
 3. Stripe webhook: `https://YOUR-SERVICE.up.railway.app/api/webhooks/stripe`
 4. Migrations run via `preDeployCommand` on each deploy

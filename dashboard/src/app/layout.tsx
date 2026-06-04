@@ -56,7 +56,10 @@ export const metadata: Metadata = {
     images: ["/opengraph-image"],
   },
   other: {
-    "swiftdroom-api-url": process.env.NEXT_PUBLIC_API_URL || "",
+    "swiftdroom-api-url":
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "",
   },
 };
 

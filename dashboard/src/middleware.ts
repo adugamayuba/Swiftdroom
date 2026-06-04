@@ -7,6 +7,7 @@ function getAllowedOrigins(): string[] {
   const origins = new Set<string>(PRODUCTION_SITE_ORIGINS);
 
   for (const value of [
+    process.env.APP_URL,
     process.env.NEXT_PUBLIC_APP_URL,
     getAppUrl(),
     "http://localhost:3000",

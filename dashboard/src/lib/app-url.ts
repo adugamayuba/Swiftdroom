@@ -17,6 +17,8 @@ function isUsableUrl(value?: string | null): value is string {
   const trimmed = value.trim();
   // Reject common placeholder values copied from docs without a real URL
   if (
+    trimmed === "APP_URL" ||
+    trimmed === "API_URL" ||
     trimmed === "NEXT_PUBLIC_APP_URL" ||
     trimmed === "NEXT_PUBLIC_API_URL" ||
     trimmed.includes("${") ||
@@ -34,6 +36,10 @@ function isUsableUrl(value?: string | null): value is string {
 }
 
 export function getAppUrl() {
+  if (isUsableUrl(process.env.APP_URL)) {
+    return normalizeUrl(process.env.APP_URL!);
+  }
+
   if (isUsableUrl(process.env.NEXT_PUBLIC_APP_URL)) {
     return normalizeUrl(process.env.NEXT_PUBLIC_APP_URL!);
   }

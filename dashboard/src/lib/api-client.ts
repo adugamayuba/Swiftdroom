@@ -2,7 +2,8 @@ const SESSION_KEY = "swiftdroom_session_token";
 
 /** Railway API base URL. Empty = same origin (local dev or monolith deploy). */
 export function getApiBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const url =
+    process.env.API_URL?.trim() || process.env.NEXT_PUBLIC_API_URL?.trim();
   return url ? url.replace(/\/$/, "") : "";
 }
 

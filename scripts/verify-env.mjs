@@ -1,9 +1,8 @@
 // Runs before the app starts on Railway/production
 
-// Railway auto-injects RAILWAY_PUBLIC_DOMAIN when you generate a public domain
-if (!process.env.NEXT_PUBLIC_APP_URL?.trim() && process.env.RAILWAY_PUBLIC_DOMAIN?.trim()) {
-  process.env.NEXT_PUBLIC_APP_URL = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
-  console.log(`Using Railway domain: ${process.env.NEXT_PUBLIC_APP_URL}`);
+if (!process.env.APP_URL?.trim() && process.env.RAILWAY_PUBLIC_DOMAIN?.trim()) {
+  process.env.APP_URL = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+  console.log(`Using Railway domain for APP_URL: ${process.env.APP_URL}`);
 }
 
 const required = [
@@ -29,8 +28,8 @@ const required = [
 
 const recommended = [
   {
-    key: "NEXT_PUBLIC_APP_URL",
-    hint: "Optional if you generated a Railway public domain (auto-detected)",
+    key: "APP_URL",
+    hint: "https://swiftdroom.com — CORS and Stripe redirects (or auto from Railway domain)",
   },
   {
     key: "ADMIN_EMAIL",
@@ -40,7 +39,6 @@ const recommended = [
 
 const missing = required.filter(({ key }) => !process.env[key]?.trim());
 
-// Warn if only pooler URL is configured
 if (
   process.env.DATABASE_URL?.includes("-pooler") &&
   !process.env.DIRECT_URL?.trim()
@@ -58,19 +56,15 @@ if (missing.length > 0) {
     }
     console.error("");
   }
-  console.error("Quick setup in Railway Variables (Raw Editor):\n");
-  console.error(`  DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require`);
-  console.error(`  DIRECT_URL=postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`);
-  console.error(`  JWT_SECRET=paste-a-long-random-string-here`);
-  console.error(`  ADMIN_EMAIL=you@company.com\n`);
+  console.error("See docs/ENVIRONMENT.md and env/railway.env.example\n");
   process.exit(1);
 }
 
-if (!process.env.NEXT_PUBLIC_APP_URL?.trim()) {
-  console.warn("\nWarning: NEXT_PUBLIC_APP_URL not set.");
-  console.warn("Generate a public domain in Railway → Settings → Networking\n");
+if (!process.env.APP_URL?.trim() && !process.env.NEXT_PUBLIC_APP_URL?.trim()) {
+  console.warn("\nWarning: APP_URL not set.");
+  console.warn("Set APP_URL=https://swiftdroom.com in Railway Variables\n");
   for (const { key, hint } of recommended) {
-    console.warn(`  ${key}: ${hint[0]}`);
+    console.warn(`  ${key}: ${hint}`);
   }
   console.warn("");
 }

@@ -76,10 +76,10 @@ Regenerate mocks: see `assets/chrome-web-store/README.md`.
 **Extension ID:** `ficlpmiflbjkgegelneegohcbimjhnnb`  
 **Store URL:** https://chromewebstore.google.com/detail/ficlpmiflbjkgegelneegohcbimjhnnb
 
-The dashboard falls back to this URL if `NEXT_PUBLIC_CHROME_WEB_STORE_URL` is unset. Optional in Vercel:
+Set on **Vercel** (see [ENVIRONMENT.md](ENVIRONMENT.md)):
 
 ```env
-NEXT_PUBLIC_CHROME_WEB_STORE_URL=https://chromewebstore.google.com/detail/ficlpmiflbjkgegelneegohcbimjhnnb
+CHROME_WEB_STORE_URL=https://chromewebstore.google.com/detail/ficlpmiflbjkgegelneegohcbimjhnnb
 ```
 
 Redeploy frontend after approval so “Add to Chrome” uses this listing (not the archived 1.0.0 item).
