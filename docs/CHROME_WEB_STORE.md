@@ -71,19 +71,35 @@ Regenerate mocks: see `assets/chrome-web-store/README.md`.
 - Promo 1400×560: `assets/logos/promo-marquee-1400x560.png`
 - All logo styles: `assets/logos/README.md`
 
-## After approval
+## Live listing (v1.0.3)
 
-1. Copy the full Chrome Web Store URL from your listing  
-2. Set in Vercel:
+**Extension ID:** `ficlpmiflbjkgegelneegohcbimjhnnb`  
+**Store URL:** https://chromewebstore.google.com/detail/ficlpmiflbjkgegelneegohcbimjhnnb
+
+The dashboard falls back to this URL if `NEXT_PUBLIC_CHROME_WEB_STORE_URL` is unset. Optional in Vercel:
 
 ```env
-NEXT_PUBLIC_CHROME_WEB_STORE_URL=https://chromewebstore.google.com/detail/swiftdroom/YOUR_EXTENSION_ID
+NEXT_PUBLIC_CHROME_WEB_STORE_URL=https://chromewebstore.google.com/detail/ficlpmiflbjkgegelneegohcbimjhnnb
 ```
 
-3. Redeploy frontend
+Redeploy frontend after approval so “Add to Chrome” uses this listing (not the archived 1.0.0 item).
 
 ## Updates
 
-1. Bump `version` in `extension/manifest.json` (e.g. 1.0.1)  
+1. Bump `version` in `extension/manifest.json` (e.g. 1.0.4)  
 2. Run `node scripts/package-extension.mjs`  
 3. Upload new zip in the same listing → Submit for review
+
+### v1.0.3 — release notes (paste in “What’s new”)
+
+```
+• Sign in on swiftdroom.com — no API keys to copy
+• Scan forms across Greenhouse, Workday, and more (including iframes)
+• Edit every answer in the side panel before filling the page
+• Smarter suggestions from your profile and persona resume (country, location, etc.)
+• Generate all Ghostwriter answers at once
+• “Fill application” types answers into the form with a live typing effect
+• Applications count toward your plan when all sidebar answers are complete
+```
+
+**Package ready:** `swiftdroom-extension.zip` (version 1.0.3)
