@@ -1,5 +1,5 @@
 const SwiftdroomAPI = (() => {
-  const DEFAULT_URL = "http://localhost:3000";
+  const DEFAULT_URL = "https://swiftdroom.com";
 
   async function getConfig() {
     const data = await chrome.storage.local.get(["apiToken", "apiUrl"]);

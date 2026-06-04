@@ -8,6 +8,8 @@ const personaSchema = z.object({
   focus: z.string().optional(),
   summary: z.string().optional(),
   skills: z.string().optional(),
+  resumeText: z.string().optional(),
+  resumeFileName: z.string().optional(),
   isDefault: z.boolean().optional(),
 });
 

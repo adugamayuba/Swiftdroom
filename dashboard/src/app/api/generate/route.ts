@@ -50,10 +50,15 @@ export async function POST(request: NextRequest) {
       persona = user.personas.find((p) => p.id === personaId) || persona;
     }
 
+    const resumeText =
+      (persona?.resumeText && persona.resumeText.trim()) ||
+      user.profile?.resumeText ||
+      "";
+
     const answer = await generateAnswer({
       question,
       jobDescription: jobDescription || "",
-      resumeText: user.profile?.resumeText || "",
+      resumeText,
       personaSummary: persona?.summary || "",
       personaFocus: persona?.focus || "",
       company,

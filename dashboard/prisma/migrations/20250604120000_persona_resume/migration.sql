@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Persona" ADD COLUMN "resumeText" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Persona" ADD COLUMN "resumeFileName" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Persona" ADD COLUMN "resumeUrl" TEXT NOT NULL DEFAULT '';

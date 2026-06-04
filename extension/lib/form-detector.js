@@ -4,7 +4,36 @@
  */
 const SwiftdroomFormDetector = (() => {
   const INPUT_SELECTORS =
-    'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]), textarea, select, [contenteditable="true"], [role="textbox"], [role="combobox"]';
+    'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="file"]), textarea, select, [contenteditable="true"], [role="textbox"], [role="combobox"]';
+
+  function queryDeepRoots(root) {
+    const elements = [];
+    const stack = [root];
+
+    while (stack.length) {
+      const node = stack.pop();
+      if (!node) continue;
+
+      try {
+        elements.push(...node.querySelectorAll(INPUT_SELECTORS));
+      } catch {
+        /* cross-origin or detached */
+      }
+
+      if (node.shadowRoot) stack.push(node.shadowRoot);
+
+      try {
+        const children = node.querySelectorAll ? node.querySelectorAll("*") : [];
+        for (const child of children) {
+          if (child.shadowRoot) stack.push(child.shadowRoot);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    return elements;
+  }
 
   function getLabelText(element) {
     if (element.id) {
@@ -32,8 +61,10 @@ const SwiftdroomFormDetector = (() => {
     if (parentLabel) return cleanText(parentLabel.textContent);
 
     let node = element.parentElement;
-    for (let i = 0; i < 6 && node; i++) {
-      const labelEl = node.querySelector("label, legend, .label, [class*='label'], [class*='Label']");
+    for (let i = 0; i < 8 && node; i++) {
+      const labelEl = node.querySelector(
+        "label, legend, .label, [class*='label'], [class*='Label'], [data-automation-id*='label']"
+      );
       if (labelEl && !labelEl.contains(element)) {
         const text = cleanText(labelEl.textContent);
         if (text && text.length < 200) return text;
@@ -48,7 +79,12 @@ const SwiftdroomFormDetector = (() => {
       node = node.parentElement;
     }
 
-    const name = element.getAttribute("name") || element.getAttribute("data-automation-id") || "";
+    const name =
+      element.getAttribute("name") ||
+      element.getAttribute("id") ||
+      element.getAttribute("data-automation-id") ||
+      element.getAttribute("data-testid") ||
+      "";
     return cleanText(name.replace(/[-_]/g, " "));
   }
 
@@ -64,7 +100,11 @@ const SwiftdroomFormDetector = (() => {
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return false;
     const style = window.getComputedStyle(el);
-    return style.visibility !== "hidden" && style.display !== "none";
+    if (style.visibility === "hidden" || style.display === "none" || style.opacity === "0") {
+      return false;
+    }
+    if (el.getAttribute("aria-hidden") === "true") return false;
+    return true;
   }
 
   function assignFieldId(element) {
@@ -75,7 +115,7 @@ const SwiftdroomFormDetector = (() => {
   }
 
   function detectFields() {
-    const elements = Array.from(document.querySelectorAll(INPUT_SELECTORS)).filter(isVisible);
+    const elements = queryDeepRoots(document).filter(isVisible);
     const seen = new Set();
 
     return elements
@@ -90,7 +130,9 @@ const SwiftdroomFormDetector = (() => {
         const isTextarea = tag === "textarea" || element.isContentEditable;
         const isLongForm =
           isTextarea ||
-          (tag === "input" && ["text", "search"].includes(type) && (element.maxLength > 500 || !element.maxLength));
+          (tag === "input" &&
+            ["text", "search"].includes(type) &&
+            (element.maxLength > 500 || !element.maxLength));
 
         return {
           id,
@@ -99,7 +141,6 @@ const SwiftdroomFormDetector = (() => {
           type,
           isLongForm,
           value: getElementValue(element),
-          rect: element.getBoundingClientRect(),
         };
       })
       .filter(Boolean);
@@ -160,6 +201,7 @@ const SwiftdroomFormDetector = (() => {
       "[class*='job-description']",
       "[class*='JobDescription']",
       "[data-automation-id='jobPostingDescription']",
+      "[class*='posting-page']",
       "#content",
       "main",
       "[role='main']",

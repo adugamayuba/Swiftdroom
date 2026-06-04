@@ -8,22 +8,26 @@
   </head>
   <body>
     <div id="app">
-      <div id="setup-screen" class="screen hidden">
+      <div id="connect-screen" class="screen hidden">
         <h1 class="brand-title">Swiftdroom</h1>
-        <p class="subtitle">Connect your account to get started</p>
-        <label class="field-label">API Token</label>
-        <input
-          type="password"
-          id="api-token-input"
-          placeholder="From dashboard settings"
-        />
-        <label class="field-label">API URL</label>
-        <input type="text" id="api-url-input" value="http://localhost:3000" />
-        <button id="connect-btn" class="btn btn-primary">Connect</button>
-        <p id="setup-error" class="error hidden"></p>
-        <a id="dashboard-link" href="#" target="_blank" class="link"
-          >Open dashboard settings</a
-        >
+        <p class="subtitle" id="connect-message">
+          Sign in on swiftdroom.com and we&apos;ll connect your account automatically.
+        </p>
+        <ol class="connect-steps">
+          <li>Sign in or create an account</li>
+          <li>Open <strong>Settings</strong> while logged in</li>
+          <li>Come back here and tap <strong>Refresh</strong></li>
+        </ol>
+        <a id="login-link" href="#" target="_blank" class="btn btn-primary btn-block">
+          Sign in at swiftdroom.com
+        </a>
+        <a id="settings-link" href="#" target="_blank" class="btn btn-secondary btn-block">
+          Open Settings
+        </a>
+        <button id="retry-connect-btn" type="button" class="btn btn-secondary btn-block">
+          Refresh
+        </button>
+        <p id="connect-error" class="error hidden"></p>
       </div>
 
       <div id="subscription-screen" class="screen hidden">
@@ -44,6 +48,11 @@
           </div>
           <select id="persona-select" class="persona-select"></select>
         </header>
+
+        <p id="scan-hint" class="scan-hint hidden">
+          Open a job application page (Apply form), then tap Scan. If nothing appears, click the
+          Swiftdroom icon on that tab first.
+        </p>
 
         <div class="actions">
           <button id="scan-btn" class="btn btn-primary btn-block">

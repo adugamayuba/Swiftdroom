@@ -1,3 +1,5 @@
+const DEFAULT_APP_URL = "https://swiftdroom.com";
+
 let state = {
   profile: null,
   personas: [],
@@ -6,17 +8,18 @@ let state = {
   pageContext: null,
   selectedPersonaId: null,
   usage: null,
-  apiUrl: "http://localhost:3000",
+  apiUrl: DEFAULT_APP_URL,
 };
+
+const listenersBound = { connect: false, main: false };
 
 async function init() {
   const config = await SwiftdroomAPI.getConfig();
-  state.apiUrl = config.apiUrl;
-  updateDashboardLinks(config.apiUrl);
+  state.apiUrl = config.apiUrl || DEFAULT_APP_URL;
+  updateDashboardLinks(state.apiUrl);
 
   if (!config.apiToken) {
-    showScreen("setup");
-    bindSetup();
+    showConnectScreen();
     return;
   }
 
@@ -29,16 +32,31 @@ async function init() {
       showSubscriptionScreen(err);
       return;
     }
-    showScreen("setup");
-    bindSetup();
+    showConnectScreen(
+      "Your session may have expired. Sign in again on swiftdroom.com, open Settings, then refresh below."
+    );
   }
 }
 
 function updateDashboardLinks(apiUrl) {
-  const settingsLink = document.getElementById("dashboard-link");
+  const base = apiUrl || DEFAULT_APP_URL;
+  const loginLink = document.getElementById("login-link");
+  const settingsLink = document.getElementById("settings-link");
   const subscribeLink = document.getElementById("subscribe-link");
-  if (settingsLink) settingsLink.href = `${apiUrl}/dashboard/settings`;
-  if (subscribeLink) subscribeLink.href = `${apiUrl}/subscribe`;
+  if (loginLink) loginLink.href = `${base}/login`;
+  if (settingsLink) settingsLink.href = `${base}/dashboard/settings`;
+  if (subscribeLink) subscribeLink.href = `${base}/subscribe`;
+}
+
+function showConnectScreen(message) {
+  showScreen("connect");
+  const msgEl = document.getElementById("connect-message");
+  if (msgEl && message) {
+    msgEl.textContent = message;
+  }
+  const errorEl = document.getElementById("connect-error");
+  if (errorEl) errorEl.classList.add("hidden");
+  bindConnect();
 }
 
 function showSubscriptionScreen(err) {
@@ -52,34 +70,28 @@ function showSubscriptionScreen(err) {
 }
 
 function showScreen(name) {
-  document.getElementById("setup-screen").classList.toggle("hidden", name !== "setup");
+  document.getElementById("connect-screen").classList.toggle("hidden", name !== "connect");
   document.getElementById("subscription-screen").classList.toggle("hidden", name !== "subscription");
   document.getElementById("main-screen").classList.toggle("hidden", name !== "main");
 }
 
-function bindSetup() {
-  document.getElementById("connect-btn").addEventListener("click", async () => {
-    const token = document.getElementById("api-token-input").value.trim();
-    const url = document.getElementById("api-url-input").value.trim();
-    const errorEl = document.getElementById("setup-error");
+function bindConnect() {
+  if (listenersBound.connect) return;
+  listenersBound.connect = true;
 
-    if (!token) {
-      errorEl.textContent = "API token is required";
+  document.getElementById("retry-connect-btn").addEventListener("click", async () => {
+    const errorEl = document.getElementById("connect-error");
+    const config = await SwiftdroomAPI.getConfig();
+
+    if (!config.apiToken) {
+      errorEl.textContent =
+        "Not connected yet. Sign in at swiftdroom.com and open Settings once, then try again.";
       errorEl.classList.remove("hidden");
       return;
     }
 
-    await SwiftdroomAPI.setConfig(token, url);
-
-    try {
-      await loadSyncData();
-      errorEl.classList.add("hidden");
-      showScreen("main");
-      bindMain();
-    } catch (err) {
-      errorEl.textContent = err.message || "Connection failed";
-      errorEl.classList.remove("hidden");
-    }
+    errorEl.classList.add("hidden");
+    await init();
   });
 }
 
@@ -107,6 +119,9 @@ async function loadSyncData() {
 }
 
 function bindMain() {
+  if (listenersBound.main) return;
+  listenersBound.main = true;
+
   document.getElementById("persona-select").addEventListener("change", (e) => {
     state.selectedPersonaId = e.target.value;
   });
@@ -121,31 +136,104 @@ async function getActiveTab() {
   return tab;
 }
 
-async function sendToContent(tabId, message) {
-  try {
-    return await chrome.tabs.sendMessage(tabId, message);
-  } catch {
-    await chrome.scripting.executeScript({
-      target: { tabId, allFrames: false },
-      files: ["lib/form-detector.js", "content.js"],
-    });
-    return chrome.tabs.sendMessage(tabId, message);
-  }
+function isInjectableUrl(url) {
+  return Boolean(url && (url.startsWith("http://") || url.startsWith("https://")));
+}
+
+async function injectDetectorAllFrames(tabId) {
+  await chrome.scripting.executeScript({
+    target: { tabId, allFrames: true },
+    files: ["lib/form-detector.js"],
+  });
 }
 
 async function scanFields() {
   const tab = await getActiveTab();
-  if (!tab?.id) return;
+  if (!tab?.id || !isInjectableUrl(tab.url)) {
+    state.fields = [];
+    renderFields();
+    return [];
+  }
 
-  const [fieldsRes, contextRes] = await Promise.all([
-    sendToContent(tab.id, { type: "SCAN_FIELDS" }),
-    sendToContent(tab.id, { type: "GET_PAGE_CONTEXT" }),
-  ]);
+  try {
+    await injectDetectorAllFrames(tab.id);
 
-  state.fields = fieldsRes?.fields || [];
-  state.pageContext = contextRes || {};
+    const [fieldResults, contextResults] = await Promise.all([
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        func: () =>
+          window.SwiftdroomFormDetector ? window.SwiftdroomFormDetector.detectFields() : [],
+      }),
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        func: () =>
+          window.SwiftdroomFormDetector
+            ? {
+                jobDescription: window.SwiftdroomFormDetector.scrapeJobDescription(),
+                meta: window.SwiftdroomFormDetector.scrapePageMeta(),
+              }
+            : { jobDescription: "", meta: {} },
+      }),
+    ]);
+
+    const merged = [];
+    for (const { result, frameId } of fieldResults) {
+      if (!Array.isArray(result)) continue;
+      for (const field of result) {
+        merged.push({ ...field, frameId });
+      }
+    }
+
+    state.fields = merged;
+    const contexts = contextResults.map((r) => r.result).filter(Boolean);
+    state.pageContext = contexts.sort(
+      (a, b) => (b.jobDescription?.length || 0) - (a.jobDescription?.length || 0)
+    )[0] || {};
+  } catch (err) {
+    console.error("Swiftdroom scan failed:", err);
+    state.fields = [];
+    state.pageContext = {};
+  }
+
   renderFields();
   return state.fields;
+}
+
+async function runInFrame(tabId, frameId, func, args = []) {
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId, frameIds: [frameId] },
+    func,
+    args,
+  });
+  return result?.result;
+}
+
+async function fillFieldInFrame(tabId, field) {
+  await runInFrame(
+    tabId,
+    field.frameId ?? 0,
+    (fieldId, value) => {
+      const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+      if (!el || !window.SwiftdroomFormDetector) return false;
+      window.SwiftdroomFormDetector.setElementValue(el, value);
+      return true;
+    },
+    [field.id, field.value]
+  );
+}
+
+async function highlightFieldInFrame(tabId, field, color) {
+  await runInFrame(
+    tabId,
+    field.frameId ?? 0,
+    (fieldId, highlightColor) => {
+      if (!window.SwiftdroomFormDetector) return false;
+      window.SwiftdroomFormDetector.clearHighlights();
+      window.SwiftdroomFormDetector.highlightField(fieldId, highlightColor);
+      return true;
+    },
+    [field.id, color]
+  );
 }
 
 async function scanAndAutofill() {
@@ -169,22 +257,15 @@ async function scanAndAutofill() {
     );
 
     if (value) {
-      await sendToContent(tab.id, {
-        type: "FILL_FIELD",
-        fieldId: field.id,
-        value,
-      });
+      field.value = value;
+      await fillFieldInFrame(tab.id, field);
       field._status = "filled";
       field._value = value;
       filled++;
     } else if (field.label) {
       field._status = "uncertain";
       uncertain++;
-      await sendToContent(tab.id, {
-        type: "HIGHLIGHT_FIELD",
-        fieldId: field.id,
-        color: "#f59e0b",
-      });
+      await highlightFieldInFrame(tab.id, field, "#f59e0b");
     }
   }
 
@@ -202,11 +283,15 @@ function renderFields() {
 
   if (state.fields.length === 0) {
     section.classList.add("hidden");
+    const hint = document.getElementById("scan-hint");
+    if (hint) hint.classList.remove("hidden");
     return;
   }
 
+  const hint = document.getElementById("scan-hint");
+  if (hint) hint.classList.add("hidden");
+
   section.classList.remove("hidden");
-  const domain = state.pageContext?.meta ? "" : "";
 
   list.innerHTML = state.fields
     .filter((f) => !SwiftdroomFieldMapper.isOpenEndedField(f))
@@ -267,8 +352,10 @@ function renderFields() {
       });
 
       const value = SwiftdroomFieldMapper.resolveFieldValue(state.profile, fieldKey);
-      if (value && tab?.id) {
-        await sendToContent(tab.id, { type: "FILL_FIELD", fieldId, value });
+      const target = state.fields.find((f) => f.id === fieldId);
+      if (value && tab?.id && target) {
+        target.value = value;
+        await fillFieldInFrame(tab.id, target);
       }
 
       await scanAndAutofill();
@@ -332,11 +419,11 @@ async function renderGhostwriter(tabId) {
         insertBtn.className = "btn btn-sm btn-insert btn-block";
         insertBtn.textContent = "Click to Insert";
         insertBtn.addEventListener("click", async () => {
-          await sendToContent(tabId, {
-            type: "FILL_FIELD",
-            fieldId,
-            value: data.answer,
-          });
+          const target = state.fields.find((f) => f.id === fieldId);
+          if (target) {
+            target.value = data.answer;
+            await fillFieldInFrame(tabId, target);
+          }
           insertBtn.textContent = "✓ Inserted";
           insertBtn.disabled = true;
         });
@@ -387,5 +474,11 @@ function escapeHtml(str) {
   div.textContent = str || "";
   return div.innerHTML;
 }
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && (changes.apiToken || changes.apiUrl)) {
+    init();
+  }
+});
 
 init();

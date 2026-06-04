@@ -9,12 +9,20 @@
   const apiToken = localStorage.getItem("swiftdroom_api_token");
   if (!apiToken) return;
 
-  // The API URL is injected by the dashboard via a <meta> tag.
-  // Falls back to the production Railway URL.
   const metaEl = document.querySelector('meta[name="swiftdroom-api-url"]');
-  const apiUrl =
-    metaEl?.getAttribute("content") ||
-    "https://swiftdroom-production.up.railway.app";
+  const fromMeta = metaEl?.getAttribute("content")?.trim();
+  let apiUrl = fromMeta ? fromMeta.replace(/\/$/, "") : "";
+
+  if (!apiUrl) {
+    const { hostname, protocol, host } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      apiUrl = `${protocol}//${host}`;
+    } else if (hostname === "swiftdroom.com" || hostname === "www.swiftdroom.com") {
+      apiUrl = "https://swiftdroom.com";
+    } else {
+      apiUrl = "https://swiftdroom-production.up.railway.app";
+    }
+  }
 
   chrome.runtime.sendMessage(
     { type: "AUTO_CONNECT", apiToken, apiUrl },
