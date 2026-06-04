@@ -36,6 +36,7 @@ Get started at https://swiftdroom.com — create your profile, subscribe, instal
 
 **Homepage:** https://swiftdroom.com  
 **Privacy policy:** https://swiftdroom.com/privacy  
+**Support URL:** https://swiftdroom.com/support  
 **Support email:** hello@swiftdroom.com
 
 ## Permission justifications
@@ -50,11 +51,25 @@ Get started at https://swiftdroom.com — create your profile, subscribe, instal
 
 ## Screenshots (required)
 
-Capture at 1280×800 or 640×400:
+Ready-made assets (1280×800 and 640×400):
+
+- `assets/chrome-web-store/screenshots/01-sidepanel-job-form.png`
+- `assets/chrome-web-store/screenshots/02-autofill-progress.png`
+- `assets/chrome-web-store/screenshots/03-dashboard-settings.png`
+- Smaller set: `assets/chrome-web-store/screenshots/640x400/`
+
+Regenerate mocks: see `assets/chrome-web-store/README.md`.
 
 1. Side panel open on a job application form  
 2. Autofill / scan in progress  
-3. Dashboard at swiftdroom.com/settings showing extension connected  
+3. Dashboard settings showing extension connected  
+
+## Store icon & promo
+
+- Icon (128×128): `assets/logos/sizes/store-icon-128.png`
+- Promo 440×280: `assets/logos/promo-small-440x280.png`
+- Promo 1400×560: `assets/logos/promo-marquee-1400x560.png`
+- All logo styles: `assets/logos/README.md`
 
 ## After approval
 

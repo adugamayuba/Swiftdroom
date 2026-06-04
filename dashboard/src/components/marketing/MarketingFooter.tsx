@@ -14,6 +14,7 @@ const FOOTER_LINKS = {
   ],
   Company: [
     { label: "About", href: "#" },
+    { label: "Support", href: "/support" },
     { label: "Contact", href: "mailto:hello@swiftdroom.com" },
     { label: "Privacy", href: "/privacy" },
     { label: "Terms", href: "/terms" },
