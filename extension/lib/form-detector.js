@@ -127,21 +127,36 @@ const SwiftdroomFormDetector = (() => {
         const label = getLabelText(element);
         const tag = element.tagName.toLowerCase();
         const type = element.getAttribute("type") || tag;
+        const role = element.getAttribute("role") || "";
+        const isSelect = tag === "select";
+        const isCombobox = role === "combobox" || role === "listbox";
         const isTextarea = tag === "textarea" || element.isContentEditable;
         const isLongForm =
-          isTextarea ||
-          (tag === "input" &&
-            ["text", "search"].includes(type) &&
-            (element.maxLength > 500 || !element.maxLength));
+          !isSelect &&
+          !isCombobox &&
+          (isTextarea ||
+            (tag === "input" &&
+              ["text", "search"].includes(type) &&
+              (element.maxLength > 500 || !element.maxLength)));
 
-        return {
+        const field = {
           id,
           label,
           tag,
           type,
+          role,
+          isSelect,
+          isCombobox,
           isLongForm,
           value: getElementValue(element),
+          options: [],
         };
+
+        if (isSelect) {
+          field.options = getSelectOptions(element);
+        }
+
+        return field;
       })
       .filter(Boolean);
   }
@@ -170,31 +185,99 @@ const SwiftdroomFormDetector = (() => {
     }
   }
 
+  function getSelectOptions(element) {
+    return Array.from(element.options || [])
+      .filter((opt) => opt.value && opt.value !== "")
+      .map((opt) => ({
+        value: opt.value,
+        text: cleanText(opt.textContent || opt.label || opt.value),
+      }));
+  }
+
+  function scoreOptionMatch(target, text, val) {
+    if (!target) return 0;
+    if (text === target || val === target) return 100;
+    if (text.startsWith(target) || target.startsWith(text)) return 80;
+    if (val.includes(target) || target.includes(val)) return 70;
+    if (text.includes(target) || target.includes(text)) return 60;
+    const targetWords = target.split(/\s+/).filter(Boolean);
+    const textWords = text.split(/\s+/).filter(Boolean);
+    const overlap = targetWords.filter((w) => textWords.some((tw) => tw.includes(w) || w.includes(tw)));
+    return overlap.length ? 40 + overlap.length * 5 : 0;
+  }
+
   function setSelectValue(element, value) {
     const target = (value || "").toLowerCase().trim();
-    let matched = false;
+    if (!target) return false;
+
+    let best = null;
+    let bestScore = 0;
+
     for (const opt of element.options) {
-      const text = (opt.textContent || "").toLowerCase();
+      const text = cleanText(opt.textContent || opt.label || "").toLowerCase();
       const val = (opt.value || "").toLowerCase();
-      if (
-        text === target ||
-        val === target ||
-        text.includes(target) ||
-        target.includes(text)
-      ) {
-        element.value = opt.value;
-        matched = true;
-        break;
+      const score = scoreOptionMatch(target, text, val);
+      if (score > bestScore) {
+        bestScore = score;
+        best = opt;
       }
     }
-    if (!matched && element.options.length) {
-      for (const opt of element.options) {
-        if (opt.value && opt.value !== "") {
-          element.value = opt.value;
-          break;
-        }
+
+    if (best && bestScore >= 40) {
+      element.value = best.value;
+      return true;
+    }
+
+    return false;
+  }
+
+  function findVisibleListboxOptions() {
+    const listboxes = Array.from(document.querySelectorAll('[role="listbox"]')).filter(isVisible);
+    const options = [];
+    for (const listbox of listboxes) {
+      for (const opt of listbox.querySelectorAll('[role="option"]')) {
+        if (!isVisible(opt)) continue;
+        options.push(opt);
       }
     }
+    return options;
+  }
+
+  function setComboboxValue(element, value) {
+    const target = (value || "").trim();
+    if (!target) return false;
+
+    element.focus();
+    element.click();
+
+    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+      setNativeValue(element, target);
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    const targetLower = target.toLowerCase();
+    const options = findVisibleListboxOptions();
+    let best = null;
+    let bestScore = 0;
+
+    for (const opt of options) {
+      const text = cleanText(opt.textContent || "").toLowerCase();
+      const score = scoreOptionMatch(targetLower, text, text);
+      if (score > bestScore) {
+        bestScore = score;
+        best = opt;
+      }
+    }
+
+    if (best && bestScore >= 40) {
+      best.click();
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+
+    element.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    element.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
+    return Boolean(element.value || element.textContent);
   }
 
   function setElementValue(element, value) {
@@ -203,17 +286,32 @@ const SwiftdroomFormDetector = (() => {
     if (element.isContentEditable) {
       element.textContent = value;
       element.dispatchEvent(new InputEvent("input", { bubbles: true }));
-      return;
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
     }
 
     if (element.tagName === "SELECT") {
-      setSelectValue(element, value);
-    } else {
-      setNativeValue(element, value);
+      const ok = setSelectValue(element, value);
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      return ok;
     }
 
+    if (element.getAttribute("role") === "combobox") {
+      return setComboboxValue(element, value);
+    }
+
+    setNativeValue(element, value);
     element.dispatchEvent(new Event("input", { bubbles: true }));
     element.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  }
+
+  function isDropdownField(element) {
+    if (!element) return false;
+    return (
+      element.tagName === "SELECT" || element.getAttribute("role") === "combobox"
+    );
   }
 
   function scrollToField(fieldId) {
@@ -277,7 +375,10 @@ const SwiftdroomFormDetector = (() => {
   return {
     detectFields,
     getLabelText,
+    getSelectOptions,
     setElementValue,
+    setSelectValue,
+    isDropdownField,
     highlightField,
     clearHighlights,
     scrapeJobDescription,

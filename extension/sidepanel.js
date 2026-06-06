@@ -14,7 +14,6 @@ let state = {
 };
 
 const listenersBound = { connect: false, main: false };
-let recordApplicationTimer = null;
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -224,6 +223,32 @@ async function scanFields() {
   return state.fields;
 }
 
+function matchDraftToSelectOption(draft, options) {
+  if (!draft || !options?.length) return draft || "";
+  const target = draft.toLowerCase().trim();
+  let best = null;
+  let bestScore = 0;
+
+  for (const opt of options) {
+    const text = (opt.text || "").toLowerCase();
+    const val = (opt.value || "").toLowerCase();
+    let score = 0;
+    if (text === target || val === target) score = 100;
+    else if (text.startsWith(target) || target.startsWith(text)) score = 80;
+    else if (text.includes(target) || target.includes(text)) score = 60;
+    if (score > bestScore) {
+      bestScore = score;
+      best = opt;
+    }
+  }
+
+  return bestScore >= 40 ? best.value : draft;
+}
+
+function isDropdownField(field) {
+  return Boolean(field.isSelect || field.isCombobox || field.tag === "select");
+}
+
 function applySuggestionsToFields(domain) {
   const persona = getSelectedPersona();
 
@@ -242,30 +267,23 @@ function applySuggestionsToFields(domain) {
       domain
     );
 
-    field._draftValue = value || field.value || "";
+    let draft = value || field.value || "";
+    if (isDropdownField(field) && field.options?.length) {
+      draft = matchDraftToSelectOption(draft, field.options);
+    }
+
+    field._draftValue = draft;
     field._source = source;
     field._status = field._draftValue ? (source === "empty" ? "empty" : "suggested") : "empty";
   }
 }
 
-function allAnswersComplete() {
-  if (!state.fields.length) return false;
-  return state.fields.every((f) => (f._draftValue || "").trim().length > 0);
-}
-
-function scheduleRecordApplicationCheck() {
-  clearTimeout(recordApplicationTimer);
-  recordApplicationTimer = setTimeout(() => {
-    maybeRecordApplication();
-  }, 600);
-}
-
-async function maybeRecordApplication() {
-  if (!allAnswersComplete()) return;
+async function recordApplicationAfterFill(filledCount, attemptedCount) {
+  if (filledCount < 1) return false;
 
   const tab = await getActiveTab();
-  if (!tab?.url || !isInjectableUrl(tab.url)) return;
-  if (state.recordedApplicationUrl === tab.url) return;
+  if (!tab?.url || !isInjectableUrl(tab.url)) return false;
+  if (state.recordedApplicationUrl === tab.url) return true;
 
   const meta = state.pageContext?.meta || {};
   const statusEl = document.getElementById("uncertain-count");
@@ -278,8 +296,8 @@ async function maybeRecordApplication() {
       role: meta.role || meta.title || "Unknown role",
       url: tab.url,
       personaId: state.selectedPersonaId,
-      status: "submitted",
-      notes: "All sidebar answers completed in extension",
+      status: "filled",
+      notes: `Autofilled ${filledCount} of ${attemptedCount} fields via extension`,
     });
 
     state.recordedApplicationUrl = tab.url;
@@ -292,12 +310,14 @@ async function maybeRecordApplication() {
     }
 
     updateStats();
+    return true;
   } catch (err) {
     if (err.code === "QUOTA_EXCEEDED" && statusEl) {
       statusEl.textContent = "Monthly limit reached";
     } else if (statusEl) {
-      updateStats();
+      statusEl.textContent = "Could not save application";
     }
+    return false;
   }
 }
 
@@ -321,11 +341,8 @@ function updateStats() {
   } else if (needs > 0) {
     statusEl.textContent = `${needs} to review`;
     statusEl.style.color = "";
-  } else if (allAnswersComplete()) {
-    statusEl.textContent = "Counting application…";
-    statusEl.style.color = "";
   } else {
-    statusEl.textContent = "all set";
+    statusEl.textContent = "Ready to fill";
     statusEl.style.color = "";
   }
 }
@@ -348,7 +365,6 @@ async function scanForm() {
   updateStats();
   renderFields();
   renderGhostwriter(tab.id);
-  scheduleRecordApplicationCheck();
 
   scanBtn.disabled = false;
   scanBtn.textContent = "Scan form";
@@ -389,9 +405,49 @@ async function setFieldValueInFrame(tabId, field, value) {
   );
 }
 
+async function fillDropdownField(tabId, field, value) {
+  const text = (value || "").trim();
+  if (!text) return false;
+
+  await scrollToFieldInFrame(tabId, field);
+  await sleep(200);
+
+  const ok = await runInFrame(
+    tabId,
+    field.frameId ?? 0,
+    (fieldId, val) => {
+      const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+      if (!el || !window.SwiftdroomFormDetector) return false;
+      return window.SwiftdroomFormDetector.setElementValue(el, val);
+    },
+    [field.id, text]
+  );
+
+  if (ok) {
+    await runInFrame(
+      tabId,
+      field.frameId ?? 0,
+      (fieldId) => {
+        const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+        if (el && window.SwiftdroomFormDetector) {
+          window.SwiftdroomFormDetector.highlightField(fieldId, "#8b5cf6");
+        }
+      },
+      [field.id]
+    );
+    await sleep(200);
+  }
+
+  return Boolean(ok);
+}
+
 async function typeFieldMagically(tabId, field, text) {
   const value = text || "";
-  if (!value.trim()) return;
+  if (!value.trim()) return false;
+
+  if (isDropdownField(field)) {
+    return fillDropdownField(tabId, field, value);
+  }
 
   await scrollToFieldInFrame(tabId, field);
   await sleep(280);
@@ -430,6 +486,7 @@ async function typeFieldMagically(tabId, field, text) {
     [field.id]
   );
   await sleep(200);
+  return true;
 }
 
 function sourceLabel(source) {
@@ -458,30 +515,53 @@ function renderFields() {
       const draft = field._draftValue ?? "";
       const statusClass =
         draft.trim() ? (field._source === "resume" ? "guessed" : "filled") : "uncertain";
+      const dropdown = isDropdownField(field) && field.options?.length;
+
+      const control = dropdown
+        ? `<select class="field-draft-select" data-field-id="${field.id}">
+            <option value="">Select…</option>
+            ${field.options
+              .map((opt) => {
+                const selected =
+                  draft === opt.value || draft === opt.text ? " selected" : "";
+                return `<option value="${escapeAttr(opt.value)}"${selected}>${escapeHtml(opt.text)}</option>`;
+              })
+              .join("")}
+          </select>`
+        : `<textarea class="field-draft" rows="${draft.length > 80 ? 3 : 2}" data-field-id="${field.id}" placeholder="Type or edit answer…">${escapeHtml(draft)}</textarea>`;
 
       return `<div class="field-item ${statusClass}" data-field-id="${field.id}">
-        <div class="field-label-text">${escapeHtml(field.label || "Field")}</div>
+        <div class="field-label-text">${escapeHtml(field.label || "Field")}${dropdown ? ' <span class="field-type-tag">Dropdown</span>' : ""}</div>
         <div class="field-source">${sourceLabel(field._source)}</div>
-        <textarea class="field-draft" rows="${draft.length > 80 ? 3 : 2}" data-field-id="${field.id}" placeholder="Type or edit answer…">${escapeHtml(draft)}</textarea>
+        ${control}
       </div>`;
     })
     .join("");
 
+  function handleDraftChange(fieldId, value) {
+    const field = state.fields.find((f) => f.id === fieldId);
+    if (!field) return;
+    field._draftValue = value;
+    field._status = field._draftValue.trim() ? "edited" : "empty";
+    field._source = "edited";
+    updateStats();
+    const card = list.querySelector(`.field-item[data-field-id="${fieldId}"]`);
+    if (card) {
+      card.classList.toggle("filled", Boolean(field._draftValue.trim()));
+      card.classList.toggle("uncertain", !field._draftValue.trim());
+      card.classList.toggle("guessed", field._source === "resume");
+    }
+  }
+
   list.querySelectorAll(".field-draft").forEach((el) => {
     el.addEventListener("input", (e) => {
-      const field = state.fields.find((f) => f.id === e.target.dataset.fieldId);
-      if (!field) return;
-      field._draftValue = e.target.value;
-      field._status = field._draftValue.trim() ? "edited" : "empty";
-      field._source = "edited";
-      updateStats();
-      scheduleRecordApplicationCheck();
-      const card = e.target.closest(".field-item");
-      if (card) {
-        card.classList.toggle("filled", Boolean(field._draftValue.trim()));
-        card.classList.toggle("uncertain", !field._draftValue.trim());
-        card.classList.toggle("guessed", field._source === "resume");
-      }
+      handleDraftChange(e.target.dataset.fieldId, e.target.value);
+    });
+  });
+
+  list.querySelectorAll(".field-draft-select").forEach((el) => {
+    el.addEventListener("change", (e) => {
+      handleDraftChange(e.target.dataset.fieldId, e.target.value);
     });
   });
 }
@@ -518,7 +598,6 @@ function renderGhostwriter(tabId) {
       if (field) {
         field._draftValue = e.target.value;
         updateStats();
-        scheduleRecordApplicationCheck();
       }
     });
   });
@@ -549,20 +628,12 @@ async function generateOneAnswer(fieldId, tabId, btn) {
       company: state.pageContext?.meta?.company || "",
     });
 
-    if (state.usage) {
-      state.usage.used += 1;
-      state.usage.remaining = Math.max(0, state.usage.remaining - 1);
-      const badge = document.getElementById("usage-badge");
-      if (badge) badge.textContent = `${state.usage.remaining} left`;
-    }
-
     field._draftValue = data.answer;
     if (textarea) {
       textarea.value = data.answer;
       textarea.classList.remove("ghostwriter-loading");
     }
     updateStats();
-    scheduleRecordApplicationCheck();
   } catch (err) {
     if (textarea) {
       textarea.value = SwiftdroomFriendlyErrors.message(
@@ -602,7 +673,6 @@ async function generateAllGhostwriter() {
 
   btn.disabled = false;
   btn.textContent = "Generate all answers";
-  scheduleRecordApplicationCheck();
 }
 
 async function fillApplicationMagic() {
@@ -631,15 +701,19 @@ async function fillApplicationMagic() {
   try {
     await injectDetectorAllFrames(tab.id);
 
+    let filledCount = 0;
     for (let i = 0; i < ordered.length; i++) {
       const field = ordered[i];
       btn.textContent = `Filling ${i + 1}/${ordered.length}…`;
-      await typeFieldMagically(tab.id, field, field._draftValue.trim());
-      await sleep(350);
+      const ok = await typeFieldMagically(tab.id, field, field._draftValue.trim());
+      if (ok) filledCount += 1;
+      await sleep(isDropdownField(field) ? 500 : 350);
     }
 
-    btn.textContent = "✨ Done — review & submit";
-    await maybeRecordApplication();
+    const saved = await recordApplicationAfterFill(filledCount, ordered.length);
+    btn.textContent = saved
+      ? "✨ Done — application counted"
+      : "✨ Done — review & submit";
   } catch (err) {
     btn.textContent = SwiftdroomFriendlyErrors.message(
       err.message,
@@ -658,6 +732,14 @@ function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str || "";
   return div.innerHTML;
+}
+
+function escapeAttr(str) {
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {

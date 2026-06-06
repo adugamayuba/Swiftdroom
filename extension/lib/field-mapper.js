@@ -175,6 +175,7 @@ function suggestValue(label, profile, persona, customMappings, domain) {
 }
 
 function isOpenEndedField(field) {
+  if (field.isSelect || field.isCombobox || field.tag === "select") return false;
   if (field.isLongForm) return true;
   const label = normalize(field.label);
   const openPatterns = [
