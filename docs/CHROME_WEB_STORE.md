@@ -71,10 +71,10 @@ Regenerate mocks: see `assets/chrome-web-store/README.md`.
 - Promo 1400×560: `assets/logos/promo-marquee-1400x560.png`
 - All logo styles: `assets/logos/README.md`
 
-## Live listing (v1.0.3)
+## Live listing (v1.0.7)
 
 **Extension ID:** `ficlpmiflbjkgegelneegohcbimjhnnb`  
-**Store URL:** https://chromewebstore.google.com/detail/ficlpmiflbjkgegelneegohcbimjhnnb
+**Store URL:** https://chromewebstore.google.com/detail/swiftdroom-%E2%80%94-job-applicat/ficlpmiflbjkgegelneegohcbimjhnnb
 
 Set on **Vercel** (see [ENVIRONMENT.md](ENVIRONMENT.md)):
 
@@ -90,16 +90,25 @@ Redeploy frontend after approval so “Add to Chrome” uses this listing (not t
 2. Run `node scripts/package-extension.mjs`  
 3. Upload new zip in the same listing → Submit for review
 
-### v1.0.3 — release notes (paste in “What’s new”)
+### v1.0.7 — release notes (paste in “What’s new”)
 
 ```
-• Sign in on swiftdroom.com — no API keys to copy
-• Scan forms across Greenhouse, Workday, and more (including iframes)
-• Edit every answer in the side panel before filling the page
-• Smarter suggestions from your profile and persona resume (country, location, etc.)
-• Generate all Ghostwriter answers at once
-• “Fill application” types answers into the form with a live typing effect
-• Applications count toward your plan when all sidebar answers are complete
+• Dropdown fields show real select menus in the side panel (country, state, etc.)
+• Fill application saves your answers to the dashboard for tracking
+• Track application status: applied, interview, invited, hired, rejected, and more
+• AI learns from your past submitted answers to match your writing style
+• Default persona syncs with your onboarding resume automatically
+• Improved extension auto-connect when you visit the dashboard
+• Applications count toward your plan when fill completes
+• Cleaner solid Fill application button
 ```
 
-**Package ready:** `swiftdroom-extension.zip` (version 1.0.3)
+**Package ready:** `swiftdroom-extension.zip` (version 1.0.7)
+
+### Upload steps
+
+1. Open https://chrome.google.com/webstore/devconsole
+2. Select **Swiftdroom — Job Application Co-Pilot**
+3. **Package** → Upload `swiftdroom-extension.zip`
+4. Paste release notes above under **What's new**
+5. **Submit for review**
