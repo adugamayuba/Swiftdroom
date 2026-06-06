@@ -63,6 +63,12 @@ model User {
   referralDiscountUsed     Boolean            @default(false)
   referralEarnings         ReferralEarning[]  @relation("ReferrerEarnings")
   earningsAsReferee        ReferralEarning[]  @relation("RefereeEarnings")
+  emailNotifyLogin         Boolean            @default(true)
+  emailNotifyApplications  Boolean            @default(true)
+  emailNotifyBilling       Boolean            @default(true)
+  welcomeEmailSent         Boolean            @default(false)
+  passwordResetToken       String?            @unique
+  passwordResetExpiresAt   DateTime?
 }
 
 model ReferralEarning {

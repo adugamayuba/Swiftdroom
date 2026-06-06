@@ -9,8 +9,45 @@ import {
   markRefereeDiscountUsed,
   recordReferralCommission,
 } from "./referrals";
+import { notifyPaymentFailed, notifySubscriptionActivated } from "./notifications";
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+
+/** Stripe v22+ moved billing periods from Subscription to SubscriptionItem. */
+function getSubscriptionPeriod(
+  subscription: Stripe.Subscription
+): { start: Date; end: Date } | null {
+  const item = subscription.items?.data?.[0];
+  const legacy = subscription as Stripe.Subscription & {
+    current_period_start?: number;
+    current_period_end?: number;
+  };
+
+  const periodStart = item?.current_period_start ?? legacy.current_period_start;
+  const periodEnd = item?.current_period_end ?? legacy.current_period_end;
+
+  if (
+    typeof periodStart === "number" &&
+    typeof periodEnd === "number" &&
+    !Number.isNaN(periodStart) &&
+    !Number.isNaN(periodEnd)
+  ) {
+    return {
+      start: new Date(periodStart * 1000),
+      end: new Date(periodEnd * 1000),
+    };
+  }
+
+  const anchor = subscription.billing_cycle_anchor ?? subscription.start_date;
+  if (typeof anchor === "number" && !Number.isNaN(anchor)) {
+    const start = new Date(anchor * 1000);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 1);
+    return { start, end };
+  }
+
+  return null;
+}
 
 function planIdFromSubscription(
   subscription: Stripe.Subscription,
@@ -59,15 +96,14 @@ export async function updateUserSubscription(
   };
 
   const status = statusMap[subscription.status] || "CANCELED";
-
-  const periodStart = (subscription as Stripe.Subscription & {
-    current_period_start: number;
-    current_period_end: number;
-  }).current_period_start;
-  const periodEnd = (subscription as Stripe.Subscription & {
-    current_period_start: number;
-    current_period_end: number;
-  }).current_period_end;
+  const period = getSubscriptionPeriod(subscription);
+  const previous = await db.user.findUnique({
+    where: { id: userId },
+    select: { subscriptionStatus: true },
+  });
+  const wasActive =
+    previous?.subscriptionStatus === "ACTIVE" ||
+    previous?.subscriptionStatus === "TRIALING";
 
   await db.user.update({
     where: { id: userId },
@@ -81,13 +117,22 @@ export async function updateUserSubscription(
         typeof subscription.customer === "string"
           ? subscription.customer
           : subscription.customer?.id,
-      currentPeriodStart: new Date(periodStart * 1000),
-      currentPeriodEnd: new Date(periodEnd * 1000),
+      ...(period
+        ? {
+            currentPeriodStart: period.start,
+            currentPeriodEnd: period.end,
+          }
+        : {}),
     },
   });
 
   if (status === "CANCELED" || status === "PAST_DUE") {
     await cancelReferralEarningIfPending(userId);
+  }
+
+  if (!wasActive && (status === "ACTIVE" || status === "TRIALING")) {
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (user) await notifySubscriptionActivated(user, planId);
   }
 
   return true;
@@ -275,4 +320,6 @@ export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       applicationsLimit: 0,
     },
   });
+
+  await notifyPaymentFailed(user);
 }

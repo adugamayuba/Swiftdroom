@@ -62,13 +62,16 @@ export default function SubscribeSuccessContent() {
 
   async function handleGoToDashboard() {
     setActivating(true);
+    setActivationError("");
     const active = await tryActivate();
     setActivating(false);
     if (active) {
       router.push("/dashboard");
-    } else {
-      router.push("/dashboard");
+      return;
     }
+    setActivationError(
+      "We couldn't activate your account yet. Wait a minute and try again, or email support@swiftdroom.com with your payment confirmation."
+    );
   }
 
   return (
@@ -104,6 +107,11 @@ export default function SubscribeSuccessContent() {
               Your payment went through. Tap below to finish activating your account.
               If you still can&apos;t get in, email support@swiftdroom.com.
             </p>
+            {activationError && (
+              <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {activationError}
+              </div>
+            )}
             <button
               type="button"
               onClick={handleGoToDashboard}

@@ -87,6 +87,16 @@ export async function PUT(request: NextRequest) {
         where: { id: user.id },
         data: { onboardingComplete: complete },
       });
+
+      if (complete) {
+        const { notifyWelcomeIfNeeded } = await import("@/lib/notifications");
+        const refreshedUser = await db.user.findUnique({ where: { id: user.id } });
+        if (refreshedUser) {
+          notifyWelcomeIfNeeded(refreshedUser).catch((err) =>
+            console.error("Onboarding welcome email failed:", err)
+          );
+        }
+      }
     }
 
     return NextResponse.json({ profile: fresh, onboardingComplete: complete, missing });

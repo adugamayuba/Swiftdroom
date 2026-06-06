@@ -1,3 +1,174 @@
+import type { User } from "@prisma/client";
+import { getAppUrl } from "./app-url";
+
+export type EmailNotificationType = "login" | "applications" | "billing";
+
+interface SendEmailParams {
+  to: string;
+  subject: string;
+  text: string;
+}
+
+export async function sendEmail(params: SendEmailParams): Promise<boolean> {
+  const { to, subject, text } = params;
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM || "Swiftdroom <noreply@swiftdroom.com>";
+
+  if (!apiKey) {
+    console.log(`[email] To: ${to} | Subject: ${subject}\n${text}`);
+    return false;
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to, subject, text }),
+    });
+    if (!res.ok) {
+      console.error("Resend email failed:", await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Resend email error:", err);
+    return false;
+  }
+}
+
+export function userWantsEmail(
+  user: Pick<
+    User,
+    "emailNotifyLogin" | "emailNotifyApplications" | "emailNotifyBilling"
+  >,
+  type: EmailNotificationType
+): boolean {
+  if (type === "login") return user.emailNotifyLogin;
+  if (type === "applications") return user.emailNotifyApplications;
+  return user.emailNotifyBilling;
+}
+
+export async function sendWelcomeEmail(user: {
+  email: string;
+  name: string | null;
+}) {
+  const displayName = user.name || "there";
+  await sendEmail({
+    to: user.email,
+    subject: "You're all set on Swiftdroom",
+    text: `Hi ${displayName},
+
+Your Swiftdroom profile is complete — nice work.
+
+Next steps:
+1. Choose a plan to unlock the Chrome extension
+2. Start applying to jobs with AI-powered autofill
+
+Open your dashboard: ${getAppUrl()}/dashboard
+
+— The Swiftdroom team`,
+  });
+}
+
+export async function sendLoginNotificationEmail(user: {
+  email: string;
+  name: string | null;
+}) {
+  const displayName = user.name || "there";
+  await sendEmail({
+    to: user.email,
+    subject: "New sign-in to your Swiftdroom account",
+    text: `Hi ${displayName},
+
+Someone just signed in to your Swiftdroom account.
+
+If this was you, no action is needed. If you don't recognize this sign-in, reset your password right away: ${getAppUrl()}/forgot-password
+
+— The Swiftdroom team`,
+  });
+}
+
+export async function sendApplicationSubmittedEmail(
+  user: { email: string; name: string | null },
+  application: { company: string; role: string }
+) {
+  const displayName = user.name || "there";
+  await sendEmail({
+    to: user.email,
+    subject: `Application logged: ${application.role} at ${application.company}`,
+    text: `Hi ${displayName},
+
+Your application was saved in Swiftdroom:
+
+Role: ${application.role}
+Company: ${application.company}
+
+View your applications: ${getAppUrl()}/dashboard/applications
+
+— The Swiftdroom team`,
+  });
+}
+
+export async function sendSubscriptionActivatedEmail(
+  user: { email: string; name: string | null },
+  planName: string
+) {
+  const displayName = user.name || "there";
+  await sendEmail({
+    to: user.email,
+    subject: "Your Swiftdroom subscription is active",
+    text: `Hi ${displayName},
+
+Your ${planName} subscription is now active. You can use the Chrome extension and start applying.
+
+Open your dashboard: ${getAppUrl()}/dashboard
+
+— The Swiftdroom team`,
+  });
+}
+
+export async function sendPaymentFailedEmail(user: {
+  email: string;
+  name: string | null;
+}) {
+  const displayName = user.name || "there";
+  await sendEmail({
+    to: user.email,
+    subject: "Action needed: Swiftdroom payment failed",
+    text: `Hi ${displayName},
+
+We couldn't process your latest Swiftdroom subscription payment. Update your billing details to keep access:
+
+${getAppUrl()}/dashboard/settings
+
+— The Swiftdroom team`,
+  });
+}
+
+export async function sendPasswordResetEmail(
+  user: { email: string; name: string | null },
+  resetUrl: string
+) {
+  const displayName = user.name || "there";
+  await sendEmail({
+    to: user.email,
+    subject: "Reset your Swiftdroom password",
+    text: `Hi ${displayName},
+
+We received a request to reset your Swiftdroom password.
+
+Reset your password (link expires in 1 hour):
+${resetUrl}
+
+If you didn't request this, you can ignore this email.
+
+— The Swiftdroom team`,
+  });
+}
+
 interface ReferralRedemptionEmailParams {
   to: string;
   name: string | null;
@@ -9,8 +180,10 @@ export async function sendReferralRedemptionEmail(
 ) {
   const { to, name, amount } = params;
   const displayName = name || "there";
-  const subject = "Your Swiftdroom referral earnings are ready";
-  const body = `Hi ${displayName},
+  await sendEmail({
+    to,
+    subject: "Your Swiftdroom referral earnings are ready",
+    text: `Hi ${displayName},
 
 Great news — your referral commission of $${amount.toFixed(2)} is now eligible for payout.
 
@@ -18,29 +191,6 @@ To receive your earnings, reply to this email with your preferred payment detail
 
 Thank you for spreading the word about Swiftdroom!
 
-— The Swiftdroom team`;
-
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "Swiftdroom <noreply@swiftdroom.com>";
-
-  if (apiKey) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ from, to, subject, text: body }),
-      });
-      if (!res.ok) {
-        console.error("Resend email failed:", await res.text());
-      }
-      return;
-    } catch (err) {
-      console.error("Resend email error:", err);
-    }
-  }
-
-  console.log(`[referral-email] To: ${to} | Subject: ${subject}\n${body}`);
+— The Swiftdroom team`,
+  });
 }

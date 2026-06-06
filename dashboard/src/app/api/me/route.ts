@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveUser } from "@/lib/auth";
+import {
+  getSessionTokenFromRequest,
+  maybeRefreshSession,
+  resolveUser,
+} from "@/lib/auth";
 import {
   getUsageSummary,
   hasActiveSubscription,
@@ -26,6 +30,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const sessionToken = getSessionTokenFromRequest(request);
+  const refreshedToken = sessionToken
+    ? await maybeRefreshSession(sessionToken)
+    : null;
+
   return NextResponse.json({
     id: user.id,
     email: user.email,
@@ -40,5 +49,11 @@ export async function GET(request: NextRequest) {
     usage: getUsageSummary(user),
     referralDiscountAvailable: refereeGetsDiscount(user),
     referralCode: user.referralCode,
+    emailNotifications: {
+      login: user.emailNotifyLogin,
+      applications: user.emailNotifyApplications,
+      billing: user.emailNotifyBilling,
+    },
+    ...(refreshedToken ? { sessionToken: refreshedToken } : {}),
   });
 }

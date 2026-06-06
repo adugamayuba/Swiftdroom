@@ -77,6 +77,14 @@ export async function POST(request: NextRequest) {
 
     await incrementApplicationUsage(user.id);
 
+    const { notifyApplicationSubmitted } = await import("@/lib/notifications");
+    notifyApplicationSubmitted(user, {
+      company: application.company,
+      role: application.role,
+    }).catch((err) =>
+      console.error("Application notification email failed:", err)
+    );
+
     return NextResponse.json({ application });
   } catch (error) {
     if (error instanceof z.ZodError) {

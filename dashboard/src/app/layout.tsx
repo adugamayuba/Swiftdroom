@@ -8,6 +8,7 @@ import {
   DEFAULT_TITLE,
   SITE_NAME,
 } from "@/lib/seo";
+import SessionKeeper from "@/components/SessionKeeper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -73,6 +74,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SessionKeeper />
         {children}
         <Analytics />
       </body>

@@ -14,6 +14,8 @@ import {
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
   const [extensionConnected, setExtensionConnected] = useState(false);
   const [usage, setUsage] = useState({
     used: 0,
@@ -22,15 +24,27 @@ export default function SettingsPage() {
     status: "NONE",
     periodEnd: null as string | null,
   });
+  const [notifications, setNotifications] = useState({
+    login: true,
+    applications: true,
+    billing: true,
+  });
 
   useEffect(() => {
-    apiFetch("/api/me").then(async (r) => {
-      if (!r.ok) return;
-      const data = await r.json();
-      if (data.apiToken) localStorage.setItem("swiftdroom_api_token", data.apiToken);
-      if (data.usage) setUsage(data.usage);
-      setLoading(false);
-    });
+    Promise.all([apiFetch("/api/me"), apiFetch("/api/settings/notifications")]).then(
+      async ([meRes, settingsRes]) => {
+        if (meRes.ok) {
+          const data = await meRes.json();
+          if (data.apiToken) localStorage.setItem("swiftdroom_api_token", data.apiToken);
+          if (data.usage) setUsage(data.usage);
+        }
+        if (settingsRes.ok) {
+          const settings = await settingsRes.json();
+          setNotifications(settings);
+        }
+        setLoading(false);
+      }
+    );
 
     const handler = () => setExtensionConnected(true);
     window.addEventListener("swiftdroom:connected", handler);
@@ -51,6 +65,30 @@ export default function SettingsPage() {
     const data = await res.json();
     setBillingLoading(false);
     if (data.url) window.location.href = data.url;
+  }
+
+  async function updateNotification(
+    key: keyof typeof notifications,
+    value: boolean
+  ) {
+    const next = { ...notifications, [key]: value };
+    setNotifications(next);
+    setSavingNotifications(true);
+    setNotificationMessage("");
+
+    const res = await apiFetch("/api/settings/notifications", {
+      method: "PATCH",
+      body: JSON.stringify({ [key]: value }),
+    });
+    setSavingNotifications(false);
+
+    if (!res.ok) {
+      setNotifications(notifications);
+      setNotificationMessage("We couldn't save your email preferences. Try again.");
+      return;
+    }
+
+    setNotificationMessage("Email preferences saved.");
   }
 
   const planName =
@@ -104,6 +142,60 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+        )}
+      </DashboardCard>
+
+      <DashboardCard className="mt-5 p-6">
+        <p className="al-section-tag">Email notifications</p>
+        <p className="mt-2 text-sm text-[var(--brand-header)]/65">
+          Choose which updates we send to your inbox.
+        </p>
+
+        <div className="mt-5 space-y-4">
+          {(
+            [
+              {
+                key: "login" as const,
+                label: "Sign-in alerts",
+                description: "Get notified when someone signs in to your account.",
+              },
+              {
+                key: "applications" as const,
+                label: "Application submissions",
+                description: "Get a confirmation when a new application is logged.",
+              },
+              {
+                key: "billing" as const,
+                label: "Billing updates",
+                description: "Subscription activations and payment issues.",
+              },
+            ] as const
+          ).map(({ key, label, description }) => (
+            <label
+              key={key}
+              className="flex items-start justify-between gap-4 rounded-md border border-[var(--brand-mint)] px-4 py-3"
+            >
+              <span>
+                <span className="block text-sm font-medium text-[var(--brand-header)]">
+                  {label}
+                </span>
+                <span className="mt-0.5 block text-xs text-[var(--brand-header)]/55">
+                  {description}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={notifications[key]}
+                disabled={savingNotifications}
+                onChange={(e) => updateNotification(key, e.target.checked)}
+                className="mt-1 h-4 w-4 accent-[var(--brand-header)]"
+              />
+            </label>
+          ))}
+        </div>
+
+        {notificationMessage && (
+          <p className="mt-3 text-xs text-[var(--brand-header)]/55">{notificationMessage}</p>
         )}
       </DashboardCard>
 
