@@ -1,23 +1,50 @@
 import type Stripe from "stripe";
+import type { User } from "@prisma/client";
 import { db } from "./db";
-import { getStripe } from "./stripe";
+import { getStripe, isStripeConfigured } from "./stripe";
 import { getPlanFromPriceId, PLANS, type PlanId } from "./plans";
-import { resetUsageForPeriod } from "./subscription";
+import { hasActiveSubscription, resetUsageForPeriod } from "./subscription";
 import {
   cancelReferralEarningIfPending,
   markRefereeDiscountUsed,
   recordReferralCommission,
 } from "./referrals";
 
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+
+function planIdFromSubscription(
+  subscription: Stripe.Subscription,
+  planIdOverride?: PlanId
+): PlanId | null {
+  if (planIdOverride) return planIdOverride;
+
+  const metadataPlan = subscription.metadata?.planId;
+  if (
+    metadataPlan === "STARTER" ||
+    metadataPlan === "PRO" ||
+    metadataPlan === "BUSINESS"
+  ) {
+    return metadataPlan;
+  }
+
+  const priceId = subscription.items.data[0]?.price.id;
+  return priceId ? getPlanFromPriceId(priceId) : null;
+}
+
 export async function updateUserSubscription(
   userId: string,
   subscription: Stripe.Subscription,
   planIdOverride?: PlanId
 ) {
-  const priceId = subscription.items.data[0]?.price.id;
-  const planId =
-    planIdOverride || (priceId ? getPlanFromPriceId(priceId) : null);
-  if (!planId) return;
+  const planId = planIdFromSubscription(subscription, planIdOverride);
+  if (!planId) {
+    console.warn("Could not resolve plan for subscription", {
+      subscriptionId: subscription.id,
+      userId,
+      priceId: subscription.items.data[0]?.price.id,
+    });
+    return false;
+  }
 
   const plan = PLANS[planId];
   const statusMap: Record<string, "ACTIVE" | "PAST_DUE" | "CANCELED" | "TRIALING"> = {
@@ -62,6 +89,93 @@ export async function updateUserSubscription(
   if (status === "CANCELED" || status === "PAST_DUE") {
     await cancelReferralEarningIfPending(userId);
   }
+
+  return true;
+}
+
+async function findStripeCustomerId(user: User): Promise<string | null> {
+  if (user.stripeCustomerId) return user.stripeCustomerId;
+
+  const stripe = getStripe();
+  const customers = await stripe.customers.list({
+    email: user.email,
+    limit: 10,
+  });
+
+  const match =
+    customers.data.find((customer) => customer.metadata?.userId === user.id) ||
+    customers.data[0];
+
+  if (!match) return null;
+
+  if (!user.stripeCustomerId) {
+    await db.user.update({
+      where: { id: user.id },
+      data: { stripeCustomerId: match.id },
+    });
+  }
+
+  return match.id;
+}
+
+async function findActiveStripeSubscription(
+  customerId: string,
+  subscriptionId?: string | null
+): Promise<Stripe.Subscription | null> {
+  const stripe = getStripe();
+
+  if (subscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      if (ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status)) {
+        return subscription;
+      }
+    } catch {
+      // Fall through to customer lookup.
+    }
+  }
+
+  for (const status of ["active", "trialing"] as const) {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status,
+      limit: 5,
+    });
+    if (subscriptions.data[0]) return subscriptions.data[0];
+  }
+
+  return null;
+}
+
+/** Recover access when payment succeeded but webhook activation was missed. */
+export async function syncSubscriptionFromStripe(user: User): Promise<boolean> {
+  if (!isStripeConfigured() || hasActiveSubscription(user)) return false;
+
+  const customerId = await findStripeCustomerId(user);
+  if (!customerId) return false;
+
+  const subscription = await findActiveStripeSubscription(
+    customerId,
+    user.stripeSubscriptionId
+  );
+  if (!subscription) return false;
+
+  const planId = planIdFromSubscription(subscription);
+  if (!planId) {
+    console.warn("Stripe subscription found but plan could not be resolved", {
+      userId: user.id,
+      email: user.email,
+      subscriptionId: subscription.id,
+    });
+    return false;
+  }
+
+  const updated = await updateUserSubscription(user.id, subscription, planId);
+  if (!updated) return false;
+
+  await markRefereeDiscountUsed(user.id);
+  await recordReferralCommission(user.id, planId);
+  return true;
 }
 
 /** Activate subscription from a paid Checkout session (webhook or success-page fallback). */
@@ -83,7 +197,9 @@ export async function activateFromCheckoutSession(
 
   const stripe = getStripe();
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  await updateUserSubscription(userId, subscription, planId);
+  const updated = await updateUserSubscription(userId, subscription, planId);
+  if (!updated) return false;
+
   await markRefereeDiscountUsed(userId);
   await recordReferralCommission(userId, planId);
   return true;

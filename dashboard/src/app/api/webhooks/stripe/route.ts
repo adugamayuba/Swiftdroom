@@ -53,11 +53,23 @@ export async function POST(request: NextRequest) {
 
   try {
     switch (event.type) {
-      case "checkout.session.completed":
-        await activateFromCheckoutSession(
-          event.data.object as Stripe.Checkout.Session
-        );
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const activated = await activateFromCheckoutSession(session);
+        if (!activated) {
+          console.warn("checkout.session.completed did not activate user", {
+            sessionId: session.id,
+            paymentStatus: session.payment_status,
+            userId: session.metadata?.userId,
+            planId: session.metadata?.planId,
+            subscription:
+              typeof session.subscription === "string"
+                ? session.subscription
+                : session.subscription?.id,
+          });
+        }
         break;
+      }
       case "checkout.session.async_payment_failed":
       case "checkout.session.expired":
         break;

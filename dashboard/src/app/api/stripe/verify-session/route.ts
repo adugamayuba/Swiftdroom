@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveUser } from "@/lib/auth";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { activateFromCheckoutSession } from "@/lib/stripe-subscription";
+import {
+  activateFromCheckoutSession,
+  syncSubscriptionFromStripe,
+} from "@/lib/stripe-subscription";
+import { db } from "@/lib/db";
 import { hasActiveSubscription } from "@/lib/subscription";
 import { friendlyUserMessage } from "@/lib/user-messages";
 
@@ -46,8 +50,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ activated: false, pending: true });
     }
 
-    const activated = await activateFromCheckoutSession(session);
-    return NextResponse.json({ activated });
+    let activated = await activateFromCheckoutSession(session);
+    if (!activated) {
+      activated = await syncSubscriptionFromStripe(user);
+    }
+
+    const refreshed = await db.user.findUnique({ where: { id: user.id } });
+    const current = refreshed ? { ...user, ...refreshed } : user;
+    return NextResponse.json({
+      activated: activated || hasActiveSubscription(current),
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });

@@ -99,6 +99,12 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
               >
                 Referral payouts
               </Link>
+              <Link
+                href="/admin/s/users"
+                className="text-neutral-600 hover:text-neutral-900"
+              >
+                Subscription recovery
+              </Link>
             </nav>
           </div>
           <button

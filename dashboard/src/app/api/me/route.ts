@@ -5,8 +5,10 @@ import {
   hasActiveSubscription,
   syncExpiredSubscription,
 } from "@/lib/subscription";
+import { syncSubscriptionFromStripe } from "@/lib/stripe-subscription";
 import { refereeGetsDiscount } from "@/lib/referrals";
 import { getPostAuthRedirect } from "@/lib/user-flow";
+import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   let user = await resolveUser(request);
@@ -15,6 +17,14 @@ export async function GET(request: NextRequest) {
   }
 
   user = await syncExpiredSubscription(user);
+
+  if (!hasActiveSubscription(user)) {
+    await syncSubscriptionFromStripe(user);
+    const refreshed = await db.user.findUnique({ where: { id: user.id } });
+    if (refreshed) {
+      user = { ...user, ...refreshed };
+    }
+  }
 
   return NextResponse.json({
     id: user.id,
