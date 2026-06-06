@@ -278,7 +278,47 @@ function applySuggestionsToFields(domain) {
   }
 }
 
-async function recordApplicationAfterFill(filledCount, attemptedCount) {
+async function captureFormSnapshot(tabId) {
+  const snapshots = [];
+
+  for (const field of state.fields) {
+    const draft = (field._draftValue || "").trim();
+    if (!draft) continue;
+
+    let pageValue = draft;
+    try {
+      const read = await runInFrame(
+        tabId,
+        field.frameId ?? 0,
+        (fieldId) => {
+          const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+          if (!el || !window.SwiftdroomFormDetector) return "";
+          if (el.tagName === "SELECT") {
+            const opt = el.options[el.selectedIndex];
+            return opt ? (opt.textContent || opt.value || "").trim() : el.value || "";
+          }
+          return window.SwiftdroomFormDetector.getElementValue(el) || el.value || "";
+        },
+        [field.id]
+      );
+      if (read && String(read).trim()) pageValue = String(read).trim();
+    } catch {
+      /* keep draft */
+    }
+
+    snapshots.push({
+      label: field.label || "Field",
+      value: pageValue,
+      draftValue: draft,
+      source: field._source || "edited",
+      isOpenEnded: SwiftdroomFieldMapper.isOpenEndedField(field),
+    });
+  }
+
+  return snapshots;
+}
+
+async function recordApplicationAfterFill(tabId, filledCount, attemptedCount) {
   if (filledCount < 1) return false;
 
   const tab = await getActiveTab();
@@ -287,22 +327,27 @@ async function recordApplicationAfterFill(filledCount, attemptedCount) {
 
   const meta = state.pageContext?.meta || {};
   const statusEl = document.getElementById("uncertain-count");
+  const submittedAnswers = await captureFormSnapshot(tabId);
 
   try {
     if (statusEl) statusEl.textContent = "Saving application…";
 
-    await SwiftdroomAPI.logApplication({
+    const result = await SwiftdroomAPI.logApplication({
       company: meta.company || "Unknown company",
       role: meta.role || meta.title || "Unknown role",
       url: tab.url,
       personaId: state.selectedPersonaId,
       status: "filled",
-      notes: `Autofilled ${filledCount} of ${attemptedCount} fields via extension`,
+      notes: `Autofilled ${filledCount} of ${attemptedCount} fields`,
+      jobDescription: (state.pageContext?.jobDescription || "").slice(0, 8000),
+      submittedAnswers,
+      fieldsFilled: filledCount,
+      fieldsAttempted: attemptedCount,
     });
 
     state.recordedApplicationUrl = tab.url;
 
-    if (state.usage) {
+    if (!result.updated && state.usage) {
       state.usage.used += 1;
       state.usage.remaining = Math.max(0, state.usage.remaining - 1);
       const badge = document.getElementById("usage-badge");
@@ -710,7 +755,7 @@ async function fillApplicationMagic() {
       await sleep(isDropdownField(field) ? 500 : 350);
     }
 
-    const saved = await recordApplicationAfterFill(filledCount, ordered.length);
+    const saved = await recordApplicationAfterFill(tab.id, filledCount, ordered.length);
     btn.textContent = saved
       ? "✨ Done — application counted"
       : "✨ Done — review & submit";

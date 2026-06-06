@@ -4,6 +4,11 @@ const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
+interface PastAnswerExample {
+  question: string;
+  answer: string;
+}
+
 interface GenerateParams {
   question: string;
   jobDescription: string;
@@ -11,6 +16,7 @@ interface GenerateParams {
   personaSummary: string;
   personaFocus: string;
   company?: string;
+  pastAnswers?: PastAnswerExample[];
 }
 
 export async function generateAnswer(params: GenerateParams): Promise<string> {
@@ -21,7 +27,18 @@ export async function generateAnswer(params: GenerateParams): Promise<string> {
     personaSummary,
     personaFocus,
     company,
+    pastAnswers = [],
   } = params;
+
+  const styleExamples =
+    pastAnswers.length > 0
+      ? `\n\nThe candidate's past application answers (match this voice and specificity):\n${pastAnswers
+          .map(
+            (ex, i) =>
+              `Example ${i + 1}\nQ: ${ex.question}\nA: ${ex.answer}`
+          )
+          .join("\n\n")}`
+      : "";
 
   const systemPrompt = `You are a job application co-pilot. Write concise, authentic first-person answers for application forms.
 Rules:
@@ -30,6 +47,7 @@ Rules:
 - Keep answers under 200 words unless the question clearly needs more
 - Never invent employers, degrees, or projects not in the resume
 - Tailor to the job description and persona focus
+- When past answers are provided, mirror the candidate's writing style and level of detail
 - Do not use markdown formatting`;
 
   const userPrompt = `Question: ${question}
@@ -43,7 +61,7 @@ Resume:
 ${resumeText || "No resume provided"}
 
 Job description (from page):
-${jobDescription || "No job description detected"}
+${jobDescription || "No job description detected"}${styleExamples}
 
 Write the answer:`;
 

@@ -375,6 +375,7 @@ const SwiftdroomFormDetector = (() => {
   return {
     detectFields,
     getLabelText,
+    getElementValue,
     getSelectOptions,
     setElementValue,
     setSelectValue,

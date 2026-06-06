@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, clearSessionToken, getSessionToken } from "@/lib/api-client";
+import {
+  apiFetch,
+  clearSessionToken,
+  getSessionToken,
+  setSessionToken,
+} from "@/lib/api-client";
 import { persistApiToken } from "@/lib/extension-client";
 
 interface MeAuthResponse {
@@ -22,10 +27,7 @@ export async function resolveAuthenticatedRedirect(): Promise<string | null> {
   }
 
   const data = (await res.json()) as MeAuthResponse;
-  if (data.sessionToken) {
-    const { setSessionToken } = await import("@/lib/api-client");
-    setSessionToken(data.sessionToken);
-  }
+  if (data.sessionToken) setSessionToken(data.sessionToken);
   if (data.apiToken) persistApiToken(data.apiToken);
 
   return data.redirectTo || "/dashboard";

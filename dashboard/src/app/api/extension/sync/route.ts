@@ -39,15 +39,26 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const { syncDefaultPersonaFromProfile } = await import("@/lib/persona-sync");
+  await syncDefaultPersonaFromProfile(user.id);
+
+  const refreshed = await getUserFromApiToken(token);
+  if (!refreshed) {
+    return NextResponse.json(
+      { error: friendlyUserMessage("Invalid token") },
+      { status: 401 }
+    );
+  }
+
   const mappings = await db.fieldMapping.findMany({
-    where: { userId: user.id },
+    where: { userId: refreshed.id },
   });
 
   return NextResponse.json({
-    profile: user.profile,
-    personas: user.personas,
+    profile: refreshed.profile,
+    personas: refreshed.personas,
     fieldMappings: mappings,
-    usage: getUsageSummary(user),
+    usage: getUsageSummary(refreshed),
   });
 }
 

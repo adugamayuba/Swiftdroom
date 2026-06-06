@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getUserFromApiToken } from "@/lib/auth";
 import { generateAnswer } from "@/lib/ai";
+import { getSubmissionExamplesForAI } from "@/lib/application-learning";
 import {
   canUseExtension,
   hasApplicationQuota,
@@ -70,6 +71,8 @@ export async function POST(request: NextRequest) {
       user.profile?.resumeText ||
       "";
 
+    const pastAnswers = await getSubmissionExamplesForAI(user.id);
+
     const answer = await generateAnswer({
       question,
       jobDescription: jobDescription || "",
@@ -77,6 +80,7 @@ export async function POST(request: NextRequest) {
       personaSummary: persona?.summary || "",
       personaFocus: persona?.focus || "",
       company,
+      pastAnswers,
     });
 
     return NextResponse.json({ answer });

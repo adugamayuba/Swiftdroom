@@ -82,6 +82,9 @@ export async function PUT(request: NextRequest) {
     const complete = isProfileComplete(fresh);
     const missing = completionErrors(fresh);
 
+    const { syncDefaultPersonaFromProfile } = await import("@/lib/persona-sync");
+    await syncDefaultPersonaFromProfile(user.id);
+
     if (complete !== user.onboardingComplete) {
       await db.user.update({
         where: { id: user.id },
@@ -89,6 +92,7 @@ export async function PUT(request: NextRequest) {
       });
 
       if (complete) {
+        await syncDefaultPersonaFromProfile(user.id);
         const { notifyWelcomeIfNeeded } = await import("@/lib/notifications");
         const refreshedUser = await db.user.findUnique({ where: { id: user.id } });
         if (refreshedUser) {

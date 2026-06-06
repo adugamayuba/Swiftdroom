@@ -86,6 +86,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const { syncDefaultPersonaFromProfile } = await import("@/lib/persona-sync");
+    await syncDefaultPersonaFromProfile(user.id);
+
     return NextResponse.json({
       resumeText: text,
       resumeFileName: file.name,

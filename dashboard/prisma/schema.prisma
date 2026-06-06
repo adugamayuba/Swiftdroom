@@ -133,20 +133,25 @@ model Persona {
 }
 
 model Application {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company   String
-  role      String
-  url       String
-  status    String   @default("applied")
-  personaId String?
-  notes     String   @default("")
-  appliedAt DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company          String
+  role             String
+  url              String
+  status           String   @default("applied")
+  personaId        String?
+  notes            String   @default("")
+  jobDescription   String   @default("")
+  submittedAnswers Json?
+  fieldsFilled     Int      @default(0)
+  fieldsAttempted  Int      @default(0)
+  appliedAt        DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([userId])
+  @@index([userId, url])
 }
 
 model FieldMapping {
