@@ -6,6 +6,7 @@ import {
   canUseExtension,
   hasApplicationQuota,
   incrementApplicationUsage,
+  syncExpiredSubscription,
 } from "@/lib/subscription";
 
 const applicationSchema = z.object({
@@ -32,10 +33,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await resolveUser(request);
+  let user = await resolveUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  user = await syncExpiredSubscription(user);
 
   if (!canUseExtension(user)) {
     return NextResponse.json(

@@ -13,6 +13,7 @@ export default function SubscribePageContent() {
   const [userState, setUserState] = useState<{
     onboardingComplete: boolean;
     hasActiveSubscription: boolean;
+    referralDiscountAvailable?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -87,6 +88,12 @@ export default function SubscribePageContent() {
         {canceled && (
           <div className="mt-6 rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-600">
             Checkout was canceled. Select a plan when you are ready.
+          </div>
+        )}
+
+        {userState.referralDiscountAvailable && (
+          <div className="mt-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            Your referral discount is applied — 20% off your first subscription.
           </div>
         )}
 

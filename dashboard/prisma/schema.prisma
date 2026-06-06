@@ -27,6 +27,13 @@ enum SubscriptionStatus {
   TRIALING
 }
 
+enum ReferralEarningStatus {
+  PENDING
+  ELIGIBLE
+  PAID
+  CANCELED
+}
+
 model User {
   id                     String             @id @default(cuid())
   email                  String             @unique
@@ -49,6 +56,36 @@ model User {
   applicationsLimit      Int                @default(0)
   currentPeriodStart     DateTime?
   currentPeriodEnd       DateTime?
+  referralCode           String             @unique
+  referredById           String?
+  referredBy               User?              @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals                User[]             @relation("UserReferrals")
+  referralDiscountUsed     Boolean            @default(false)
+  referralEarnings         ReferralEarning[]  @relation("ReferrerEarnings")
+  earningsAsReferee        ReferralEarning[]  @relation("RefereeEarnings")
+}
+
+model ReferralEarning {
+  id                    String                @id @default(cuid())
+  referrerId            String
+  referrer              User                  @relation("ReferrerEarnings", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId        String                @unique
+  referredUser          User                  @relation("RefereeEarnings", fields: [referredUserId], references: [id], onDelete: Cascade)
+  plan                  SubscriptionPlan
+  subscriptionAmount    Float
+  commissionPercent     Float                 @default(10)
+  commissionAmount      Float
+  status                ReferralEarningStatus @default(PENDING)
+  eligibleAt            DateTime
+  redemptionEmailSentAt DateTime?
+  paidAt                DateTime?
+  paidNote              String                @default("")
+  stripeInvoiceId       String?               @unique
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@index([referrerId])
+  @@index([status, eligibleAt])
 }
 
 model Profile {

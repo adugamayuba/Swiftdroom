@@ -5,7 +5,7 @@ import { generateAnswer } from "@/lib/ai";
 import {
   canUseExtension,
   hasApplicationQuota,
-  incrementApplicationUsage,
+  syncExpiredSubscription,
 } from "@/lib/subscription";
 
 const generateSchema = z.object({
@@ -21,10 +21,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await getUserFromApiToken(token);
+  let user = await getUserFromApiToken(token);
   if (!user) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
+
+  user = await syncExpiredSubscription(user);
 
   if (!canUseExtension(user)) {
     return NextResponse.json(
@@ -63,8 +65,6 @@ export async function POST(request: NextRequest) {
       personaFocus: persona?.focus || "",
       company,
     });
-
-    await incrementApplicationUsage(user.id);
 
     return NextResponse.json({ answer });
   } catch (error) {

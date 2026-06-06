@@ -3,8 +3,17 @@ import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getDatabaseUrl, maskUrl } from "./database-url.mjs";
+import { runMigrateDeploy } from "./migrate.mjs";
 
 const dashboardDir = join(dirname(fileURLToPath(import.meta.url)), "..", "dashboard");
+
+// Fallback: apply migrations before accepting traffic (preDeployCommand also runs on deploy).
+const migrated = await runMigrateDeploy({ maxAttempts: 1 });
+if (!migrated) {
+  console.error("\nMigrations failed — refusing to start until database is up to date.");
+  console.error("Ensure DIRECT_URL is set on Railway (Neon direct URL, no -pooler).\n");
+  process.exit(1);
+}
 
 const dbUrl = getDatabaseUrl();
 if (!dbUrl) {

@@ -2,11 +2,41 @@ import { db } from "./db";
 import { PLANS, type PlanId } from "./plans";
 import type { User } from "@prisma/client";
 
+export function isSubscriptionPeriodValid(user: User): boolean {
+  if (!user.currentPeriodEnd) return true;
+  return user.currentPeriodEnd > new Date();
+}
+
 export function hasActiveSubscription(user: User): boolean {
-  return (
+  const statusOk =
     user.subscriptionStatus === "ACTIVE" ||
-    user.subscriptionStatus === "TRIALING"
-  );
+    user.subscriptionStatus === "TRIALING";
+  if (!statusOk) return false;
+  return isSubscriptionPeriodValid(user);
+}
+
+/** Sync expired local period — blocks access until Stripe renews. */
+export async function syncExpiredSubscription<T extends User>(user: T): Promise<T> {
+  if (
+    (user.subscriptionStatus === "ACTIVE" ||
+      user.subscriptionStatus === "TRIALING") &&
+    user.currentPeriodEnd &&
+    user.currentPeriodEnd <= new Date()
+  ) {
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        subscriptionStatus: "CANCELED",
+        applicationsLimit: 0,
+      },
+    });
+    return {
+      ...user,
+      subscriptionStatus: "CANCELED",
+      applicationsLimit: 0,
+    };
+  }
+  return user;
 }
 
 export function canUseExtension(user: User): boolean {

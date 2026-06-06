@@ -1,9 +1,11 @@
+# Deploy from repo root (not dashboard/). Migrations run automatically on every deploy.
 [build]
 builder = "nixpacks"
 buildCommand = "npm run build"
-watchPatterns = ["dashboard/**"]
+watchPatterns = ["dashboard/**", "scripts/**"]
 
 [deploy]
+# Runs once per deploy before new containers go live (needs DIRECT_URL on Railway).
 preDeployCommand = "node scripts/migrate.mjs"
 startCommand = "npm start"
 restartPolicyType = "ON_FAILURE"

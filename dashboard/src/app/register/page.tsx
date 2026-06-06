@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refFromUrl = searchParams.get("ref")?.toUpperCase() || "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState(refFromUrl);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +25,12 @@ export default function RegisterPage() {
     const res = await apiFetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        referralCode: referralCode.trim() || undefined,
+      }),
     });
 
     let data: {
@@ -92,6 +100,21 @@ export default function RegisterPage() {
             />
           </div>
           <div>
+            <label className="app-label">Referral code (optional)</label>
+            <input
+              type="text"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+              placeholder="Friend's invite code"
+              className="app-input"
+            />
+            {referralCode && (
+              <p className="mt-1 text-xs text-[var(--brand-header)]/45">
+                You&apos;ll get 20% off your first subscription.
+              </p>
+            )}
+          </div>
+          <div>
             <label className="app-label">Password</label>
             <input
               type="password"
@@ -128,5 +151,19 @@ export default function RegisterPage() {
         </p>
       </form>
     </AuthLayout>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthLayout>
+          <p className="text-center text-sm text-[var(--brand-header)]/50">Loading...</p>
+        </AuthLayout>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }

@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   LayoutDashboard,
+  Gift,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { apiFetch, clearSessionToken } from "@/lib/api-client";
@@ -19,6 +20,7 @@ const navItems = [
   { href: "/dashboard/profile", label: "Profile", icon: User },
   { href: "/dashboard/personas", label: "Personas", icon: Users },
   { href: "/dashboard/applications", label: "Applications", icon: Briefcase },
+  { href: "/dashboard/referrals", label: "Referrals", icon: Gift },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

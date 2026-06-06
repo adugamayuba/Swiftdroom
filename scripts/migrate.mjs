@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import { getMigrateUrl, maskUrl } from "./database-url.mjs";
 
@@ -28,43 +28,58 @@ function isUpToDate(output) {
   );
 }
 
-const migrateUrl = getMigrateUrl();
-if (!migrateUrl) {
-  console.error("DATABASE_URL or DIRECT_URL is required for migrations");
-  process.exit(1);
+/**
+ * Apply pending Prisma migrations (used by Railway pre-deploy and app startup).
+ * @param {{ maxAttempts?: number }} options
+ */
+export async function runMigrateDeploy({ maxAttempts = 5 } = {}) {
+  const migrateUrl = getMigrateUrl();
+  if (!migrateUrl) {
+    console.error("DATABASE_URL or DIRECT_URL is required for migrations");
+    return false;
+  }
+
+  const migrateEnv = {
+    ...process.env,
+    DATABASE_URL: migrateUrl,
+    PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT:
+      process.env.PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT || "120000",
+  };
+
+  console.log(`Running migrations against: ${maskUrl(migrateUrl)}`);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (maxAttempts > 1) {
+      console.log(`\nMigration attempt ${attempt}/${maxAttempts}...`);
+    }
+
+    const result = run(["prisma", "migrate", "deploy"], migrateEnv);
+    if (result.status === 0) {
+      console.log("\nMigrations applied successfully.");
+      return true;
+    }
+
+    if (isUpToDate(migrateStatus(migrateEnv))) {
+      console.log("\nMigrations already applied. Skipping.");
+      return true;
+    }
+
+    if (attempt < maxAttempts) {
+      const delayMs = attempt * 8000;
+      console.log(`\nRetrying in ${delayMs / 1000}s...`);
+      await setTimeout(delayMs);
+    }
+  }
+
+  console.error("\nPrisma migrate deploy failed after all retries.");
+  return false;
 }
 
-const migrateEnv = {
-  ...process.env,
-  DATABASE_URL: migrateUrl,
-  PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT:
-    process.env.PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT || "120000",
-};
+const isMain =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-console.log(`Running migrations against: ${maskUrl(migrateUrl)}`);
-
-const maxAttempts = 5;
-
-for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-  console.log(`\nMigration attempt ${attempt}/${maxAttempts}...`);
-
-  const result = run(["prisma", "migrate", "deploy"], migrateEnv);
-  if (result.status === 0) {
-    console.log("\nMigrations applied successfully.");
-    process.exit(0);
-  }
-
-  if (isUpToDate(migrateStatus(migrateEnv))) {
-    console.log("\nMigrations already applied. Skipping.");
-    process.exit(0);
-  }
-
-  if (attempt < maxAttempts) {
-    const delayMs = attempt * 8000;
-    console.log(`\nRetrying in ${delayMs / 1000}s...`);
-    await setTimeout(delayMs);
-  }
+if (isMain) {
+  const maxAttempts = Number(process.env.MIGRATE_MAX_ATTEMPTS || "5");
+  const ok = await runMigrateDeploy({ maxAttempts });
+  process.exit(ok ? 0 : 1);
 }
-
-console.error("\nPrisma migrate deploy failed after all retries.");
-process.exit(1);

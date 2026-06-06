@@ -8,6 +8,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().optional(),
+  referralCode: z.string().optional(),
 });
 
 function registrationError(error: unknown) {
@@ -51,7 +52,7 @@ function registrationError(error: unknown) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, name } = registerSchema.parse(body);
+    const { email, password, name, referralCode } = registerSchema.parse(body);
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
@@ -61,10 +62,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let referredById: string | undefined;
+    if (referralCode?.trim()) {
+      const referrer = await db.user.findUnique({
+        where: { referralCode: referralCode.trim().toUpperCase() },
+        select: { id: true, email: true },
+      });
+      if (!referrer) {
+        return NextResponse.json(
+          { error: "Invalid referral code" },
+          { status: 400 }
+        );
+      }
+      if (referrer.email.toLowerCase() === email.toLowerCase()) {
+        return NextResponse.json(
+          { error: "You cannot use your own referral code" },
+          { status: 400 }
+        );
+      }
+      referredById = referrer.id;
+    }
+
     const passwordHash = await hashPassword(password);
     const isAdmin =
       process.env.ADMIN_EMAIL &&
       email.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase();
+
+    const { createUniqueReferralCode } = await import("@/lib/referrals");
+    const newReferralCode = await createUniqueReferralCode();
 
     const user = await db.user.create({
       data: {
@@ -72,6 +97,8 @@ export async function POST(request: NextRequest) {
         passwordHash,
         name,
         role: isAdmin ? "ADMIN" : "USER",
+        referralCode: newReferralCode,
+        referredById,
         profile: { create: { email, fullName: name || "" } },
         personas: {
           create: {

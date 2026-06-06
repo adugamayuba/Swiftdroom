@@ -5,6 +5,10 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getPriceIdForPlan, type PlanId } from "@/lib/plans";
 import { getAppUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
+import {
+  getRefereeDiscountCouponId,
+  refereeGetsDiscount,
+} from "@/lib/referrals";
 
 const checkoutSchema = z.object({
   planId: z.enum(["STARTER", "PRO", "BUSINESS"]),
@@ -17,8 +21,17 @@ export async function POST(request: NextRequest) {
   }
 
   if (!isStripeConfigured()) {
-    // Stripe not yet configured — activate the plan directly so the user
-    // can access the dashboard. Replace with real Stripe when keys are added.
+    const allowBypass =
+      process.env.NODE_ENV !== "production" ||
+      process.env.ALLOW_STRIPE_BYPASS === "true";
+
+    if (!allowBypass) {
+      return NextResponse.json(
+        { error: "Billing is not configured. Contact support." },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const parsed = checkoutSchema.safeParse(body);
     const planId = parsed.success ? parsed.data.planId : "STARTER";
@@ -38,6 +51,14 @@ export async function POST(request: NextRequest) {
         currentPeriodEnd: periodEnd,
       },
     });
+
+    const { recordReferralCommission, markRefereeDiscountUsed } = await import(
+      "@/lib/referrals"
+    );
+    await recordReferralCommission(user.id, planId);
+    if (refereeGetsDiscount(user)) {
+      await markRefereeDiscountUsed(user.id);
+    }
 
     return NextResponse.json({ url: null, activated: true });
   }
@@ -62,7 +83,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
@@ -73,7 +94,16 @@ export async function POST(request: NextRequest) {
       subscription_data: {
         metadata: { userId: user.id, planId },
       },
-    });
+    };
+
+    if (refereeGetsDiscount(user)) {
+      const couponId = getRefereeDiscountCouponId();
+      if (couponId) {
+        sessionParams.discounts = [{ coupon: couponId }];
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

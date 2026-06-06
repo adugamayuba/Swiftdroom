@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/lib/auth";
-import { getUsageSummary, hasActiveSubscription } from "@/lib/subscription";
+import {
+  getUsageSummary,
+  hasActiveSubscription,
+  syncExpiredSubscription,
+} from "@/lib/subscription";
+import { refereeGetsDiscount } from "@/lib/referrals";
 import { getPostAuthRedirect } from "@/lib/user-flow";
 
 export async function GET(request: NextRequest) {
-  const user = await resolveUser(request);
+  let user = await resolveUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  user = await syncExpiredSubscription(user);
 
   return NextResponse.json({
     id: user.id,
@@ -21,5 +28,7 @@ export async function GET(request: NextRequest) {
     hasActiveSubscription: hasActiveSubscription(user),
     redirectTo: getPostAuthRedirect(user),
     usage: getUsageSummary(user),
+    referralDiscountAvailable: refereeGetsDiscount(user),
+    referralCode: user.referralCode,
   });
 }

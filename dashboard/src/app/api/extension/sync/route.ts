@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromApiToken } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { canUseExtension, getUsageSummary } from "@/lib/subscription";
+import {
+  canUseExtension,
+  getUsageSummary,
+  syncExpiredSubscription,
+} from "@/lib/subscription";
 
 export async function GET(request: NextRequest) {
   const token = request.headers.get("x-api-token");
@@ -9,10 +13,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await getUserFromApiToken(token);
+  let user = await getUserFromApiToken(token);
   if (!user) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
+
+  user = await syncExpiredSubscription(user);
 
   if (!canUseExtension(user)) {
     return NextResponse.json(

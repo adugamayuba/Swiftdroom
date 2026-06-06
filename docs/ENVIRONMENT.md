@@ -19,10 +19,11 @@ Copy from [`env/railway.env.example`](../env/railway.env.example).
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | Neon **pooled** connection string |
-| `DIRECT_URL` | Yes | Neon **direct** URL (migrations) |
+| `DATABASE_URL` | Yes | Neon **pooled** connection string (`-pooler` hostname) |
+| `DIRECT_URL` | Yes | Neon **direct** URL (no `-pooler`) — **required**; `prisma migrate deploy` runs automatically on every Railway deploy |
 | `JWT_SECRET` | Yes | Long random string (32+ chars) |
 | `ADMIN_EMAIL` | Yes | Email that receives admin role on register |
+| `ADMIN_PASSWORD` | Yes | Password for `/admin/s` portal |
 | `APP_URL` | Yes | Public site origin: `https://swiftdroom.com` (CORS + Stripe redirects) |
 | `ALLOWED_ORIGINS` | Recommended | `https://swiftdroom.com,https://www.swiftdroom.com` |
 | `NODE_ENV` | Yes | `production` |
@@ -32,6 +33,10 @@ Copy from [`env/railway.env.example`](../env/railway.env.example).
 | `STRIPE_PRICE_STARTER` | Yes* | Stripe price ID |
 | `STRIPE_PRICE_PRO` | Yes* | Stripe price ID |
 | `STRIPE_PRICE_BUSINESS` | Yes* | Stripe price ID |
+| `STRIPE_COUPON_REFEREE_20` | Yes* | 20% off first month for referred users |
+| `CRON_SECRET` | Recommended | Protects `/api/cron/referrals` monthly job |
+| `RESEND_API_KEY` | Optional | Sends referral redemption emails |
+| `EMAIL_FROM` | Optional | From address for transactional email |
 | `FIREBASE_PROJECT_ID` | Optional | Resume file storage |
 | `FIREBASE_CLIENT_EMAIL` | Optional | Service account |
 | `FIREBASE_PRIVATE_KEY` | Optional | Service account key (`\n` for newlines) |
