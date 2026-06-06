@@ -730,7 +730,7 @@ async function fillApplicationMagic() {
   if (!toFill.length) {
     btn.textContent = "Add answers first";
     setTimeout(() => {
-      btn.textContent = "Fill application ✨";
+      btn.textContent = "Fill application";
     }, 2000);
     return;
   }
@@ -757,8 +757,8 @@ async function fillApplicationMagic() {
 
     const saved = await recordApplicationAfterFill(tab.id, filledCount, ordered.length);
     btn.textContent = saved
-      ? "✨ Done — application counted"
-      : "✨ Done — review & submit";
+      ? "Done — application counted"
+      : "Done — review & submit";
   } catch (err) {
     btn.textContent = SwiftdroomFriendlyErrors.message(
       err.message,
@@ -768,7 +768,7 @@ async function fillApplicationMagic() {
   }
 
   setTimeout(() => {
-    btn.textContent = "Fill application ✨";
+    btn.textContent = "Fill application";
     btn.disabled = false;
   }, 4000);
 }

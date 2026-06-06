@@ -298,20 +298,18 @@ input[type="password"] {
 }
 
 .btn-magic {
-  background: linear-gradient(135deg, #031414 0%, #1e3a3a 50%, #4c1d95 100%);
+  background: #0f766e;
   color: white;
-  font-weight: 700;
+  font-weight: 600;
   padding: 12px 16px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 14px rgba(76, 29, 149, 0.35);
+  transition: background 0.15s ease;
 }
 
 .btn-magic:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(76, 29, 149, 0.45);
+  background: #0d9488;
 }
 
 .btn-magic:disabled {
