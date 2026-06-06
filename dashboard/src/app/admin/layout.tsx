@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import AdminShell from "@/components/AdminShell";
+import AdminLayoutGate from "./AdminLayoutGate";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -12,5 +12,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminShell>{children}</AdminShell>;
+  return <AdminLayoutGate>{children}</AdminLayoutGate>;
 }

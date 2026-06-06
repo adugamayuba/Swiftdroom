@@ -18,8 +18,15 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
     }
 
     apiFetch("/api/admin/s/auth/me")
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          router.replace("/admin/s/login");
+          return null;
+        }
+        return r.json();
+      })
       .then((data) => {
+        if (!data) return;
         if (!data.configured) {
           router.replace("/admin/s/login?error=not_configured");
           return;
@@ -29,6 +36,9 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
           return;
         }
         setReady(true);
+      })
+      .catch(() => {
+        router.replace("/admin/s/login");
       });
   }, [router, isLoginPage]);
 
