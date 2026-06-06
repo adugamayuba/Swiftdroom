@@ -5,15 +5,27 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
+import { useRedirectIfAuthenticated } from "@/lib/auth-client";
 import { persistApiToken } from "@/lib/extension-client";
 import { friendlyUserMessage } from "@/lib/user-messages";
 
 export default function LoginPage() {
   const router = useRouter();
+  const checkingSession = useRedirectIfAuthenticated();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (checkingSession) {
+    return (
+      <AuthLayout>
+        <div className="app-card p-8 text-center text-sm text-[var(--brand-header)]/55">
+          Checking your session...
+        </div>
+      </AuthLayout>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

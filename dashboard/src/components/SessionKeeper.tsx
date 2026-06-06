@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { apiFetch, getSessionToken, setSessionToken } from "@/lib/api-client";
+import {
+  apiFetch,
+  clearSessionToken,
+  getSessionToken,
+  setSessionToken,
+} from "@/lib/api-client";
 import { persistApiToken } from "@/lib/extension-client";
 
 /** Keeps long-lived sessions fresh across page loads (Vercel UI + Railway API). */
@@ -11,7 +16,10 @@ export default function SessionKeeper() {
 
     apiFetch("/api/me")
       .then(async (res) => {
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (res.status === 401) clearSessionToken();
+          return;
+        }
         const data = await res.json();
         if (data.sessionToken) setSessionToken(data.sessionToken);
         if (data.apiToken) persistApiToken(data.apiToken);

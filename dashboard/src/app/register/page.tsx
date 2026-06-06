@@ -5,10 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
+import { useRedirectIfAuthenticated } from "@/lib/auth-client";
+import { persistApiToken } from "@/lib/extension-client";
 import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 function RegisterForm() {
   const router = useRouter();
+  const checkingSession = useRedirectIfAuthenticated();
   const searchParams = useSearchParams();
   const refFromUrl = searchParams.get("ref")?.toUpperCase() || "";
   const [name, setName] = useState("");
@@ -17,6 +20,16 @@ function RegisterForm() {
   const [referralCode, setReferralCode] = useState(refFromUrl);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (checkingSession) {
+    return (
+      <AuthLayout>
+        <div className="app-card p-8 text-center text-sm text-[var(--brand-header)]/55">
+          Checking your session...
+        </div>
+      </AuthLayout>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,9 +71,7 @@ function RegisterForm() {
     if (data.sessionToken) {
       setSessionToken(data.sessionToken);
     }
-    if (data.apiToken) {
-      localStorage.setItem("swiftdroom_api_token", data.apiToken);
-    }
+    if (data.apiToken) persistApiToken(data.apiToken);
 
     router.push(data.redirectTo || "/onboarding");
   }

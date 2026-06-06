@@ -33,7 +33,21 @@ function isAllowedOrigin(origin: string, allowed: string[]): boolean {
   return allowed.some((o) => origin === o);
 }
 
+const CANONICAL_HOST = "www.swiftdroom.com";
+
 export function middleware(request: NextRequest) {
+  const host = request.headers.get("host")?.split(":")[0] || "";
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    host === "swiftdroom.com" &&
+    !request.nextUrl.pathname.startsWith("/api/")
+  ) {
+    const url = request.nextUrl.clone();
+    url.hostname = CANONICAL_HOST;
+    return NextResponse.redirect(url, 308);
+  }
+
   // Stripe webhooks need the raw body — skip middleware CORS handling.
   if (request.nextUrl.pathname.startsWith("/api/webhooks/")) {
     return NextResponse.next();
@@ -74,5 +88,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/:path*",
+  matcher: [
+    "/api/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|opengraph-image).*)",
+  ],
 };

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthNavLink } from "@/components/marketing/AuthNavLink";
 
 export function MarketingHeader() {
   return (
@@ -40,12 +41,7 @@ export function MarketingHeader() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-white transition hover:text-white/80"
-          >
-            Log in
-          </Link>
+          <AuthNavLink />
           <Link href="/register" className="al-btn-lavender !px-4 !py-2">
             Start free setup
           </Link>
