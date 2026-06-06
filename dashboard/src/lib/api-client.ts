@@ -48,8 +48,13 @@ export async function apiFetch(
   const isAdminRoute = path.startsWith("/api/admin/s");
   const token = isAdminRoute ? getAdminToken() : getSessionToken();
 
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
+  if (token) {
+    if (isAdminRoute) {
+      headers.set("x-admin-token", token);
+    }
+    if (!headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
 
   if (

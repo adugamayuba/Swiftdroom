@@ -56,7 +56,7 @@ export function middleware(request: NextRequest) {
     );
     response.headers.set(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, x-api-token"
+      "Content-Type, Authorization, x-api-token, x-admin-token"
     );
 
     if (request.method === "OPTIONS") {

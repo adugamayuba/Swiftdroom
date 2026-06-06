@@ -60,6 +60,9 @@ export async function getAdminSession(): Promise<boolean> {
 }
 
 function getAdminTokenFromRequest(request: NextRequest): string | null {
+  const headerToken = request.headers.get("x-admin-token")?.trim();
+  if (headerToken) return headerToken;
+
   const auth = request.headers.get("authorization");
   if (auth?.startsWith("Bearer ")) {
     const token = auth.slice(7).trim();

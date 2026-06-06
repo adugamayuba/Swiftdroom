@@ -12,40 +12,56 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
   const isLoginPage = pathname === "/admin/s/login";
 
   useEffect(() => {
+    let cancelled = false;
+
     if (isLoginPage) {
       setReady(true);
       return;
     }
 
-    if (!getAdminToken()) {
+    // Leaving login: reset so overview cannot flash before auth completes.
+    setReady(false);
+
+    const token = getAdminToken();
+    if (!token) {
       router.replace("/admin/s/login");
       return;
     }
 
     apiFetch("/api/admin/s/auth/me")
       .then(async (r) => {
+        if (cancelled) return null;
         if (!r.ok) {
+          clearAdminToken();
           router.replace("/admin/s/login");
           return null;
         }
         return r.json();
       })
       .then((data) => {
-        if (!data) return;
+        if (cancelled || !data) return;
         if (!data.configured) {
+          clearAdminToken();
           router.replace("/admin/s/login?error=not_configured");
           return;
         }
         if (!data.authenticated) {
+          clearAdminToken();
           router.replace("/admin/s/login");
           return;
         }
         setReady(true);
       })
       .catch(() => {
+        if (cancelled) return;
+        clearAdminToken();
         router.replace("/admin/s/login");
       });
-  }, [router, isLoginPage]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, isLoginPage, router]);
 
   async function handleLogout() {
     await apiFetch("/api/admin/s/auth/logout", { method: "POST" });

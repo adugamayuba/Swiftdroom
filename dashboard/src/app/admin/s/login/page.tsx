@@ -22,7 +22,16 @@ export default function AdminSLoginPage() {
       method: "POST",
       body: JSON.stringify({ password }),
     });
-    const data = await res.json();
+
+    let data: { error?: string; adminToken?: string } = {};
+    try {
+      data = await res.json();
+    } catch {
+      setError("Could not reach the API. Check API_URL on Vercel.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(false);
 
     if (!res.ok) {
@@ -30,8 +39,25 @@ export default function AdminSLoginPage() {
       return;
     }
 
-    if (data.adminToken) {
-      setAdminToken(data.adminToken);
+    if (!data.adminToken) {
+      setError(
+        "Login succeeded but no session token was returned. Redeploy the Railway API service, then try again."
+      );
+      return;
+    }
+
+    setAdminToken(data.adminToken);
+
+    const meRes = await apiFetch("/api/admin/s/auth/me");
+    if (!meRes.ok) {
+      setError("Session could not be verified. Check API_URL and redeploy Railway.");
+      return;
+    }
+
+    const me = await meRes.json();
+    if (!me.authenticated) {
+      setError("Session verification failed. Try again or redeploy Railway.");
+      return;
     }
 
     router.replace("/admin/s");
