@@ -75,7 +75,17 @@ export function getPriceIdForPlan(planId: PlanId): string {
     PRO: process.env.STRIPE_PRICE_PRO,
     BUSINESS: process.env.STRIPE_PRICE_BUSINESS,
   };
-  const priceId = map[planId];
+  const priceId = map[planId]?.trim();
   if (!priceId) throw new Error(`Missing Stripe price ID for plan ${planId}`);
+  if (priceId.startsWith("prod_")) {
+    throw new Error(
+      `STRIPE_PRICE_${planId} is a product ID (prod_...). Use the price ID (price_...) from Stripe instead.`
+    );
+  }
+  if (!priceId.startsWith("price_")) {
+    throw new Error(
+      `STRIPE_PRICE_${planId} must start with price_. Got: ${priceId.slice(0, 12)}...`
+    );
+  }
   return priceId;
 }

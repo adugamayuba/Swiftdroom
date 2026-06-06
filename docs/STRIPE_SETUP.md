@@ -31,7 +31,15 @@ Follow these steps to turn billing back on in production.
 | **Description** | `500 job applications per month with everything in Pro, plus bulk profile management, usage analytics, and priority support. For recruiters, coaches, and power users.` |
 | **Price** | $39.99 / month, recurring |
 
-3. Copy each **Price ID** (starts with `price_`) into Railway — **not** the product name:
+3. Copy each **Price ID** (starts with `price_`) into Railway.
+
+**Important:** Use the **Price ID**, not the Product ID.
+
+| Wrong | Right |
+|-------|-------|
+| `prod_UeQwYUhAezd1dn` (product) | `price_1ABC123xyz` (price) |
+
+In Stripe: open your product → under **Pricing**, click the price → copy the ID from the price row (starts with `price_`).
 
 ```env
 STRIPE_PRICE_STARTER=price_...
