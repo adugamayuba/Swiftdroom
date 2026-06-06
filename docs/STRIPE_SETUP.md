@@ -135,7 +135,18 @@ Swiftdroom’s handler reads full objects from `event.data.object` (subscription
    - `customer.subscription.deleted`
    - `invoice.paid`
    - `invoice.payment_failed`
-5. Copy the **Signing secret** from **that one destination** → `STRIPE_WEBHOOK_SECRET` on Railway.
+5. Copy the **Signing secret** from **that one destination** → `STRIPE_WEBHOOK_SECRET` on Railway (no quotes, no extra spaces).
+
+### Webhook signature errors
+
+If Railway logs show `Webhook signature verification failed`:
+
+1. Stripe → **Developers → Webhooks** → open **Swiftdroom API ENDPOINT** (Snapshot)
+2. Click **Reveal** under **Signing secret**
+3. Replace `STRIPE_WEBHOOK_SECRET` on Railway with that exact value
+4. Redeploy — the secret from a **deleted** or **Thin** destination will not work
+
+Payments still succeed in Stripe; the success page also calls `/api/stripe/verify-session` as a backup to activate accounts when webhooks fail.
 
 ### If you already created two destinations
 
