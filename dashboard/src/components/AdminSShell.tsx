@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, clearAdminToken, getAdminToken } from "@/lib/api-client";
 
 export default function AdminSShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -14,6 +14,11 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (isLoginPage) {
       setReady(true);
+      return;
+    }
+
+    if (!getAdminToken()) {
+      router.replace("/admin/s/login");
       return;
     }
 
@@ -44,6 +49,7 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
 
   async function handleLogout() {
     await apiFetch("/api/admin/s/auth/logout", { method: "POST" });
+    clearAdminToken();
     router.replace("/admin/s/login");
   }
 

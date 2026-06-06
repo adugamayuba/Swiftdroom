@@ -59,10 +59,19 @@ export async function getAdminSession(): Promise<boolean> {
   return verifyAdminSessionFromToken(token);
 }
 
+function getAdminTokenFromRequest(request: NextRequest): string | null {
+  const auth = request.headers.get("authorization");
+  if (auth?.startsWith("Bearer ")) {
+    const token = auth.slice(7).trim();
+    if (token) return token;
+  }
+  return request.cookies.get(ADMIN_COOKIE)?.value ?? null;
+}
+
 export async function requireAdminSession(
   request: NextRequest
 ): Promise<boolean> {
-  const token = request.cookies.get(ADMIN_COOKIE)?.value;
+  const token = getAdminTokenFromRequest(request);
   if (!token) return false;
   return verifyAdminSessionFromToken(token);
 }

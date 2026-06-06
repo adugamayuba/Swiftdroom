@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, setAdminToken } from "@/lib/api-client";
 
 export default function AdminSLoginPage() {
   const router = useRouter();
@@ -28,6 +28,10 @@ export default function AdminSLoginPage() {
     if (!res.ok) {
       setError(data.error || "Login failed");
       return;
+    }
+
+    if (data.adminToken) {
+      setAdminToken(data.adminToken);
     }
 
     router.replace("/admin/s");

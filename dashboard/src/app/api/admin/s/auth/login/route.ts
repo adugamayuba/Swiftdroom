@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
 
-    await createAdminSession();
-    return NextResponse.json({ ok: true });
+    const adminToken = await createAdminSession();
+    return NextResponse.json({ ok: true, adminToken });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.message }, { status: 400 });

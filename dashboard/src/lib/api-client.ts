@@ -1,4 +1,5 @@
 const SESSION_KEY = "swiftdroom_session_token";
+const ADMIN_SESSION_KEY = "swiftdroom_admin_token";
 
 /** Railway API base URL. Empty = same origin (local dev or monolith deploy). */
 export function getApiBaseUrl(): string {
@@ -26,15 +27,29 @@ export function clearSessionToken() {
   localStorage.removeItem(SESSION_KEY);
 }
 
+export function getAdminToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ADMIN_SESSION_KEY);
+}
+
+export function setAdminToken(token: string) {
+  localStorage.setItem(ADMIN_SESSION_KEY, token);
+}
+
+export function clearAdminToken() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
 export async function apiFetch(
   path: string,
   options: RequestInit = {}
 ): Promise<Response> {
   const headers = new Headers(options.headers);
-  const session = getSessionToken();
+  const isAdminRoute = path.startsWith("/api/admin/s");
+  const token = isAdminRoute ? getAdminToken() : getSessionToken();
 
-  if (session && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${session}`);
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   if (
