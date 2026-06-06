@@ -9,22 +9,40 @@ import {
   handleSubscriptionDeleted,
   updateUserSubscription,
 } from "@/lib/stripe-subscription";
+import { getStripeWebhookSecrets } from "@/lib/stripe-webhook";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   const stripe = getStripe();
-  const body = await request.text();
   const signature = request.headers.get("stripe-signature");
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  const secrets = getStripeWebhookSecrets();
 
-  if (!signature || !webhookSecret) {
+  if (!signature || secrets.length === 0) {
+    console.error("Webhook missing signature or STRIPE_WEBHOOK_SECRET");
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+  const rawBody = Buffer.from(await request.arrayBuffer());
+
+  let event: Stripe.Event | null = null;
+  let lastError: unknown;
+
+  for (const secret of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, signature, secret, 300);
+      break;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (!event) {
+    console.error("Webhook signature verification failed:", lastError, {
+      bodyBytes: rawBody.length,
+      secretCount: secrets.length,
+    });
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 

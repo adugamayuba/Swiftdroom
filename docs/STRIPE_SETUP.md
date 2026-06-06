@@ -135,7 +135,15 @@ Swiftdroom’s handler reads full objects from `event.data.object` (subscription
    - `customer.subscription.deleted`
    - `invoice.paid`
    - `invoice.payment_failed`
-5. Copy the **Signing secret** from **that one destination** → `STRIPE_WEBHOOK_SECRET` on Railway (no quotes, no extra spaces).
+5. Copy the **Signing secret** from **that one destination** → `STRIPE_WEBHOOK_SECRET` on Railway.
+
+Paste as raw text only — no quotes:
+
+```env
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxx
+```
+
+Not `"whsec_xxxxxxxx"` and not with line breaks.
 
 ### Webhook signature errors
 

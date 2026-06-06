@@ -34,6 +34,11 @@ function isAllowedOrigin(origin: string, allowed: string[]): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  // Stripe webhooks need the raw body — skip middleware CORS handling.
+  if (request.nextUrl.pathname.startsWith("/api/webhooks/")) {
+    return NextResponse.next();
+  }
+
   if (request.nextUrl.pathname.startsWith("/api/")) {
     const origin = request.headers.get("origin") || "";
     const allowedOrigins = getAllowedOrigins();
