@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { apiFetch } from "@/lib/api-client";
+import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 export default function SubscribePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState<PlanId | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
   const [userState, setUserState] = useState<{
     onboardingComplete: boolean;
     hasActiveSubscription: boolean;
@@ -41,19 +43,53 @@ export default function SubscribePageContent() {
 
   async function handleSubscribe(planId: PlanId) {
     setLoading(planId);
-    const res = await apiFetch("/api/stripe/checkout", {
-      method: "POST",
-      body: JSON.stringify({ planId }),
-    });
-    const data = await res.json();
-    setLoading(null);
+    setCheckoutError("");
 
-    if (data.activated) {
-      router.push("/dashboard");
-      return;
-    }
-    if (data.url) {
-      window.location.href = data.url;
+    try {
+      const res = await apiFetch("/api/stripe/checkout", {
+        method: "POST",
+        body: JSON.stringify({ planId }),
+      });
+
+      let data: { error?: string; url?: string | null; activated?: boolean } = {};
+      try {
+        data = await res.json();
+      } catch {
+        setCheckoutError(USER_MESSAGES.network);
+        return;
+      }
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+        setCheckoutError(
+          friendlyUserMessage(
+            data.error,
+            "We couldn't start checkout. Please try again in a moment."
+          )
+        );
+        return;
+      }
+
+      if (data.activated) {
+        router.push("/dashboard");
+        return;
+      }
+
+      if (data.url) {
+        window.location.assign(data.url);
+        return;
+      }
+
+      setCheckoutError(
+        "We couldn't open the payment page. Please try again or contact support@swiftdroom.com."
+      );
+    } catch {
+      setCheckoutError(USER_MESSAGES.network);
+    } finally {
+      setLoading(null);
     }
   }
 
@@ -88,6 +124,12 @@ export default function SubscribePageContent() {
         {canceled && (
           <div className="mt-6 rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-600">
             Checkout was canceled. Select a plan when you are ready.
+          </div>
+        )}
+
+        {checkoutError && (
+          <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {checkoutError}
           </div>
         )}
 

@@ -71,6 +71,22 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { planId } = checkoutSchema.parse(body);
+
+    let priceId: string;
+    try {
+      priceId = getPriceIdForPlan(planId as PlanId);
+    } catch {
+      console.error(`Missing Stripe price ID for plan ${planId}`);
+      return NextResponse.json(
+        {
+          error: friendlyUserMessage(
+            "Billing is not configured. Contact support."
+          ),
+        },
+        { status: 503 }
+      );
+    }
+
     const stripe = getStripe();
     const appUrl = getAppUrl();
 
@@ -92,7 +108,7 @@ export async function POST(request: NextRequest) {
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [{ price: getPriceIdForPlan(planId as PlanId), quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/subscribe?canceled=true`,
       metadata: { userId: user.id, planId },
@@ -108,7 +124,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionParams);
+    } catch (stripeError) {
+      const hasCoupon = Boolean(sessionParams.discounts?.length);
+      if (hasCoupon) {
+        console.warn("Checkout with referral coupon failed, retrying without:", stripeError);
+        delete sessionParams.discounts;
+        session = await stripe.checkout.sessions.create(sessionParams);
+      } else {
+        throw stripeError;
+      }
+    }
+
+    if (!session.url) {
+      console.error("Stripe checkout session missing URL:", session.id);
+      return NextResponse.json(
+        { error: friendlyUserMessage("Checkout failed") },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
