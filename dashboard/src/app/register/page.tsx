@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
+import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 function RegisterForm() {
   const router = useRouter();
@@ -42,7 +43,7 @@ function RegisterForm() {
     try {
       data = await res.json();
     } catch {
-      setError(`Server error (${res.status}). Try again or check /api/health.`);
+      setError(USER_MESSAGES.network);
       setLoading(false);
       return;
     }
@@ -50,7 +51,7 @@ function RegisterForm() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Registration failed");
+      setError(friendlyUserMessage(data.error, "We couldn't create your account. Please try again."));
       return;
     }
 

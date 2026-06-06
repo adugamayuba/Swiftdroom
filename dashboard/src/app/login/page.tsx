@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
+import { friendlyUserMessage } from "@/lib/user-messages";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Login failed");
+      setError(friendlyUserMessage(data.error, "We couldn't sign you in. Please try again."));
       return;
     }
 

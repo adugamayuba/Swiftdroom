@@ -5,6 +5,7 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getPriceIdForPlan, type PlanId } from "@/lib/plans";
 import { getAppUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
+import { friendlyUserMessage, zodUserMessage } from "@/lib/user-messages";
 import {
   getRefereeDiscountCouponId,
   refereeGetsDiscount,
@@ -27,7 +28,11 @@ export async function POST(request: NextRequest) {
 
     if (!allowBypass) {
       return NextResponse.json(
-        { error: "Billing is not configured. Contact support." },
+        {
+          error: friendlyUserMessage(
+            "Billing is not configured. Contact support."
+          ),
+        },
         { status: 503 }
       );
     }
@@ -108,9 +113,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
     }
     console.error("Checkout error:", error);
-    return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Checkout failed") },
+      { status: 500 }
+    );
   }
 }

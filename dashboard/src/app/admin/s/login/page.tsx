@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch, setAdminToken } from "@/lib/api-client";
+import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 export default function AdminSLoginPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function AdminSLoginPage() {
     try {
       data = await res.json();
     } catch {
-      setError("Could not reach the API. Check API_URL on Vercel.");
+      setError(USER_MESSAGES.network);
       setLoading(false);
       return;
     }
@@ -35,14 +36,12 @@ export default function AdminSLoginPage() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Login failed");
+      setError(friendlyUserMessage(data.error, "That password isn't correct."));
       return;
     }
 
     if (!data.adminToken) {
-      setError(
-        "Login succeeded but no session token was returned. Redeploy the Railway API service, then try again."
-      );
+      setError(USER_MESSAGES.contactSupport);
       return;
     }
 
@@ -50,13 +49,13 @@ export default function AdminSLoginPage() {
 
     const meRes = await apiFetch("/api/admin/s/auth/me");
     if (!meRes.ok) {
-      setError("Session could not be verified. Check API_URL and redeploy Railway.");
+      setError(USER_MESSAGES.contactSupport);
       return;
     }
 
     const me = await meRes.json();
     if (!me.authenticated) {
-      setError("Session verification failed. Try again or redeploy Railway.");
+      setError("We couldn't sign you in. Please try again.");
       return;
     }
 
@@ -71,12 +70,12 @@ export default function AdminSLoginPage() {
       >
         <h1 className="text-xl font-semibold text-neutral-900">Admin access</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Enter the admin password configured on Railway.
+          Enter your admin password to continue.
         </p>
 
         {configError && (
           <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            ADMIN_PASSWORD is not set on the server.
+            Admin access isn't set up yet. Contact your team lead.
           </div>
         )}
 

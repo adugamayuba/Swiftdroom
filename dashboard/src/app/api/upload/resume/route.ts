@@ -5,31 +5,33 @@ import { parseName } from "@/lib/utils";
 import { uploadResume, isFirebaseConfigured } from "@/lib/firebase";
 import { extractTextFromBuffer } from "@/lib/pdf-extract";
 import { extractContactFromResume } from "@/lib/resume-parser";
+import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 export async function POST(request: NextRequest) {
   const user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Unauthorized") },
+      { status: 401 }
+    );
   }
 
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return NextResponse.json(
+        { error: friendlyUserMessage("No file provided") },
+        { status: 400 }
+      );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const text = await extractTextFromBuffer(buffer, file.name);
 
     if (!text.trim()) {
-      const hasOpenAi = Boolean(process.env.OPENAI_API_KEY);
       return NextResponse.json(
-        {
-          error: hasOpenAi
-            ? "Could not extract text from this PDF even with AI assistance. This may be a fully scanned/image PDF. Try exporting your resume as a .txt or .docx-converted-to-txt."
-            : "Could not extract text from this PDF. This looks like a scanned or image-only PDF. Try exporting from Google Docs, Word, or a resume builder as a standard PDF. Or add your OPENAI_API_KEY on Railway to enable AI-assisted extraction.",
-        },
+        { error: USER_MESSAGES.resumeScanned },
         { status: 422 }
       );
     }
@@ -92,6 +94,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Upload failed") },
+      { status: 500 }
+    );
   }
 }

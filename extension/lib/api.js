@@ -27,7 +27,9 @@ const SwiftdroomAPI = (() => {
     const res = await fetch(`${apiUrl}${path}`, { ...options, headers });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(data.error || `Request failed (${res.status})`);
+      const err = new Error(
+        SwiftdroomFriendlyErrors.message(data.error, data.code)
+      );
       err.code = data.code;
       err.onboardingComplete = data.onboardingComplete;
       err.subscriptionStatus = data.subscriptionStatus;

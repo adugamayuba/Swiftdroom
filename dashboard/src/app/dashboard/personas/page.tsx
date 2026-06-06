@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Star, Pencil, Upload, X } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { friendlyUserMessage } from "@/lib/user-messages";
 import {
   DashboardCard,
   DashboardEmpty,
@@ -109,7 +110,9 @@ export default function PersonasPage() {
     setUploadingId(null);
 
     if (!res.ok) {
-      alert(data.error || "Upload failed");
+      alert(
+        friendlyUserMessage(data.error, "We couldn't upload your resume. Please try again.")
+      );
       return;
     }
 

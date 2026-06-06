@@ -6,16 +6,23 @@ import {
   getUsageSummary,
   syncExpiredSubscription,
 } from "@/lib/subscription";
+import { friendlyUserMessage } from "@/lib/user-messages";
 
 export async function GET(request: NextRequest) {
   const token = request.headers.get("x-api-token");
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Unauthorized") },
+      { status: 401 }
+    );
   }
 
   let user = await getUserFromApiToken(token);
   if (!user) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Invalid token") },
+      { status: 401 }
+    );
   }
 
   user = await syncExpiredSubscription(user);
@@ -23,7 +30,7 @@ export async function GET(request: NextRequest) {
   if (!canUseExtension(user)) {
     return NextResponse.json(
       {
-        error: "Active subscription required",
+        error: friendlyUserMessage("Active subscription required"),
         code: "SUBSCRIPTION_REQUIRED",
         onboardingComplete: user.onboardingComplete,
         subscriptionStatus: user.subscriptionStatus,

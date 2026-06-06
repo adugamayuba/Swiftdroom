@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Upload, CheckCircle, ArrowRight, AlertCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { friendlyUserMessage } from "@/lib/user-messages";
 
 type ExtractedContact = {
   fullName?: string;
@@ -72,7 +73,11 @@ export default function OnboardingPage() {
     try {
       const res = await apiFetch("/api/upload/resume", { method: "POST", body: formData });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      if (!res.ok) {
+        throw new Error(
+          friendlyUserMessage(data.error, "We couldn't upload your resume. Please try again.")
+        );
+      }
 
       const extracted: ExtractedContact = data.extracted || {};
       const keys = Object.entries(extracted)
@@ -96,7 +101,11 @@ export default function OnboardingPage() {
 
       setStep("review");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "We couldn't upload your resume. Please try again."
+      );
     } finally {
       setUploading(false);
     }
@@ -121,7 +130,12 @@ export default function OnboardingPage() {
     const data = await res.json();
     setSaving(false);
 
-    if (!res.ok) { setError(data.error || "Failed to save profile"); return; }
+    if (!res.ok) {
+      setError(
+        friendlyUserMessage(data.error, "We couldn't save your profile. Please try again.")
+      );
+      return;
+    }
     if (data.onboardingComplete) {
       router.push("/subscribe");
     } else {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, verifyPassword } from "@/lib/auth";
+import { friendlyUserMessage, zodUserMessage } from "@/lib/user-messages";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -33,9 +34,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
     }
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Login failed") },
+      { status: 500 }
+    );
   }
 }
 

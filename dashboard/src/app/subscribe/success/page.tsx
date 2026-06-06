@@ -43,7 +43,7 @@ export default function SubscribeSuccessPage() {
               Confirming your payment...
             </h1>
             <p className="mt-4 text-neutral-600">
-              Stripe is processing your subscription. This usually takes a few seconds.
+              We're activating your subscription. This usually takes a few seconds.
             </p>
             <div className="mx-auto mt-6 h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" />
           </>
@@ -64,8 +64,9 @@ export default function SubscribeSuccessPage() {
               Payment received — almost there
             </h1>
             <p className="mt-4 text-neutral-600">
-              Your payment succeeded but activation is still syncing. Refresh in a minute
-              or contact support if access does not appear.
+              Your payment went through. We're still activating your account — give it a
+              minute, then refresh. If you still can't access your dashboard, email
+              support@swiftdroom.com.
             </p>
             <Link
               href="/dashboard"

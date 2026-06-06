@@ -565,10 +565,11 @@ async function generateOneAnswer(fieldId, tabId, btn) {
     scheduleRecordApplicationCheck();
   } catch (err) {
     if (textarea) {
-      textarea.value =
-        err.code === "QUOTA_EXCEEDED"
-          ? "Monthly limit reached — upgrade in dashboard."
-          : `Error: ${err.message}`;
+      textarea.value = SwiftdroomFriendlyErrors.message(
+        err.message,
+        err.code,
+        "We couldn't generate an answer. Please try again."
+      );
       textarea.classList.remove("ghostwriter-loading");
     }
   }
@@ -640,7 +641,11 @@ async function fillApplicationMagic() {
     btn.textContent = "✨ Done — review & submit";
     await maybeRecordApplication();
   } catch (err) {
-    btn.textContent = `Error: ${err.message}`;
+    btn.textContent = SwiftdroomFriendlyErrors.message(
+      err.message,
+      err.code,
+      "Something went wrong. Please try again."
+    );
   }
 
   setTimeout(() => {

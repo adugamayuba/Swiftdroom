@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { createSession, hashPassword, getUserFromApiToken } from "@/lib/auth";
+import { friendlyUserMessage, USER_MESSAGES, zodUserMessage } from "@/lib/user-messages";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -15,22 +16,19 @@ function registrationError(error: unknown) {
   console.error("Registration error:", error);
 
   if (error instanceof z.ZodError) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
       return NextResponse.json(
-        { error: "Email already registered" },
+        { error: friendlyUserMessage("Email already registered") },
         { status: 400 }
       );
     }
     if (error.code === "P2021") {
       return NextResponse.json(
-        {
-          error:
-            "Database tables missing. Run migrations or redeploy the service.",
-        },
+        { error: USER_MESSAGES.contactSupport },
         { status: 503 }
       );
     }
@@ -38,15 +36,15 @@ function registrationError(error: unknown) {
 
   if (error instanceof Prisma.PrismaClientInitializationError) {
     return NextResponse.json(
-      {
-        error:
-          "Database connection failed. Use Neon pooled URL for DATABASE_URL and direct URL for DIRECT_URL. Redeploy after updating variables.",
-      },
+      { error: USER_MESSAGES.contactSupport },
       { status: 503 }
     );
   }
 
-  return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+  return NextResponse.json(
+    { error: friendlyUserMessage("Registration failed") },
+    { status: 500 }
+  );
 }
 
 export async function POST(request: NextRequest) {

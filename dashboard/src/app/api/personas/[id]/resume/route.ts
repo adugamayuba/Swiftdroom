@@ -3,6 +3,7 @@ import { resolveUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadResume, isFirebaseConfigured } from "@/lib/firebase";
 import { extractTextFromBuffer } from "@/lib/pdf-extract";
+import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 export async function POST(
   request: NextRequest,
@@ -10,20 +11,29 @@ export async function POST(
 ) {
   const user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Unauthorized") },
+      { status: 401 }
+    );
   }
 
   const { id } = await params;
   const persona = await db.persona.findFirst({ where: { id, userId: user.id } });
   if (!persona) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Not found") },
+      { status: 404 }
+    );
   }
 
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return NextResponse.json(
+        { error: friendlyUserMessage("No file provided") },
+        { status: 400 }
+      );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -31,7 +41,7 @@ export async function POST(
 
     if (!text.trim()) {
       return NextResponse.json(
-        { error: "Could not extract text from this file. Try a text-based PDF or paste resume text." },
+        { error: USER_MESSAGES.resumeScanned },
         { status: 422 }
       );
     }
@@ -58,6 +68,9 @@ export async function POST(
     return NextResponse.json({ persona: updated });
   } catch (error) {
     console.error("Persona resume upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: friendlyUserMessage("Upload failed") },
+      { status: 500 }
+    );
   }
 }
