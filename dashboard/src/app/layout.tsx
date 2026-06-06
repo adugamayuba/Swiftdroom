@@ -9,6 +9,7 @@ import {
   SITE_NAME,
 } from "@/lib/seo";
 import SessionKeeper from "@/components/SessionKeeper";
+import { getApiUrlEnv } from "@/lib/env";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,8 +70,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const apiUrl = getApiUrlEnv();
+
   return (
     <html lang="en">
+      <head>
+        {apiUrl ? <meta name="swiftdroom-api-url" content={apiUrl} /> : null}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

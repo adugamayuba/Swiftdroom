@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { Check, ExternalLink, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { PLANS } from "@/lib/plans";
-import { CHROME_WEB_STORE_URL } from "@/lib/chrome-store";
+import { getChromeWebStoreUrl } from "@/lib/chrome-store";
+import {
+  persistApiToken,
+  useExtensionConnected,
+} from "@/lib/extension-client";
 import {
   DashboardCard,
   DashboardPageHeader,
@@ -16,7 +20,8 @@ export default function SettingsPage() {
   const [billingLoading, setBillingLoading] = useState(false);
   const [savingNotifications, setSavingNotifications] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
-  const [extensionConnected, setExtensionConnected] = useState(false);
+  const extensionConnected = useExtensionConnected();
+  const chromeStoreUrl = getChromeWebStoreUrl();
   const [usage, setUsage] = useState({
     used: 0,
     limit: 0,
@@ -35,7 +40,7 @@ export default function SettingsPage() {
       async ([meRes, settingsRes]) => {
         if (meRes.ok) {
           const data = await meRes.json();
-          if (data.apiToken) localStorage.setItem("swiftdroom_api_token", data.apiToken);
+          if (data.apiToken) persistApiToken(data.apiToken);
           if (data.usage) setUsage(data.usage);
         }
         if (settingsRes.ok) {
@@ -46,17 +51,6 @@ export default function SettingsPage() {
       }
     );
 
-    const handler = () => setExtensionConnected(true);
-    window.addEventListener("swiftdroom:connected", handler);
-
-    try {
-      // @ts-expect-error chrome injected by extension
-      chrome.runtime?.sendMessage?.({ type: "PING" }, (res: unknown) => {
-        if (res) setExtensionConnected(true);
-      });
-    } catch {}
-
-    return () => window.removeEventListener("swiftdroom:connected", handler);
   }, []);
 
   async function openBillingPortal() {
@@ -214,7 +208,7 @@ export default function SettingsPage() {
               automatically. No API keys needed.
             </p>
             <a
-              href={CHROME_WEB_STORE_URL}
+              href={chromeStoreUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="app-btn-primary mt-4"
@@ -223,7 +217,7 @@ export default function SettingsPage() {
               <ExternalLink className="h-4 w-4" />
             </a>
             <p className="mt-3 text-xs text-[var(--brand-header)]/45">
-              After installing, come back to this page and it will auto-connect.
+              After installing, refresh this page — the extension connects automatically.
             </p>
           </>
         )}

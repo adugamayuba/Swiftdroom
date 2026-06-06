@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Circle, ExternalLink } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
-import { CHROME_WEB_STORE_URL } from "@/lib/chrome-store";
+import { getChromeWebStoreUrl } from "@/lib/chrome-store";
+import {
+  persistApiToken,
+  useExtensionConnected,
+} from "@/lib/extension-client";
 import { DashboardCard, DashboardSpinner } from "@/components/dashboard/ui";
 
 interface DashboardData {
@@ -19,7 +23,8 @@ interface DashboardData {
 
 export default function DashboardOverview() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [extensionConnected, setExtensionConnected] = useState(false);
+  const extensionConnected = useExtensionConnected();
+  const chromeStoreUrl = getChromeWebStoreUrl();
 
   useEffect(() => {
     async function load() {
@@ -35,6 +40,8 @@ export default function DashboardOverview() {
       const personas = personasRes.ok ? (await personasRes.json()).personas : [];
       const apps = appsRes.ok ? (await appsRes.json()).applications : [];
 
+      if (me.apiToken) persistApiToken(me.apiToken);
+
       setData({
         name: me.name,
         plan: me.plan,
@@ -46,10 +53,6 @@ export default function DashboardOverview() {
       });
     }
     load();
-
-    const handler = () => setExtensionConnected(true);
-    window.addEventListener("swiftdroom:connected", handler);
-    return () => window.removeEventListener("swiftdroom:connected", handler);
   }, []);
 
   if (!data) return <DashboardSpinner />;
@@ -73,7 +76,7 @@ export default function DashboardOverview() {
       done: extensionConnected,
       label: "Install the Chrome extension",
       sub: "Add it from the Chrome Web Store — it connects automatically.",
-      href: CHROME_WEB_STORE_URL,
+      href: chromeStoreUrl,
       external: true,
       cta: "Add to Chrome",
     },

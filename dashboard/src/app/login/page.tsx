@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
+import { persistApiToken } from "@/lib/extension-client";
 import { friendlyUserMessage } from "@/lib/user-messages";
 
 export default function LoginPage() {
@@ -36,9 +37,7 @@ export default function LoginPage() {
     if (data.sessionToken) {
       setSessionToken(data.sessionToken);
     }
-    if (data.apiToken) {
-      localStorage.setItem("swiftdroom_api_token", data.apiToken);
-    }
+    if (data.apiToken) persistApiToken(data.apiToken);
 
     router.push(data.redirectTo || "/dashboard");
   }

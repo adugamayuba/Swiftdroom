@@ -6,32 +6,50 @@
  */
 
 (function () {
-  const apiToken = localStorage.getItem("swiftdroom_api_token");
-  if (!apiToken) return;
+  let connected = false;
 
-  const metaEl = document.querySelector('meta[name="swiftdroom-api-url"]');
-  const fromMeta = metaEl?.getAttribute("content")?.trim();
-  let apiUrl = fromMeta ? fromMeta.replace(/\/$/, "") : "";
+  function resolveApiUrl() {
+    const metaEl = document.querySelector('meta[name="swiftdroom-api-url"]');
+    const fromMeta = metaEl?.getAttribute("content")?.trim();
+    if (fromMeta) return fromMeta.replace(/\/$/, "");
 
-  if (!apiUrl) {
     const { hostname, protocol, host } = window.location;
     if (hostname === "localhost" || hostname === "127.0.0.1") {
-      apiUrl = `${protocol}//${host}`;
-    } else if (hostname === "swiftdroom.com" || hostname === "www.swiftdroom.com") {
-      apiUrl = "https://swiftdroom.com";
-    } else {
-      apiUrl = "https://swiftdroom-production.up.railway.app";
+      return `${protocol}//${host}`;
     }
+    if (hostname === "swiftdroom.com" || hostname === "www.swiftdroom.com") {
+      return "https://swiftdroom-production.up.railway.app";
+    }
+    return `${protocol}//${host}`;
   }
 
-  chrome.runtime.sendMessage(
-    { type: "AUTO_CONNECT", apiToken, apiUrl },
-    () => {
-      // Dispatch a custom event so the dashboard page knows the extension
-      // is installed and connected (used to show "Connected" badge).
-      window.dispatchEvent(
-        new CustomEvent("swiftdroom:connected", { detail: { apiUrl } })
-      );
+  function tryConnect() {
+    if (connected) return true;
+
+    const apiToken = localStorage.getItem("swiftdroom_api_token");
+    if (!apiToken) return false;
+
+    const apiUrl = resolveApiUrl();
+    chrome.runtime.sendMessage(
+      { type: "AUTO_CONNECT", apiToken, apiUrl },
+      () => {
+        if (chrome.runtime.lastError) return;
+        connected = true;
+        window.dispatchEvent(
+          new CustomEvent("swiftdroom:connected", { detail: { apiUrl } })
+        );
+      }
+    );
+    return true;
+  }
+
+  tryConnect();
+  window.addEventListener("swiftdroom:request-connect", tryConnect);
+
+  let attempts = 0;
+  const poll = window.setInterval(() => {
+    if (connected || tryConnect() || ++attempts >= 20) {
+      window.clearInterval(poll);
     }
-  );
+  }, 1000);
 })();

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { apiFetch, clearSessionToken, setSessionToken } from "@/lib/api-client";
+import { persistApiToken } from "@/lib/extension-client";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -33,6 +34,7 @@ interface MeResponse {
   name?: string | null;
   usage?: { used: number; limit: number };
   sessionToken?: string;
+  apiToken?: string;
 }
 
 function navActive(pathname: string, href: string, exact?: boolean) {
@@ -69,9 +71,8 @@ export default function DashboardShell({
           router.replace("/subscribe");
           return;
         }
-        if (data.sessionToken) {
-          setSessionToken(data.sessionToken);
-        }
+        if (data.sessionToken) setSessionToken(data.sessionToken);
+        if (data.apiToken) persistApiToken(data.apiToken);
         setUser(data);
         setChecking(false);
       });

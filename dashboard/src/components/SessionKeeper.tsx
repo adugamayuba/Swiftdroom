@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { apiFetch, getSessionToken, setSessionToken } from "@/lib/api-client";
+import { persistApiToken } from "@/lib/extension-client";
 
 /** Keeps long-lived sessions fresh across page loads (Vercel UI + Railway API). */
 export default function SessionKeeper() {
@@ -12,9 +13,8 @@ export default function SessionKeeper() {
       .then(async (res) => {
         if (!res.ok) return;
         const data = await res.json();
-        if (data.sessionToken) {
-          setSessionToken(data.sessionToken);
-        }
+        if (data.sessionToken) setSessionToken(data.sessionToken);
+        if (data.apiToken) persistApiToken(data.apiToken);
       })
       .catch(() => {});
   }, []);
