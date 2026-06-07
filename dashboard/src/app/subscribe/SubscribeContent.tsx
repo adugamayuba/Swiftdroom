@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { apiFetch } from "@/lib/api-client";
+import { trackEvent } from "@/lib/analytics";
 import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 export default function SubscribePageContent() {
@@ -44,6 +45,7 @@ export default function SubscribePageContent() {
   async function handleSubscribe(planId: PlanId) {
     setLoading(planId);
     setCheckoutError("");
+    trackEvent("subscribe_checkout", { plan: planId });
 
     try {
       const res = await apiFetch("/api/stripe/checkout", {
@@ -74,6 +76,7 @@ export default function SubscribePageContent() {
       }
 
       if (data.activated) {
+        trackEvent("subscribe_activated", { plan: planId });
         router.push("/dashboard");
         return;
       }

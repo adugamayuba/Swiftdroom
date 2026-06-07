@@ -8,7 +8,7 @@ import {
   getSessionToken,
   setSessionToken,
 } from "@/lib/api-client";
-import { persistApiToken } from "@/lib/extension-client";
+import { clearApiToken, persistApiToken } from "@/lib/extension-client";
 
 interface MeAuthResponse {
   redirectTo?: string;
@@ -22,7 +22,10 @@ export async function resolveAuthenticatedRedirect(): Promise<string | null> {
 
   const res = await apiFetch("/api/me");
   if (!res.ok) {
-    if (res.status === 401) clearSessionToken();
+    if (res.status === 401) {
+      clearSessionToken();
+      clearApiToken();
+    }
     return null;
   }
 

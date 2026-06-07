@@ -13,8 +13,10 @@ import {
   Gift,
 } from "lucide-react";
 import { clsx } from "clsx";
-import { apiFetch, clearSessionToken, setSessionToken } from "@/lib/api-client";
+import { apiFetch, setSessionToken } from "@/lib/api-client";
 import { persistApiToken } from "@/lib/extension-client";
+import { useSignOut } from "@/lib/auth-session";
+import { MobileDesktopGate } from "@/components/MobileDesktopNotice";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -49,6 +51,7 @@ export default function DashboardShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const handleSignOut = useSignOut();
   const [user, setUser] = useState<MeResponse | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -78,12 +81,6 @@ export default function DashboardShell({
       });
   }, [router]);
 
-  async function handleSignOut() {
-    await apiFetch("/api/auth/logout", { method: "POST" });
-    clearSessionToken();
-    router.push("/login");
-  }
-
   if (checking || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[color-mix(in_srgb,var(--brand-mint)_25%,white)]">
@@ -100,7 +97,22 @@ export default function DashboardShell({
 
   return (
     <div className="flex min-h-screen bg-[color-mix(in_srgb,var(--brand-mint)_20%,white)]">
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[var(--brand-header)] text-white">
+      {/* Mobile top bar */}
+      <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b border-[var(--brand-header)]/10 bg-[var(--brand-header)] px-4 text-white lg:hidden">
+        <Link href="/dashboard" className="text-base font-semibold">
+          Swiftdroom
+        </Link>
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
+      </header>
+
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-[var(--brand-header)] text-white lg:flex">
         <div className="flex h-16 items-center border-b border-white/10 px-6">
           <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
             Swiftdroom
@@ -166,7 +178,7 @@ export default function DashboardShell({
           </p>
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={() => void handleSignOut()}
             className="mt-3 flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-white/65 transition hover:bg-white/10 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
@@ -175,7 +187,12 @@ export default function DashboardShell({
         </div>
       </aside>
 
-      <main className="ml-64 min-h-screen flex-1 p-6 md:p-8">{children}</main>
+      <main className="min-h-screen flex-1 pt-14 lg:ml-64 lg:pt-0">
+        <div className="hidden p-6 md:p-8 lg:block">{children}</div>
+        <div className="lg:hidden">
+          <MobileDesktopGate showSignOut>{children}</MobileDesktopGate>
+        </div>
+      </main>
     </div>
   );
 }

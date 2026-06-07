@@ -6,7 +6,9 @@ import { useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
 import { useRedirectIfAuthenticated } from "@/lib/auth-client";
+import { broadcastAuthChange } from "@/lib/auth-session";
 import { persistApiToken } from "@/lib/extension-client";
+import { trackEvent } from "@/lib/analytics";
 import { friendlyUserMessage } from "@/lib/user-messages";
 
 export default function LoginPage() {
@@ -50,6 +52,8 @@ export default function LoginPage() {
       setSessionToken(data.sessionToken);
     }
     if (data.apiToken) persistApiToken(data.apiToken);
+    broadcastAuthChange(true);
+    trackEvent("login");
 
     router.push(data.redirectTo || "/dashboard");
   }

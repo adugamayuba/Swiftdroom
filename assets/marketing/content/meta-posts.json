@@ -1,0 +1,108 @@
+{
+  "referralCode": "LAXJSLCA",
+  "referralUrl": "https://www.swiftdroom.com/register?ref=LAXJSLCA",
+  "feedPosts": [
+    {
+      "id": "meta-feed-01",
+      "type": "flyer",
+      "headline": "50 job apps/day.\n3 seconds each.",
+      "sub": "Swiftdroom autofills Workday, Greenhouse & Lever.\nAI writes your essays.",
+      "cta": "20% off — code LAXJSLCA",
+      "caption": "Stop retyping your resume. Swiftdroom autofills job applications in 3 seconds and generates tailored AI answers. Use code LAXJSLCA for 20% off your first month.\n\n👉 swiftdroom.com/register?ref=LAXJSLCA\n\n#jobsearch #career #ai #productivity #swiftdroom"
+    },
+    {
+      "id": "meta-feed-02",
+      "type": "flyer",
+      "headline": "How I got a\n$200k job in 2 weeks",
+      "sub": "400 applications. 1 Chrome extension.\nVolume + speed wins.",
+      "cta": "Try Swiftdroom — LAXJSLCA",
+      "caption": "I applied to 400 companies in 3 weeks using Swiftdroom. Each form took 3 seconds instead of 15 minutes. Code LAXJSLCA for 20% off.\n\n#jobsearch #200k #career #remotework"
+    },
+    {
+      "id": "meta-feed-03",
+      "type": "flyer",
+      "headline": "Your Google Doc\nhack isn't enough",
+      "sub": "20+ fields per form. Different labels every time.\nSwiftdroom maps & fills automatically.",
+      "cta": "20% off with LAXJSLCA",
+      "caption": "Saved answers in a doc? Still takes 12 min per form. Swiftdroom does it in 3 sec with intelligent AI answers. Link in bio.\n\n#jobhunt #productivity #chromeextension"
+    },
+    {
+      "id": "meta-feed-04",
+      "type": "flyer",
+      "headline": "AI took over\nmy laptop",
+      "sub": "Scan → Autofill → Ghostwriter → Submit\nJob applications in co-pilot mode.",
+      "cta": "swiftdroom.com · LAXJSLCA",
+      "caption": "Watch AI fill a 25-field job application in 3 seconds. Swiftdroom Chrome extension. 20% off with code LAXJSLCA.\n\n#ai #automation #jobsearch"
+    },
+    {
+      "id": "meta-feed-05",
+      "type": "flyer",
+      "headline": "Workday.\nGreenhouse.\nLever.",
+      "sub": "One extension. All handled.\nFrom $9.99/mo — 20% off first month.",
+      "cta": "Code: LAXJSLCA",
+      "caption": "Tired of retyping your resume on every ATS? Swiftdroom autofills all major platforms. Use LAXJSLCA for 20% off.\n\n#workday #greenhouse #lever #jobapplication"
+    }
+  ],
+  "storyFrames": [
+    {"headline": "50 forms/day?", "sub": "20+ fields each", "style": "hook"},
+    {"headline": "12 min per form", "sub": "= burnout", "style": "problem"},
+    {"headline": "Swiftdroom", "sub": "3 sec autofill + AI essays", "style": "solution"},
+    {"headline": "20% OFF", "sub": "code LAXJSLCA", "style": "cta"}
+  ],
+  "reelsScripts": [
+    {
+      "id": "reel-01",
+      "duration": "15s",
+      "hook": "How I got a $200k job in 2 weeks",
+      "scenes": [
+        "0-3s: Text on screen — '50 job applications per day'",
+        "3-6s: Show form with 25 empty fields",
+        "6-9s: Swiftdroom side panel — click Scan & Autofill",
+        "9-12s: Fields fill rapidly, counter shows '14 filled in 3 sec'",
+        "12-15s: CTA — '20% off code LAXJSLCA — link in bio'"
+      ]
+    },
+    {
+      "id": "reel-02",
+      "duration": "20s",
+      "hook": "POV: AI takes over your laptop",
+      "scenes": [
+        "0-4s: POV scrolling job board, clicking Apply",
+        "4-8s: Massive Workday form loads — 7 steps",
+        "8-12s: Open Swiftdroom side panel, hit autofill",
+        "12-16s: Watch fields populate + ghostwriter answer appears",
+        "16-20s: 'Sounds intelligent. 3 seconds. Swiftdroom.' + CTA"
+      ]
+    },
+    {
+      "id": "reel-03",
+      "duration": "12s",
+      "hook": "Google doc hack vs Swiftdroom",
+      "scenes": [
+        "0-4s: Split screen — left: slow copy-paste, right: 3 sec autofill",
+        "4-8s: Timer comparison — 12:00 vs 0:03",
+        "8-12s: 'LAXJSLCA = 20% off' + logo"
+      ]
+    }
+  ],
+  "linkAds": [
+    {
+      "id": "link-ad-01",
+      "headline": "Autofill job applications in 3 seconds",
+      "sub": "Workday · Greenhouse · Lever · AI answers",
+      "cta": "20% off — LAXJSLCA"
+    },
+    {
+      "id": "link-ad-02",
+      "headline": "Stop retyping your resume",
+      "sub": "50 apps/day without burnout",
+      "cta": "Try Swiftdroom"
+    },
+    {
+      "id": "link-ad-03",
+      "headline": "$200k job in 2 weeks?",
+      "sub": "Volume + Swiftdroom = interviews",
+      "cta": "Get 20% off today"
+    }
+  ]
+}

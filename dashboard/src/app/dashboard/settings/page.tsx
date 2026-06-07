@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, ExternalLink, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { trackEvent } from "@/lib/analytics";
 import { PLANS } from "@/lib/plans";
 import { getChromeWebStoreUrl } from "@/lib/chrome-store";
 import {
@@ -211,6 +212,7 @@ export default function SettingsPage() {
               href={chromeStoreUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackEvent("extension_install_click", { source: "settings" })}
               className="app-btn-primary mt-4"
             >
               Add to Chrome

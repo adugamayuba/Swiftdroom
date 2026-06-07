@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" class="browser-mock">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Swiftdroom — Demo</title>
+    <link rel="stylesheet" href="../../chrome-web-store/mocks/shared.css" />
+    <style>
+      .field input.filling,
+      .field textarea.filling {
+        border-color: #6366f1;
+        background: #eef2ff;
+        animation: pulse 0.6s ease;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.35);
+        }
+        50% {
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+      }
+      .btn-primary.clicked {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+      .btn-primary {
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      .cursor-dot {
+        position: fixed;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(3, 20, 20, 0.75);
+        border: 2px solid white;
+        pointer-events: none;
+        z-index: 9999;
+        transform: translate(-50%, -50%);
+        transition: left 0.45s ease, top 0.45s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+      .stats strong {
+        transition: color 0.3s ease;
+      }
+      .field-card {
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.35s ease, transform 0.35s ease;
+      }
+      .field-card.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .ghost-card {
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      .ghost-card.visible {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="cursor" class="cursor-dot" style="left: 50%; top: 50%; opacity: 0"></div>
+    <div class="frame">
+      <div class="browser-bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="url-bar">job-boards.greenhouse.io/swiftdroom/jobs/4829101</div>
+      </div>
+      <div class="content-row">
+        <div class="job-page">
+          <h1>Product Manager</h1>
+          <p class="company">Swiftdroom · Remote · Full-time</p>
+          <div class="form-grid">
+            <div class="field">
+              <label>First name</label>
+              <input id="first" type="text" placeholder="" />
+            </div>
+            <div class="field">
+              <label>Last name</label>
+              <input id="last" type="text" placeholder="" />
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input id="email" type="text" placeholder="" />
+            </div>
+            <div class="field">
+              <label>Phone</label>
+              <input id="phone" type="text" placeholder="" />
+            </div>
+            <div class="field">
+              <label>LinkedIn</label>
+              <input id="linkedin" type="text" placeholder="https://" />
+            </div>
+            <div class="field">
+              <label>Location</label>
+              <input id="location" type="text" placeholder="" />
+            </div>
+            <div class="field full">
+              <label>Why do you want to work here?</label>
+              <textarea id="why" placeholder="Your answer…"></textarea>
+            </div>
+          </div>
+        </div>
+        <aside class="sidepanel">
+          <div class="brand-row">
+            <span class="brand">Swiftdroom</span>
+            <span class="badge" id="badge">0 / 50 apps</span>
+          </div>
+          <select class="persona" disabled>
+            <option>Jenny Davis — PM Resume</option>
+          </select>
+          <button id="fill-btn" class="btn-primary">Scan &amp; Autofill</button>
+          <button class="btn-secondary">Rescan Fields</button>
+          <div class="stats" id="stats" style="display: none">
+            <span><strong id="filled-count" style="color: #059669">0 filled</strong></span>
+            <span id="mapping-count">0 need mapping</span>
+          </div>
+          <p class="section-title">Fields</p>
+          <div id="field-cards"></div>
+          <p class="section-title" id="ghost-title" style="display: none">Ghostwriter</p>
+          <div class="ghost-card" id="ghost-card">
+            <div class="q">Why do you want to work here?</div>
+            <div class="a" id="ghost-answer"></div>
+          </div>
+          <p class="footer-note">Co-pilot mode: review all fields before submitting.</p>
+        </aside>
+      </div>
+    </div>
+    <script>
+      const cursor = document.getElementById("cursor");
+      const fillBtn = document.getElementById("fill-btn");
+      const stats = document.getElementById("stats");
+      const fieldCards = document.getElementById("field-cards");
+      const ghostTitle = document.getElementById("ghost-title");
+      const ghostCard = document.getElementById("ghost-card");
+      const ghostAnswer = document.getElementById("ghost-answer");
+      const filledCount = document.getElementById("filled-count");
+      const mappingCount = document.getElementById("mapping-count");
+      const badge = document.getElementById("badge");
+
+      const fields = [
+        { id: "first", label: "First name", value: "Jenny" },
+        { id: "last", label: "Last name", value: "Davis" },
+        { id: "email", label: "Email", value: "jane@droomify.com" },
+        { id: "phone", label: "Phone", value: "+1 (415) 555-0198" },
+        { id: "linkedin", label: "LinkedIn", value: "linkedin.com/in/jennydavis" },
+        { id: "location", label: "Location", value: "San Francisco, CA" },
+      ];
+
+      const aiAnswer =
+        "I'm drawn to Swiftdroom's mission of eliminating repetitive job applications. As a PM who's applied to dozens of roles, I know the pain firsthand — and I'd love to help build the product that solves it.";
+
+      function wait(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+      }
+
+      function moveCursor(x, y, show = true) {
+        cursor.style.opacity = show ? "1" : "0";
+        cursor.style.left = x + "px";
+        cursor.style.top = y + "px";
+      }
+
+      function rectCenter(el) {
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      }
+
+      async function typeText(el, text, speed = 28) {
+        el.classList.add("filling");
+        for (let i = 0; i <= text.length; i++) {
+          el.value = text.slice(0, i);
+          await wait(speed);
+        }
+        el.classList.remove("filling");
+        el.classList.add("filled");
+      }
+
+      function addFieldCard(label, filled = true) {
+        const card = document.createElement("div");
+        card.className = "field-card" + (filled ? " filled" : "");
+        card.innerHTML =
+          '<div class="name">' +
+          label +
+          '</div><div class="status">' +
+          (filled ? "✓ Mapped · Filled" : "Needs mapping") +
+          "</div>";
+        fieldCards.appendChild(card);
+        requestAnimationFrame(() => card.classList.add("visible"));
+      }
+
+      async function runDemo() {
+        await wait(800);
+        const btnPos = rectCenter(fillBtn);
+        moveCursor(btnPos.x, btnPos.y);
+        await wait(600);
+        fillBtn.classList.add("clicked");
+        await wait(200);
+        fillBtn.classList.remove("clicked");
+        fillBtn.textContent = "Filling…";
+        stats.style.display = "flex";
+        await wait(400);
+
+        let filled = 0;
+        for (const field of fields) {
+          const el = document.getElementById(field.id);
+          const pos = rectCenter(el);
+          moveCursor(pos.x, pos.y);
+          await wait(350);
+          await typeText(el, field.value, 22);
+          filled++;
+          filledCount.textContent = filled + " filled";
+          addFieldCard(field.label);
+          await wait(280);
+        }
+
+        mappingCount.textContent = "0 need mapping";
+        badge.textContent = "1 / 50 apps";
+        fillBtn.textContent = "Scan & Autofill";
+
+        ghostTitle.style.display = "block";
+        ghostCard.classList.add("visible");
+        const whyEl = document.getElementById("why");
+        const whyPos = rectCenter(whyEl);
+        moveCursor(whyPos.x, whyPos.y);
+        await wait(400);
+
+        ghostAnswer.textContent = "";
+        for (let i = 0; i <= aiAnswer.length; i++) {
+          ghostAnswer.textContent = aiAnswer.slice(0, i);
+          await wait(12);
+        }
+        await wait(300);
+        whyEl.classList.add("filling");
+        for (let i = 0; i <= aiAnswer.length; i++) {
+          whyEl.value = aiAnswer.slice(0, i);
+          await wait(10);
+        }
+        whyEl.classList.remove("filling");
+        whyEl.classList.add("filled");
+        filled++;
+        filledCount.textContent = filled + " filled";
+        addFieldCard("Why do you want to work here?");
+        await wait(1200);
+        moveCursor(window.innerWidth / 2, window.innerHeight / 2, false);
+        window.demoComplete = true;
+      }
+
+      runDemo();
+    </script>
+  </body>
+</html>

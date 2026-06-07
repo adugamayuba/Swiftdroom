@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
 import { useRedirectIfAuthenticated } from "@/lib/auth-client";
+import { broadcastAuthChange } from "@/lib/auth-session";
 import { persistApiToken } from "@/lib/extension-client";
+import { trackEvent } from "@/lib/analytics";
 import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 function RegisterForm() {
@@ -20,6 +22,12 @@ function RegisterForm() {
   const [referralCode, setReferralCode] = useState(refFromUrl);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (refFromUrl) {
+      trackEvent("referral_link_visit", { code: refFromUrl });
+    }
+  }, [refFromUrl]);
 
   if (checkingSession) {
     return (
@@ -72,6 +80,10 @@ function RegisterForm() {
       setSessionToken(data.sessionToken);
     }
     if (data.apiToken) persistApiToken(data.apiToken);
+    broadcastAuthChange(true);
+    trackEvent("register", {
+      hasReferral: referralCode.trim() ? "yes" : "no",
+    });
 
     router.push(data.redirectTo || "/onboarding");
   }

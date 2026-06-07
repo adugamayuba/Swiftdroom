@@ -1,12 +1,13 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { MarketingHeader } from "@/components/marketing/Header";
+import { TrackedRegisterLink } from "@/components/marketing/TrackedRegisterLink";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { HeroBackground } from "@/components/marketing/HeroBackground";
 import { TestimonialsSection } from "@/components/marketing/TestimonialsSection";
 import { CompaniesSection } from "@/components/marketing/CompaniesSection";
 import { BlogSection } from "@/components/marketing/BlogSection";
+import { DemoVideoSection } from "@/components/marketing/DemoVideoSection";
 import { HomeJsonLd } from "@/components/marketing/JsonLd";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -35,9 +36,9 @@ export default function HomePage() {
                 to open-ended questions using your resume and the job description.
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <Link href="/register" className="al-btn-white">
+                <TrackedRegisterLink source="hero" className="al-btn-white">
                   Create your account
-                </Link>
+                </TrackedRegisterLink>
                 <p className="text-sm text-white/50">
                   Set up your profile first. Subscribe when you are ready to apply.
                 </p>
@@ -100,6 +101,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <DemoVideoSection />
 
         {/* How it works */}
         <section id="how-it-works" className="bg-[var(--brand-dark)] py-24 text-white">
@@ -223,9 +226,9 @@ export default function HomePage() {
             <p className="mt-4 text-white/60">
               Create your profile in five minutes. Start applying when you subscribe.
             </p>
-            <Link href="/register" className="al-btn-white mt-8">
+            <TrackedRegisterLink source="footer_cta" className="al-btn-white mt-8">
               Create your account
-            </Link>
+            </TrackedRegisterLink>
           </div>
         </section>
       </main>

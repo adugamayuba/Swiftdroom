@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Circle, ExternalLink } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { trackEvent } from "@/lib/analytics";
 import { getChromeWebStoreUrl } from "@/lib/chrome-store";
 import {
   persistApiToken,
@@ -149,6 +150,7 @@ export default function DashboardOverview() {
                       href={step.href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => trackEvent("extension_install_click", { source: "overview" })}
                       className="app-btn-primary shrink-0 !px-3 !py-1.5 !text-xs"
                     >
                       {step.cta}

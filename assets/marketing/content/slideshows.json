@@ -1,0 +1,517 @@
+{
+  "referralCode": "LAXJSLCA",
+  "referralUrl": "https://www.swiftdroom.com/register?ref=LAXJSLCA",
+  "discount": "20% off your first month",
+  "slideshows": [
+    {
+      "id": "acc01-post01",
+      "account": 1,
+      "post": 1,
+      "theme": "viral-story",
+      "hook": "$200k job in 2 weeks",
+      "slides": [
+        {"style": "hook", "headline": "how i got a $200k job in 2 weeks", "sub": "no connections. no recruiter. just volume."},
+        {"style": "problem", "headline": "the part nobody talks about", "sub": "every application had 20–40 fields. name, address, work history, visa status, \"why us\" essays…"},
+        {"style": "problem", "headline": "i was applying to 50 jobs a day", "sub": "copy-paste from a google doc. fix formatting. miss a field. start over. 3 hours gone."},
+        {"style": "pain", "headline": "i tried being smart", "sub": "saved answers in a doc. still took 12 min per form. still sounded generic. still got ghosted."},
+        {"style": "solution", "headline": "then i found Swiftdroom", "sub": "chrome extension. AI reads the form. fills 20+ fields in ~3 seconds. answers sound human."},
+        {"style": "cta", "headline": "20% off with code LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "50 apps/day broke me until this 🤯 code LAXJSLCA for 20% off #jobsearch #career #techjobs #swiftdroom",
+      "hashtags": ["jobsearch", "careertok", "techjobs", "remotework", "swiftdroom"]
+    },
+    {
+      "id": "acc01-post02",
+      "account": 1,
+      "post": 2,
+      "theme": "confession",
+      "hook": "I almost quit job hunting",
+      "slides": [
+        {"style": "hook", "headline": "i almost quit job hunting last month", "sub": "not because i wasn't qualified."},
+        {"style": "problem", "headline": "because of the forms", "sub": "workday. greenhouse. lever. 30 fields each. dropdown hell."},
+        {"style": "problem", "headline": "50 applications/day", "sub": "that's 1,500 fields a day. my wrist hurt. my brain melted."},
+        {"style": "pain", "headline": "the google doc hack", "sub": "ctrl+c ctrl+v until 2am. still missed required fields. still rejected."},
+        {"style": "solution", "headline": "Swiftdroom changed everything", "sub": "AI autofill + ghostwriter for open-ended questions. 3 sec per form."},
+        {"style": "cta", "headline": "try it — 20% off", "sub": "code LAXJSLCA → swiftdroom.com"}
+      ],
+      "caption": "the forms were the real enemy 😭 LAXJSLCA for 20% off #jobhunt #workday #greenhouse",
+      "hashtags": ["jobhunt", "workday", "greenhouse", "lever", "swiftdroom"]
+    },
+    {
+      "id": "acc01-post03",
+      "account": 1,
+      "post": 3,
+      "theme": "before-after",
+      "hook": "Before vs after Swiftdroom",
+      "slides": [
+        {"style": "hook", "headline": "before vs after Swiftdroom", "sub": "same me. different system."},
+        {"style": "problem", "headline": "BEFORE", "sub": "12 min/form · 4 apps/hour · hand cramps · generic essays"},
+        {"style": "solution", "headline": "AFTER", "sub": "3 sec/form · 50+ apps/day · AI-tailored answers · tracked in dashboard"},
+        {"style": "proof", "headline": "works on", "sub": "Workday · Greenhouse · Lever · and most ATS forms"},
+        {"style": "solution", "headline": "it's like AI took over my laptop", "sub": "scan → autofill → review → submit. you stay in control."},
+        {"style": "cta", "headline": "LAXJSLCA = 20% off", "sub": "link in bio · swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "12 min → 3 sec per application 🚀 #beforeandafter #jobsearch #ai",
+      "hashtags": ["beforeandafter", "jobsearch", "ai", "productivity", "swiftdroom"]
+    },
+    {
+      "id": "acc02-post01",
+      "account": 2,
+      "post": 1,
+      "theme": "tech-pov",
+      "hook": "POV: software engineer applying",
+      "slides": [
+        {"style": "hook", "headline": "POV: you're a SWE applying to 50 jobs today", "sub": "it's 9am. you haven't written code. you've filled forms."},
+        {"style": "problem", "headline": "greenhouse: 22 fields", "sub": "workday step 3 of 7: 31 fields. lever: \"tell us about yourself\" again."},
+        {"style": "pain", "headline": "your \"smart\" setup", "sub": "notion doc with saved answers. still doesn't match weird field labels."},
+        {"style": "solution", "headline": "install Swiftdroom", "sub": "chrome extension maps fields to your profile. AI writes the essays."},
+        {"style": "proof", "headline": "3 seconds", "sub": "scan & autofill. sounds intelligent. not robotic."},
+        {"style": "cta", "headline": "20% off — LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "engineers shouldn't spend 6hrs/day on forms #softwareengineer #techjobs",
+      "hashtags": ["softwareengineer", "techjobs", "coding", "jobsearch", "swiftdroom"]
+    },
+    {
+      "id": "acc02-post02",
+      "account": 2,
+      "post": 2,
+      "theme": "workday-nightmare",
+      "hook": "Workday is designed to break you",
+      "slides": [
+        {"style": "hook", "headline": "workday applications are designed to break you", "sub": "7 steps. 40 fields. duplicate everything from your resume."},
+        {"style": "problem", "headline": "step 2: my information", "sub": "legal first name. preferred name. suffix. country. state. county."},
+        {"style": "problem", "headline": "step 4: work experience", "sub": "re-type your entire resume field by field. for the 50th time."},
+        {"style": "solution", "headline": "Swiftdroom handles Workday", "sub": "label-based autofill works inside iframes. all_frames: true."},
+        {"style": "proof", "headline": "14 fields filled in 3 sec", "sub": "ghostwriter handles \"describe your experience with…\""},
+        {"style": "cta", "headline": "code LAXJSLCA", "sub": "20% off first month · swiftdroom.com"}
+      ],
+      "caption": "workday survivors know 😤 #workday #corporate #jobapplication",
+      "hashtags": ["workday", "corporate", "jobapplication", "swiftdroom"]
+    },
+    {
+      "id": "acc02-post03",
+      "account": 2,
+      "post": 3,
+      "theme": "salary-story",
+      "hook": "$180k offer story",
+      "slides": [
+        {"style": "hook", "headline": "how i got a $180k offer", "sub": "applied to 400 companies in 3 weeks."},
+        {"style": "problem", "headline": "the math", "sub": "400 apps × 15 min each = 100 hours of form filling"},
+        {"style": "pain", "headline": "impossible manually", "sub": "i was going to hire a VA. then i found something better."},
+        {"style": "solution", "headline": "Swiftdroom = AI co-pilot", "sub": "autofill from your resume. personas for different roles. track everything."},
+        {"style": "proof", "headline": "volume wins", "sub": "more quality apps → more interviews → offer. simple."},
+        {"style": "cta", "headline": "start today — 20% off", "sub": "LAXJSLCA · swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "volume + speed = interviews 📈 code LAXJSLCA #salary #techsalary",
+      "hashtags": ["salary", "techsalary", "offers", "swiftdroom"]
+    },
+    {
+      "id": "acc03-post01",
+      "account": 3,
+      "post": 1,
+      "theme": "grad-pov",
+      "hook": "New grad reality",
+      "slides": [
+        {"style": "hook", "headline": "new grad reality check", "sub": "degree ✅ · portfolio ✅ · 200 unanswered applications ✅"},
+        {"style": "problem", "headline": "each app = 25+ fields", "sub": "gpa, graduation date, sponsorship, relocation, 500-word \"why us\""},
+        {"style": "pain", "headline": "i copied from a word doc", "sub": "for 3 weeks straight. still only 2 interviews."},
+        {"style": "solution", "headline": "then someone sent me Swiftdroom", "sub": "chrome extension. fills forms in seconds. AI answers sound like YOU."},
+        {"style": "proof", "headline": "went from 5 to 40 apps/day", "sub": "same effort. 8x output."},
+        {"style": "cta", "headline": "20% off with LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "new grads need this more than linkedin premium #newgrad #college",
+      "hashtags": ["newgrad", "college", "firstjob", "swiftdroom"]
+    },
+    {
+      "id": "acc03-post02",
+      "account": 3,
+      "post": 2,
+      "theme": "unemployment",
+      "hook": "3 months unemployed",
+      "slides": [
+        {"style": "hook", "headline": "3 months unemployed taught me this", "sub": "the bottleneck isn't your resume."},
+        {"style": "problem", "headline": "it's the application process", "sub": "20 fields minimum. 50 companies per day target. burnout in week 1."},
+        {"style": "pain", "headline": "saved answers didn't work", "sub": "every company labels fields differently. \"phone\" vs \"mobile number\" vs \"contact\""},
+        {"style": "solution", "headline": "Swiftdroom maps fields automatically", "sub": "learns your profile once. fills any ATS form."},
+        {"style": "proof", "headline": "AI ghostwriter", "sub": "\"why do you want this job?\" — tailored answer in 1 click"},
+        {"style": "cta", "headline": "LAXJSLCA = 20% off", "sub": "swiftdroom.com"}
+      ],
+      "caption": "unemployment is a numbers game. speed matters. #unemployed #jobsearch",
+      "hashtags": ["unemployed", "jobsearch", "hiring", "swiftdroom"]
+    },
+    {
+      "id": "acc03-post03",
+      "account": 3,
+      "post": 3,
+      "theme": "interview-pipeline",
+      "hook": "0 to 8 interviews",
+      "slides": [
+        {"style": "hook", "headline": "0 interviews → 8 in 2 weeks", "sub": "i didn't change my resume. i changed my process."},
+        {"style": "problem", "headline": "old process", "sub": "5 apps/day. manual copy-paste. generic cover letters."},
+        {"style": "solution", "headline": "new process", "sub": "Swiftdroom autofill. 45 apps/day. persona-based AI answers."},
+        {"style": "proof", "headline": "track everything", "sub": "dashboard shows filled → applied → interview pipeline"},
+        {"style": "solution", "headline": "feels like AI runs your laptop", "sub": "you review. you submit. it does the typing."},
+        {"style": "cta", "headline": "try free trial path", "sub": "20% off code LAXJSLCA · swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "8 interviews in 14 days after switching tools #interview #jobsearch",
+      "hashtags": ["interview", "jobsearch", "careerchange", "swiftdroom"]
+    },
+    {
+      "id": "acc04-post01",
+      "account": 4,
+      "post": 1,
+      "theme": "corporate-escape",
+      "hook": "Escaped toxic job",
+      "slides": [
+        {"style": "hook", "headline": "escaped a toxic job in 18 days", "sub": "secret: i applied to 300 companies fast."},
+        {"style": "problem", "headline": "job searching while employed?", "sub": "nights + weekends only. 15 min per form = 4 apps/night max."},
+        {"style": "pain", "headline": "not fast enough", "sub": "google doc of answers. still 12 min/form on greenhouse."},
+        {"style": "solution", "headline": "Swiftdroom = 3 sec/form", "sub": "50 apps on a sunday afternoon. real."},
+        {"style": "proof", "headline": "intelligent answers", "sub": "AI tailors \"why this company\" per role. doesn't sound copy-pasted."},
+        {"style": "cta", "headline": "20% off — LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "quit toxic job faster with volume applying #quittok #corporate",
+      "hashtags": ["quittok", "corporate", "toxicjob", "swiftdroom"]
+    },
+    {
+      "id": "acc04-post02",
+      "account": 4,
+      "post": 2,
+      "theme": "greenhouse",
+      "hook": "Greenhouse form hell",
+      "slides": [
+        {"style": "hook", "headline": "greenhouse forms are a special kind of hell", "sub": "22 fields. 3 dropdowns. 2 essay questions. every. single. time."},
+        {"style": "problem", "headline": "50 jobs/day goal", "sub": "= 1,100 fields/day. manually. are you serious?"}, 
+        {"style": "pain", "headline": "the doc hack fails", "sub": "field labels never match. you still tab through everything."},
+        {"style": "solution", "headline": "Swiftdroom side panel", "sub": "scan → map → autofill → ghostwriter for essays"},
+        {"style": "proof", "headline": "3 second fill", "sub": "review before submit. co-pilot mode."},
+        {"style": "cta", "headline": "LAXJSLCA for 20% off", "sub": "swiftdroom.com"}
+      ],
+      "caption": "greenhouse users you need this #greenhouse #recruiting",
+      "hashtags": ["greenhouse", "recruiting", "apply", "swiftdroom"]
+    },
+    {
+      "id": "acc04-post03",
+      "account": 4,
+      "post": 3,
+      "theme": "remote-dream",
+      "hook": "$200k remote",
+      "slides": [
+        {"style": "hook", "headline": "landed $200k remote", "sub": "2 weeks. 350 applications. 1 tool."},
+        {"style": "problem", "headline": "remote jobs get 10,000 applicants", "sub": "speed is your only edge. slow forms = missed deadlines."},
+        {"style": "solution", "headline": "Swiftdroom autofill", "sub": "workday, greenhouse, lever — all handled"},
+        {"style": "proof", "headline": "personas", "sub": "different resume angles for PM vs eng vs ops roles"},
+        {"style": "solution", "headline": "sounds intelligent", "sub": "AI reads your profile. writes answers that match the question."},
+        {"style": "cta", "headline": "code LAXJSLCA", "sub": "20% off · swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "$200k remote in 2 weeks — volume + Swiftdroom #remotework #200k",
+      "hashtags": ["remotework", "wfh", "200k", "swiftdroom"]
+    },
+    {
+      "id": "acc05-post01",
+      "account": 5,
+      "post": 1,
+      "theme": "side-hustle",
+      "hook": "Applied during lunch breaks",
+      "slides": [
+        {"style": "hook", "headline": "how i applied to 30 jobs during lunch breaks", "sub": "without my boss noticing."},
+        {"style": "problem", "headline": "12 min per application", "sub": "can't do that in 30 min lunch. old way = 2 apps max."},
+        {"style": "solution", "headline": "Swiftdroom = 3 sec", "sub": "open job → scan → autofill → submit. 30 apps in one lunch."},
+        {"style": "proof", "headline": "chrome extension", "sub": "side panel stays open. works on any job board."},
+        {"style": "solution", "headline": "AI answers essays", "sub": "no more writing \"why us\" from scratch"},
+        {"style": "cta", "headline": "20% off LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "lunch break job hunting hack 🍱 #sidehustle #jobsearch",
+      "hashtags": ["sidehustle", "jobsearch", "careerhack", "swiftdroom"]
+    },
+    {
+      "id": "acc05-post02",
+      "account": 5,
+      "post": 2,
+      "theme": "numbers-game",
+      "hook": "Job search is math",
+      "slides": [
+        {"style": "hook", "headline": "job search is a numbers game", "sub": "here's the math nobody shows you."},
+        {"style": "problem", "headline": "5 apps/day × 2% response", "sub": "= 3 interviews/month. maybe 0 offers."},
+        {"style": "solution", "headline": "50 apps/day × 2% response", "sub": "= 30 interviews/month. offers become likely."},
+        {"style": "pain", "headline": "50 apps/day is impossible…", "sub": "…unless each form takes 3 seconds, not 15 minutes."},
+        {"style": "solution", "headline": "Swiftdroom", "sub": "the tool that makes volume possible."},
+        {"style": "cta", "headline": "LAXJSLCA = 20% off", "sub": "swiftdroom.com"}
+      ],
+      "caption": "the math of job searching 📊 #jobsearch #careeradvice",
+      "hashtags": ["jobsearch", "careeradvice", "interviews", "swiftdroom"]
+    },
+    {
+      "id": "acc05-post03",
+      "account": 5,
+      "post": 3,
+      "theme": "ai-takeover",
+      "hook": "AI took over my laptop",
+      "slides": [
+        {"style": "hook", "headline": "watch AI take over my laptop", "sub": "and fill a 25-field job application in 3 seconds."},
+        {"style": "problem", "headline": "the form", "sub": "name, email, phone, linkedin, work auth, salary, 3 essays…"},
+        {"style": "solution", "headline": "click \"scan & autofill\"", "sub": "Swiftdroom maps every field to your profile."},
+        {"style": "proof", "headline": "ghostwriter kicks in", "sub": "open-ended questions get tailored AI answers. sounds human."},
+        {"style": "solution", "headline": "review & submit", "sub": "co-pilot mode — you're always in control"},
+        {"style": "cta", "headline": "20% off — code LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "AI filling job apps in 3 sec is insane 🤖 #ai #automation",
+      "hashtags": ["ai", "automation", "chromeextension", "swiftdroom"]
+    },
+    {
+      "id": "acc06-post01",
+      "account": 6,
+      "post": 1,
+      "theme": "remote-hunter",
+      "hook": "Only remote jobs",
+      "slides": [
+        {"style": "hook", "headline": "i only apply to remote jobs", "sub": "here's how i hit 40 applications/day."},
+        {"style": "problem", "headline": "remote = more competition", "sub": "you need volume. but each ATS form eats 15 minutes."},
+        {"style": "pain", "headline": "saved answers in notion", "sub": "still doesn't handle weird dropdowns or custom questions."},
+        {"style": "solution", "headline": "Swiftdroom chrome extension", "sub": "autofill + AI ghostwriter. 3 sec per form."},
+        {"style": "proof", "headline": "tracks your pipeline", "sub": "filled → applied → interview → offer in one dashboard"},
+        {"style": "cta", "headline": "LAXJSLCA for 20% off", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "remote job hunters need speed #remotework #digitalnomad",
+      "hashtags": ["remotework", "digitalnomad", "wfh", "swiftdroom"]
+    },
+    {
+      "id": "acc06-post02",
+      "account": 6,
+      "post": 2,
+      "theme": "lever-ats",
+      "hook": "Lever applications",
+      "slides": [
+        {"style": "hook", "headline": "lever applications in 3 seconds", "sub": "yes, really."},
+        {"style": "problem", "headline": "lever + greenhouse + workday", "sub": "3 different ATS systems. 3 different field layouts."},
+        {"style": "pain", "headline": "one google doc can't handle it", "sub": "labels change. required fields hide. dropdowns break paste."},
+        {"style": "solution", "headline": "Swiftdroom learns your profile", "sub": "maps fields by label. works across all major ATS."},
+        {"style": "proof", "headline": "50 forms/day", "sub": "without hand cramps or 2am copy-paste sessions"},
+        {"style": "cta", "headline": "20% off — LAXJSLCA", "sub": "swiftdroom.com"}
+      ],
+      "caption": "lever greenhouse workday — one tool #ats #jobapplication",
+      "hashtags": ["ats", "jobapplication", "lever", "swiftdroom"]
+    },
+    {
+      "id": "acc06-post03",
+      "account": 6,
+      "post": 3,
+      "theme": "laid-off",
+      "hook": "Laid off Monday",
+      "slides": [
+        {"style": "hook", "headline": "got laid off on a monday", "sub": "had 40 applications out by friday."},
+        {"style": "problem", "headline": "panic applying", "sub": "20+ fields per form. typos everywhere. missed deadlines."},
+        {"style": "solution", "headline": "friend recommended Swiftdroom", "sub": "AI autofill from resume. essays generated per company."},
+        {"style": "proof", "headline": "3 sec per form", "sub": "40 apps in one week while processing the layoff"},
+        {"style": "solution", "headline": "sounds intelligent", "sub": "not generic chatgpt copy. tailored to your profile + the role."},
+        {"style": "cta", "headline": "code LAXJSLCA", "sub": "20% off first month · swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "laid off? speed matters. 40 apps in 5 days. #layoff #jobsearch",
+      "hashtags": ["layoff", "jobsearch", "hiring", "swiftdroom"]
+    },
+    {
+      "id": "acc07-post01",
+      "account": 7,
+      "post": 1,
+      "theme": "faang",
+      "hook": "FAANG pipeline",
+      "slides": [
+        {"style": "hook", "headline": "how i built a FAANG interview pipeline", "sub": "applied to 200 companies in 10 days."},
+        {"style": "problem", "headline": "big tech forms are brutal", "sub": "workday 7-step wizards. 40+ fields. work history re-entry."},
+        {"style": "pain", "headline": "manual = 3 apps/day max", "sub": "not enough for a real pipeline."},
+        {"style": "solution", "headline": "Swiftdroom", "sub": "3 sec autofill. AI ghostwriter. persona switching for different roles."},
+        {"style": "proof", "headline": "20 apps/day minimum", "sub": "dashboard tracks every application status."},
+        {"style": "cta", "headline": "LAXJSLCA = 20% off", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "FAANG pipeline needs volume #faang #bigtech #leetcode",
+      "hashtags": ["faang", "bigtech", "leetcode", "swiftdroom"]
+    },
+    {
+      "id": "acc07-post02",
+      "account": 7,
+      "post": 2,
+      "theme": "product-manager",
+      "hook": "PM job search",
+      "slides": [
+        {"style": "hook", "headline": "PM job search is different", "sub": "every app wants a custom \"product sense\" essay."},
+        {"style": "problem", "headline": "25 fields + 3 essays", "sub": "per application. × 50 companies. = full-time job."},
+        {"style": "solution", "headline": "Swiftdroom ghostwriter", "sub": "generates tailored answers from your persona + resume."},
+        {"style": "proof", "headline": "personas", "sub": "PM focus vs growth focus vs B2B focus — switch per app"},
+        {"style": "solution", "headline": "3 seconds for fields", "sub": "1 click for essays. review everything before submit."},
+        {"style": "cta", "headline": "20% off — LAXJSLCA", "sub": "swiftdroom.com"}
+      ],
+      "caption": "PMs — stop writing the same essay 50 times #productmanager #pm",
+      "hashtags": ["productmanager", "pm", "product", "swiftdroom"]
+    },
+    {
+      "id": "acc07-post03",
+      "account": 7,
+      "post": 3,
+      "theme": "200k-story-2",
+      "hook": "$200k in 2 weeks v2",
+      "slides": [
+        {"style": "hook", "headline": "$200k offer. 2 weeks. here's the tool.", "sub": "not clickbait. just volume + speed."},
+        {"style": "problem", "headline": "i was filling 50 forms/day", "sub": "20-40 fields each. wrist pain. eye strain. despair."},
+        {"style": "pain", "headline": "google doc wasn't enough", "sub": "answers sounded the same. recruiters could tell."},
+        {"style": "solution", "headline": "Swiftdroom AI", "sub": "tailored per company. intelligent tone. 3 sec fill."},
+        {"style": "proof", "headline": "chrome extension", "sub": "works on workday, greenhouse, lever. add to chrome → connect → go."},
+        {"style": "cta", "headline": "LAXJSLCA — 20% off", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "$200k in 2 weeks — the tool that made it possible #200k #offer",
+      "hashtags": ["200k", "offer", "salary", "swiftdroom"]
+    },
+    {
+      "id": "acc08-post01",
+      "account": 8,
+      "post": 1,
+      "theme": "mom-return",
+      "hook": "Mom returning to work",
+      "slides": [
+        {"style": "hook", "headline": "returning to work after 3 years", "sub": "gap on resume. zero time. 2 kids."},
+        {"style": "problem", "headline": "nap-time job hunting", "sub": "90 min window. 12 min/form = 7 apps max. not enough."},
+        {"style": "solution", "headline": "Swiftdroom", "sub": "3 sec/form. 30 apps during one nap session."},
+        {"style": "proof", "headline": "AI handles the essays", "sub": "\"explain your career gap\" — tailored, professional answer"},
+        {"style": "solution", "headline": "track from phone", "sub": "dashboard shows every application status"},
+        {"style": "cta", "headline": "20% off LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "moms returning to work — you need speed #momtok #careercomeback",
+      "hashtags": ["momtok", "careercomeback", "workingmom", "swiftdroom"]
+    },
+    {
+      "id": "acc08-post02",
+      "account": 8,
+      "post": 2,
+      "theme": "career-gap",
+      "hook": "Career gap",
+      "slides": [
+        {"style": "hook", "headline": "career gap? apply to MORE jobs, not fewer.", "sub": "counterintuitive but true."},
+        {"style": "problem", "headline": "but 50 apps/day?", "sub": "impossible when each form takes 15 minutes manually."},
+        {"style": "solution", "headline": "Swiftdroom makes 50/day real", "sub": "autofill + AI answers. 3 seconds per form."},
+        {"style": "proof", "headline": "personas for different angles", "sub": "highlight different skills per role type"},
+        {"style": "solution", "headline": "sounds human, not AI", "sub": "ghostwriter uses YOUR resume. YOUR experience."},
+        {"style": "cta", "headline": "LAXJSLCA for 20% off", "sub": "swiftdroom.com"}
+      ],
+      "caption": "career gap warriors apply with volume #careergap #comeback",
+      "hashtags": ["careergap", "comeback", "jobsearch", "swiftdroom"]
+    },
+    {
+      "id": "acc08-post03",
+      "account": 8,
+      "post": 3,
+      "theme": "part-time-to-full",
+      "hook": "Part-time to $120k",
+      "slides": [
+        {"style": "hook", "headline": "part-time → $120k full-time in 3 weeks", "sub": "applied to 250 companies."},
+        {"style": "problem", "headline": "250 × 15 min = 62 hours", "sub": "of form filling. i don't have 62 hours."},
+        {"style": "solution", "headline": "250 × 3 sec = 12 minutes", "sub": "with Swiftdroom. that's the difference."},
+        {"style": "proof", "headline": "workday + greenhouse", "sub": "both handled. even the dropdown nightmares."},
+        {"style": "solution", "headline": "referral code saves 20%", "sub": "LAXJSLCA at checkout"},
+        {"style": "cta", "headline": "swiftdroom.com/register?ref=LAXJSLCA", "sub": "start applying smarter today"}
+      ],
+      "caption": "250 apps in 3 weeks → $120k offer #fulltime #joboffer",
+      "hashtags": ["fulltime", "joboffer", "career", "swiftdroom"]
+    },
+    {
+      "id": "acc09-post01",
+      "account": 9,
+      "post": 1,
+      "theme": "international",
+      "hook": "H1B job search",
+      "slides": [
+        {"style": "hook", "headline": "H1B job search is brutal", "sub": "fewer openings. more applicants. every day counts."},
+        {"style": "problem", "headline": "visa sponsorship field", "sub": "on every single form. plus 25 other fields. 50 companies/day target."},
+        {"style": "pain", "headline": "copy-paste from a doc", "sub": "doesn't cut it when you're racing against visa deadlines."},
+        {"style": "solution", "headline": "Swiftdroom", "sub": "profile stores visa status once. autofills everywhere. 3 sec."},
+        {"style": "proof", "headline": "AI essays", "sub": "tailored answers that sound professional and specific"},
+        {"style": "cta", "headline": "20% off — LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "H1B seekers — speed is survival #h1b #visa #international",
+      "hashtags": ["h1b", "visa", "international", "swiftdroom"]
+    },
+    {
+      "id": "acc09-post02",
+      "account": 9,
+      "post": 2,
+      "theme": "intern-student",
+      "hook": "International student",
+      "slides": [
+        {"style": "hook", "headline": "international student job hunt", "sub": "OPT clock ticking. 50 apps/day or fall behind."},
+        {"style": "problem", "headline": "20+ fields every form", "sub": "work authorization. sponsorship. graduation date. gpa. essays."},
+        {"style": "solution", "headline": "Swiftdroom autofill", "sub": "save profile once. fill 50 forms/day. AI writes essays."},
+        {"style": "proof", "headline": "3 seconds", "sub": "per application. track status in dashboard."},
+        {"style": "solution", "headline": "chrome extension", "sub": "works on US job boards. greenhouse, workday, lever."},
+        {"style": "cta", "headline": "LAXJSLCA = 20% off", "sub": "swiftdroom.com"}
+      ],
+      "caption": "OPT countdown — apply faster #opt #internationalstudent",
+      "hashtags": ["opt", "internationalstudent", "f1", "swiftdroom"]
+    },
+    {
+      "id": "acc09-post03",
+      "account": 9,
+      "post": 3,
+      "theme": "sponsorship",
+      "hook": "Sponsorship jobs only",
+      "slides": [
+        {"style": "hook", "headline": "only 5% of jobs sponsor visas", "sub": "you need to find and apply to ALL of them. fast."},
+        {"style": "problem", "headline": "speed problem", "sub": "15 min/form × 30 sponsorship jobs = 7.5 hours. per day."},
+        {"style": "solution", "headline": "Swiftdroom = 3 sec/form", "sub": "30 sponsorship apps in 90 seconds of autofill time."},
+        {"style": "proof", "headline": "intelligent AI answers", "sub": "\"why should we sponsor you?\" — handled."},
+        {"style": "solution", "headline": "volume wins", "sub": "more apps → more interviews → sponsorship offer"},
+        {"style": "cta", "headline": "code LAXJSLCA", "sub": "20% off · swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "visa sponsorship jobs — apply to all of them fast #sponsorship #visa",
+      "hashtags": ["sponsorship", "visa", "workvisa", "swiftdroom"]
+    },
+    {
+      "id": "acc10-post01",
+      "account": 10,
+      "post": 1,
+      "theme": "burnout",
+      "hook": "Job search burnout",
+      "slides": [
+        {"style": "hook", "headline": "job search burnout is real", "sub": "and 90% of it is form filling. not rejection."},
+        {"style": "problem", "headline": "the grind", "sub": "50 forms/day. 20+ fields each. same info. different layouts."},
+        {"style": "pain", "headline": "i tried everything", "sub": "google doc. text expander. chatgpt copy-paste. all slow."},
+        {"style": "solution", "headline": "Swiftdroom fixed the grind", "sub": "AI autofill in 3 sec. ghostwriter for essays. done."},
+        {"style": "proof", "headline": "actually enjoy applying now", "sub": "because the tedious part is automated"},
+        {"style": "cta", "headline": "20% off — LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "burnout from forms not rejection #burnout #jobsearch",
+      "hashtags": ["burnout", "jobsearch", "mentalhealth", "swiftdroom"]
+    },
+    {
+      "id": "acc10-post02",
+      "account": 10,
+      "post": 2,
+      "theme": "doc-fail",
+      "hook": "Google doc hack failed",
+      "slides": [
+        {"style": "hook", "headline": "the google doc hack doesn't work", "sub": "and i tried for 6 weeks straight."},
+        {"style": "problem", "headline": "why it fails", "sub": "every company uses different field labels. dropdowns break paste. required fields hide."},
+        {"style": "problem", "headline": "50 forms/day?", "sub": "at 12 min each = 10 hours. not happening."},
+        {"style": "solution", "headline": "Swiftdroom maps fields automatically", "sub": "label-based detection. learns once. fills anywhere."},
+        {"style": "proof", "headline": "3 sec + intelligent AI", "sub": "answers tailored per company. not copy-paste."},
+        {"style": "cta", "headline": "LAXJSLCA for 20% off", "sub": "swiftdroom.com"}
+      ],
+      "caption": "stop copy-pasting from google docs #productivity #jobhack",
+      "hashtags": ["productivity", "jobhack", "automation", "swiftdroom"]
+    },
+    {
+      "id": "acc10-post03",
+      "account": 10,
+      "post": 3,
+      "theme": "final-cta",
+      "hook": "Ultimate CTA slideshow",
+      "slides": [
+        {"style": "hook", "headline": "stop retyping your resume", "sub": "Swiftdroom — job applications without the repetition."},
+        {"style": "problem", "headline": "the old way", "sub": "20+ fields. 50 forms/day. google doc. 12 min each. burnout."},
+        {"style": "solution", "headline": "the new way", "sub": "chrome extension. 3 sec autofill. AI ghostwriter. application tracker."},
+        {"style": "proof", "headline": "works on", "sub": "Workday · Greenhouse · Lever · most ATS forms"},
+        {"style": "solution", "headline": "sounds intelligent", "sub": "AI uses your profile. tailored per role. human tone."},
+        {"style": "cta", "headline": "20% OFF — CODE LAXJSLCA", "sub": "swiftdroom.com/register?ref=LAXJSLCA"}
+      ],
+      "caption": "job applications without the repetition ⚡ LAXJSLCA for 20% off #swiftdroom",
+      "hashtags": ["swiftdroom", "jobsearch", "autofill", "ai"]
+    }
+  ]
+}

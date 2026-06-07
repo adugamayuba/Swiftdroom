@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, clearSessionToken } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { useSignOut } from "@/lib/auth-session";
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const handleSignOut = useSignOut();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -27,12 +29,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         setReady(true);
       });
   }, [router]);
-
-  async function handleSignOut() {
-    await apiFetch("/api/auth/logout", { method: "POST" });
-    clearSessionToken();
-    router.push("/login");
-  }
 
   if (!ready) {
     return (
@@ -65,7 +61,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </Link>
             <button
               type="button"
-              onClick={handleSignOut}
+              onClick={() => void handleSignOut()}
               className="text-sm text-neutral-500 hover:text-neutral-900"
             >
               Sign out
