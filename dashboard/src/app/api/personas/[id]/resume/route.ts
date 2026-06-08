@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveUser } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { db } from "@/lib/db";
 import { uploadResume, isFirebaseConfigured } from "@/lib/firebase";
 import { extractTextFromBuffer } from "@/lib/pdf-extract";
@@ -9,16 +9,13 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json(
-      { error: friendlyUserMessage("Unauthorized") },
-      { status: 401 }
-    );
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
   const { id } = await params;
-  const persona = await db.persona.findFirst({ where: { id, userId: user.id } });
+  const persona = await db.persona.findFirst({
+    where: { id, userId: gate.user.id },
+  });
   if (!persona) {
     return NextResponse.json(
       { error: friendlyUserMessage("Not found") },
@@ -49,7 +46,7 @@ export async function POST(
     let resumeUrl = persona.resumeUrl;
     if (isFirebaseConfigured()) {
       resumeUrl = await uploadResume(
-        `${user.id}/personas/${persona.id}`,
+        `${gate.user.id}/personas/${persona.id}`,
         file.name,
         buffer,
         file.type || "application/octet-stream"

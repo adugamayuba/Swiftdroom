@@ -173,6 +173,7 @@ export default function DashboardOverview() {
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         {[
+          { label: "Jobs", desc: "Matched roles for you", href: "/dashboard/jobs" },
           { label: "Profile", desc: "Resume & contact details", href: "/dashboard/profile" },
           { label: "Personas", desc: `${data.personaCount} configured`, href: "/dashboard/personas" },
           {

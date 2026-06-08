@@ -46,6 +46,8 @@ model User {
   personas               Persona[]
   applications           Application[]
   fieldMappings          FieldMapping[]
+  jobFeedItems           JobFeedItem[]
+  jobSearchPreference    JobSearchPreference?
   apiToken               String             @unique @default(cuid())
   onboardingComplete     Boolean            @default(false)
   stripeCustomerId       String?            @unique
@@ -171,4 +173,52 @@ model StripeEvent {
   id        String   @id
   type      String
   createdAt DateTime @default(now())
+}
+
+model JobListing {
+  id          String        @id @default(cuid())
+  externalId  String
+  source      String
+  company     String
+  title       String
+  description String        @default("")
+  applyUrl    String
+  location    String        @default("")
+  region      String        @default("us")
+  remote      Boolean       @default(false)
+  postedAt    DateTime?
+  atsType     String        @default("")
+  feedItems   JobFeedItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([source, externalId])
+  @@index([region, postedAt])
+}
+
+model JobFeedItem {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobListingId String
+  jobListing   JobListing @relation(fields: [jobListingId], references: [id], onDelete: Cascade)
+  personaId    String?
+  score        Float      @default(0)
+  matchReason  String     @default("")
+  status       String     @default("recommended")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([userId, jobListingId])
+  @@index([userId, status, score])
+}
+
+model JobSearchPreference {
+  userId          String    @id
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  region          String    @default("all")
+  remoteOnly      Boolean   @default(false)
+  personaId       String?
+  lastRefreshedAt DateTime?
+  updatedAt       DateTime  @updatedAt
 }

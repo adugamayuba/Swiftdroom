@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { resolveUser } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/subscription-gate";
 
 const personaSchema = z.object({
   name: z.string().min(1),
@@ -14,13 +14,11 @@ const personaSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
   const personas = await db.persona.findMany({
-    where: { userId: user.id },
+    where: { userId: gate.user.id },
     orderBy: { createdAt: "asc" },
   });
 
@@ -28,12 +26,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
-  const userId = user.id;
+  const userId = gate.user.id;
 
   try {
     const body = await request.json();

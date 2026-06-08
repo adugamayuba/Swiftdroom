@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getUserFromApiToken } from "@/lib/auth";
+import {
+  hasActiveSubscription,
+  syncExpiredSubscription,
+} from "@/lib/subscription";
 
 const mappingSchema = z.object({
   domain: z.string(),
@@ -15,9 +19,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await getUserFromApiToken(token);
+  let user = await getUserFromApiToken(token);
   if (!user) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
+  user = await syncExpiredSubscription(user);
+  if (!hasActiveSubscription(user)) {
+    return NextResponse.json(
+      { error: "Active subscription required", code: "SUBSCRIPTION_REQUIRED" },
+      { status: 403 }
+    );
   }
 
   try {
@@ -51,9 +63,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await getUserFromApiToken(token);
+  let user = await getUserFromApiToken(token);
   if (!user) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
+  user = await syncExpiredSubscription(user);
+  if (!hasActiveSubscription(user)) {
+    return NextResponse.json(
+      { error: "Active subscription required", code: "SUBSCRIPTION_REQUIRED" },
+      { status: 403 }
+    );
   }
 
   const mappings = await db.fieldMapping.findMany({

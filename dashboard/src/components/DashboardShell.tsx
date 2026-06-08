@@ -11,6 +11,7 @@ import {
   LogOut,
   LayoutDashboard,
   Gift,
+  Compass,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { apiFetch, setSessionToken } from "@/lib/api-client";
@@ -20,6 +21,7 @@ import { MobileDesktopGate } from "@/components/MobileDesktopNotice";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/dashboard/jobs", label: "Jobs", icon: Compass },
   { href: "/dashboard/profile", label: "Profile", icon: User },
   { href: "/dashboard/personas", label: "Personas", icon: Users },
   { href: "/dashboard/applications", label: "Applications", icon: Briefcase },

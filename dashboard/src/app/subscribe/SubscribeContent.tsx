@@ -121,7 +121,8 @@ export default function SubscribePageContent() {
           Choose your plan
         </h1>
         <p className="mt-2 text-neutral-600">
-          Subscribe to unlock the Chrome extension and start applying.
+          Subscribe to unlock everything — matched job feed, dashboard, Chrome
+          extension, and AI autofill. No free tier.
         </p>
 
         {canceled && (

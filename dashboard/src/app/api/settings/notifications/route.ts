@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { resolveUser } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { db } from "@/lib/db";
 import { friendlyUserMessage, zodUserMessage } from "@/lib/user-messages";
 
@@ -11,30 +11,26 @@ const updateSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
   return NextResponse.json({
-    login: user.emailNotifyLogin,
-    applications: user.emailNotifyApplications,
-    billing: user.emailNotifyBilling,
+    login: gate.user.emailNotifyLogin,
+    applications: gate.user.emailNotifyApplications,
+    billing: gate.user.emailNotifyBilling,
   });
 }
 
 export async function PATCH(request: NextRequest) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
   try {
     const body = await request.json();
     const data = updateSchema.parse(body);
 
     const updated = await db.user.update({
-      where: { id: user.id },
+      where: { id: gate.user.id },
       data: {
         ...(data.login !== undefined
           ? { emailNotifyLogin: data.login }

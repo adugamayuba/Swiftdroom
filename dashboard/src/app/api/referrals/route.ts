@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveUser } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { db } from "@/lib/db";
 import { getReferralLink, REFERRAL_CONFIG } from "@/lib/referrals";
 
@@ -11,14 +11,12 @@ function maskEmail(email: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
   const [referrals, earnings] = await Promise.all([
     db.user.findMany({
-      where: { referredById: user.id },
+      where: { referredById: gate.user.id },
       select: {
         id: true,
         name: true,
@@ -30,7 +28,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     }),
     db.referralEarning.findMany({
-      where: { referrerId: user.id },
+      where: { referrerId: gate.user.id },
       include: {
         referredUser: { select: { email: true, name: true } },
       },
@@ -51,8 +49,8 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    referralCode: user.referralCode,
-    referralLink: getReferralLink(user.referralCode),
+    referralCode: gate.user.referralCode,
+    referralLink: getReferralLink(gate.user.referralCode),
     config: REFERRAL_CONFIG,
     referrals: referrals.map((r) => ({
       id: r.id,

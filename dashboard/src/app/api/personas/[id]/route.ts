@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { resolveUser } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/subscription-gate";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -17,12 +17,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
-  const userId = user.id;
+  const userId = gate.user.id;
   const { id } = await params;
 
   try {
@@ -55,12 +53,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
-  const userId = user.id;
+  const userId = gate.user.id;
   const { id } = await params;
 
   const existing = await db.persona.findFirst({ where: { id, userId } });

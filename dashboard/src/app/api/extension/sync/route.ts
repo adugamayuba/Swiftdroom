@@ -54,11 +54,15 @@ export async function GET(request: NextRequest) {
     where: { userId: refreshed.id },
   });
 
+  const { getActiveJobForUser } = await import("@/lib/job-feed");
+  const activeJob = await getActiveJobForUser(refreshed.id);
+
   return NextResponse.json({
     profile: refreshed.profile,
     personas: refreshed.personas,
     fieldMappings: mappings,
     usage: getUsageSummary(refreshed),
+    activeJob,
   });
 }
 

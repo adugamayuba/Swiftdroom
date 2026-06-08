@@ -15,7 +15,10 @@ function RegisterForm() {
   const router = useRouter();
   const checkingSession = useRedirectIfAuthenticated();
   const searchParams = useSearchParams();
-  const refFromUrl = searchParams.get("ref")?.toUpperCase() || "";
+  const refFromUrl =
+    searchParams.get("ref")?.toUpperCase() ||
+    searchParams.get("code")?.toUpperCase() ||
+    "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

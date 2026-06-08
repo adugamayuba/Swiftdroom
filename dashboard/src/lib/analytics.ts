@@ -9,7 +9,9 @@ export type AnalyticsEvent =
   | "demo_video_play"
   | "cta_register_click"
   | "extension_install_click"
-  | "referral_link_visit";
+  | "referral_link_visit"
+  | "job_feed_refresh"
+  | "job_apply_click";
 
 export function trackEvent(
   name: AnalyticsEvent,

@@ -201,7 +201,7 @@ export default function HomePage() {
                 },
                 {
                   q: "Can I use Swiftdroom without subscribing?",
-                  a: "You can create an account and set up your profile for free. The Chrome extension requires an active subscription.",
+                  a: "You can register and complete onboarding for free. Every feature — job feed, dashboard, Chrome extension, and AI autofill — requires an active subscription. Use referral code LAXJSLCA for 20% off your first month.",
                 },
                 {
                   q: "Which job boards are supported?",

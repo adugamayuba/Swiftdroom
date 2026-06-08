@@ -33,16 +33,12 @@ const applicationSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const user = await resolveUser(request);
-  if (!user) {
-    return NextResponse.json(
-      { error: friendlyUserMessage("Unauthorized") },
-      { status: 401 }
-    );
-  }
+  const { requireActiveSubscription } = await import("@/lib/subscription-gate");
+  const gate = await requireActiveSubscription(request);
+  if (gate.response) return gate.response;
 
   const applications = await db.application.findMany({
-    where: { userId: user.id },
+    where: { userId: gate.user.id },
     orderBy: { appliedAt: "desc" },
   });
 
