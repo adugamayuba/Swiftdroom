@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { setActiveJob } from "@/lib/job-feed";
-import { friendlyUserMessage, zodUserMessage } from "@/lib/user-messages";
+import { apiError, apiZodError } from "@/lib/user-messages";
 
 const patchSchema = z.object({
   status: z.enum(["saved", "dismissed", "clicked", "active"]),
@@ -28,7 +28,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return apiError("Job not found", 404);
     }
 
     if (status === "active") {
@@ -54,11 +54,8 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
+      return apiZodError(error);
     }
-    return NextResponse.json(
-      { error: friendlyUserMessage("Update failed") },
-      { status: 500 }
-    );
+    return apiError("Update failed", 500);
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { refreshJobFeed } from "@/lib/job-feed";
+import { apiError } from "@/lib/user-messages";
 
 export async function POST(request: NextRequest) {
   const gate = await requireActiveSubscription(request);
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return apiError("User not found", 404);
   }
 
   const result = await refreshJobFeed(user);

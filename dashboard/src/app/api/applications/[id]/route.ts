@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
+import { apiError, apiZodError } from "@/lib/user-messages";
 
 const updateSchema = z.object({
   status: z.string().optional(),
@@ -24,16 +25,16 @@ export async function PATCH(
 
     const existing = await db.application.findFirst({ where: { id, userId } });
     if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return apiError("Not found", 404);
     }
 
     const application = await db.application.update({ where: { id }, data });
     return NextResponse.json({ application });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return apiZodError(error);
     }
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return apiError("Update failed", 500);
   }
 }
 
@@ -49,7 +50,7 @@ export async function DELETE(
 
   const existing = await db.application.findFirst({ where: { id, userId } });
   if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return apiError("Not found", 404);
   }
 
   await db.application.delete({ where: { id } });

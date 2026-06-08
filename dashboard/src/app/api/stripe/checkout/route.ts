@@ -5,7 +5,7 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getPriceIdForPlan, type PlanId } from "@/lib/plans";
 import { getAppUrl } from "@/lib/app-url";
 import { db } from "@/lib/db";
-import { friendlyUserMessage, zodUserMessage } from "@/lib/user-messages";
+import { apiError, apiZodError, friendlyUserMessage } from "@/lib/user-messages";
 import {
   getRefereeDiscountCouponId,
   refereeGetsDiscount,
@@ -18,7 +18,7 @@ const checkoutSchema = z.object({
 export async function POST(request: NextRequest) {
   const user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   if (!isStripeConfigured()) {
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
+      return apiZodError(error);
     }
     console.error("Checkout error:", error);
     return NextResponse.json(

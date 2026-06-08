@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
+import { apiError, apiZodError } from "@/lib/user-messages";
 
 const personaSchema = z.object({
   name: z.string().min(1),
@@ -49,8 +50,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ persona });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return apiZodError(error);
     }
-    return NextResponse.json({ error: "Create failed" }, { status: 500 });
+    return apiError("Create failed", 500);
   }
 }

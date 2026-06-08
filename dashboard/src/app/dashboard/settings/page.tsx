@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Check, ExternalLink, RefreshCw } from "lucide-react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, readApiError } from "@/lib/api-client";
+import { friendlyUserMessage } from "@/lib/user-messages";
 import { trackEvent } from "@/lib/analytics";
 import { PLANS } from "@/lib/plans";
 import { getChromeWebStoreUrl } from "@/lib/chrome-store";
@@ -56,9 +57,19 @@ export default function SettingsPage() {
 
   async function openBillingPortal() {
     setBillingLoading(true);
+    setNotificationMessage("");
     const res = await apiFetch("/api/stripe/portal", { method: "POST" });
     const data = await res.json();
     setBillingLoading(false);
+    if (!res.ok) {
+      setNotificationMessage(
+        friendlyUserMessage(
+          data.error,
+          "We couldn't open billing. Please try again."
+        )
+      );
+      return;
+    }
     if (data.url) window.location.href = data.url;
   }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession, verifyPassword } from "@/lib/auth";
-import { friendlyUserMessage, zodUserMessage } from "@/lib/user-messages";
+import { apiError, apiZodError, friendlyUserMessage } from "@/lib/user-messages";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -16,10 +16,7 @@ export async function POST(request: NextRequest) {
 
     const user = await db.user.findUnique({ where: { email } });
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
+      return apiError("Invalid email or password", 401);
     }
 
     const sessionToken = await createSession(user.id);
@@ -38,7 +35,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
+      return apiZodError(error);
     }
     return NextResponse.json(
       { error: friendlyUserMessage("Login failed") },

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { getOrCreatePreferences } from "@/lib/job-feed";
-import { zodUserMessage } from "@/lib/user-messages";
+import { apiError, apiZodError } from "@/lib/user-messages";
 
 const prefsSchema = z.object({
   region: z.enum(["us", "international", "all"]).optional(),
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest) {
         where: { id: data.personaId, userId: gate.user.id },
       });
       if (!persona) {
-        return NextResponse.json({ error: "Persona not found" }, { status: 400 });
+        return apiError("Persona not found", 400);
       }
     }
 
@@ -60,8 +60,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ preferences: prefs });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
+      return apiZodError(error);
     }
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return apiError("Update failed", 500);
   }
 }

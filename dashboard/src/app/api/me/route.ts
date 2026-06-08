@@ -13,11 +13,12 @@ import { syncSubscriptionFromStripe } from "@/lib/stripe-subscription";
 import { refereeGetsDiscount } from "@/lib/referrals";
 import { getPostAuthRedirect } from "@/lib/user-flow";
 import { db } from "@/lib/db";
+import { apiError } from "@/lib/user-messages";
 
 export async function GET(request: NextRequest) {
   let user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   user = await syncExpiredSubscription(user);

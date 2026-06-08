@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
 const EXACT: Record<string, string> = {
@@ -18,15 +19,27 @@ const EXACT: Record<string, string> = {
   "Monthly application limit reached":
     "You've used all your applications for this month. Upgrade your plan or wait until your next billing cycle.",
   "Generation failed": "We couldn't generate an answer. Please try again.",
-  "Create failed": "We couldn't save that application. Please try again.",
+  "Create failed": "We couldn't save that. Please try again.",
   "Upload failed": "We couldn't upload your file. Please try again.",
   "Update failed": "We couldn't save your changes. Please try again.",
+  "Save failed": "We couldn't save your changes. Please try again.",
   "No file provided": "Please choose a file to upload.",
   "Not found": "We couldn't find what you're looking for.",
+  "Persona not found": "We couldn't find that persona. Try selecting another one.",
+  "Job not found": "We couldn't find that job. It may have been removed.",
+  "User not found": "We couldn't find your account. Please sign in again.",
+  "Invalid request": "Something doesn't look right. Please try again.",
+  "No billing account found":
+    "We couldn't find a billing account. Subscribe first to manage billing.",
+  Forbidden: "You don't have access to this page.",
+  "Sync failed": "We couldn't sync your subscription. Please try again.",
+  "Invalid email": "Please enter a valid email address.",
+  "This payment does not match your account.":
+    "This payment doesn't match your account. Please sign in with the email you used to pay.",
 };
 
 const TECHNICAL =
-  /railway|vercel|api_url|database_url|direct_url|neon|postgresql|prisma|migrate|deploy|webhook|cors|localhost|\/api\/|zod|expected|string received|invalid_type|OPENAI_API_KEY|503|p2021|p2002/i;
+  /railway|vercel|api_url|database_url|direct_url|neon|postgresql|prisma|migrate|deploy|webhook|cors|localhost|\/api\/|zod|expected|string received|invalid_type|OPENAI_API_KEY|503|p2021|p2002|stripe|firebase|jwt|typeerror|syntaxerror|econnrefused|enotfound|unique constraint|foreign key|invocation|stack trace|at \/|cannot read propert/i;
 
 export function friendlyUserMessage(
   raw?: string | null,
@@ -37,9 +50,27 @@ export function friendlyUserMessage(
   const message = raw.trim();
   if (EXACT[message]) return EXACT[message];
   if (TECHNICAL.test(message)) return fallback;
+  if (/^expected\s/i.test(message)) return fallback;
+  if (/^\[?\{/.test(message)) return fallback;
   if (message.length > 140) return fallback;
 
   return message;
+}
+
+/** JSON error response with a customer-friendly message. */
+export function apiError(
+  message: string,
+  status: number,
+  extra?: Record<string, unknown>
+): NextResponse {
+  return NextResponse.json(
+    { error: friendlyUserMessage(message), ...extra },
+    { status }
+  );
+}
+
+export function apiZodError(error: ZodError): NextResponse {
+  return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
 }
 
 export function zodUserMessage(error: ZodError): string {

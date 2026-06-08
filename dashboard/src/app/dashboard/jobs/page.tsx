@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { friendlyUserMessage } from "@/lib/user-messages";
 import { trackEvent } from "@/lib/analytics";
 import {
   DashboardCard,
@@ -111,6 +112,10 @@ export default function JobsPage() {
     const res = await apiFetch("/api/jobs/refresh", { method: "POST" });
     const data = await res.json();
     setRefreshing(false);
+    if (!res.ok) {
+      setMessage(friendlyUserMessage(data.error));
+      return;
+    }
     setMessage(data.message || "");
     if (data.refreshed) {
       trackEvent("job_feed_refresh", { region });

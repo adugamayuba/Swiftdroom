@@ -1,3 +1,5 @@
+import { friendlyUserMessage, USER_MESSAGES } from "@/lib/user-messages";
+
 const SESSION_KEY = "swiftdroom_session_token";
 const ADMIN_SESSION_KEY = "swiftdroom_admin_token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
@@ -87,6 +89,21 @@ export function setAdminToken(token: string) {
 
 export function clearAdminToken() {
   localStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+/** Parse a failed API response into a customer-friendly message. */
+export async function readApiError(
+  response: Response,
+  fallback = USER_MESSAGES.tryAgain
+): Promise<string> {
+  try {
+    const data = (await response.json()) as { error?: string };
+    return friendlyUserMessage(data.error, fallback);
+  } catch {
+    return response.status >= 500
+      ? USER_MESSAGES.contactSupport
+      : USER_MESSAGES.network;
+  }
 }
 
 export async function apiFetch(

@@ -6,6 +6,7 @@ import {
   hasActiveSubscription,
   syncExpiredSubscription,
 } from "@/lib/subscription";
+import { apiError, apiZodError } from "@/lib/user-messages";
 
 const mappingSchema = z.object({
   domain: z.string(),
@@ -16,20 +17,19 @@ const mappingSchema = z.object({
 export async function POST(request: NextRequest) {
   const token = request.headers.get("x-api-token");
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   let user = await getUserFromApiToken(token);
   if (!user) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    return apiError("Invalid token", 401);
   }
 
   user = await syncExpiredSubscription(user);
   if (!hasActiveSubscription(user)) {
-    return NextResponse.json(
-      { error: "Active subscription required", code: "SUBSCRIPTION_REQUIRED" },
-      { status: 403 }
-    );
+    return apiError("Active subscription required", 403, {
+      code: "SUBSCRIPTION_REQUIRED",
+    });
   }
 
   try {
@@ -51,29 +51,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ mapping });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return apiZodError(error);
     }
-    return NextResponse.json({ error: "Save failed" }, { status: 500 });
+    return apiError("Save failed", 500);
   }
 }
 
 export async function GET(request: NextRequest) {
   const token = request.headers.get("x-api-token");
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   let user = await getUserFromApiToken(token);
   if (!user) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    return apiError("Invalid token", 401);
   }
 
   user = await syncExpiredSubscription(user);
   if (!hasActiveSubscription(user)) {
-    return NextResponse.json(
-      { error: "Active subscription required", code: "SUBSCRIPTION_REQUIRED" },
-      { status: 403 }
-    );
+    return apiError("Active subscription required", 403, {
+      code: "SUBSCRIPTION_REQUIRED",
+    });
   }
 
   const mappings = await db.fieldMapping.findMany({

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Upload, CheckCircle, ArrowRight, AlertCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
-import { friendlyUserMessage } from "@/lib/user-messages";
+import { friendlyUserMessage, USER_MESSAGES } from "@/lib/user-messages";
 
 type ExtractedContact = {
   fullName?: string;
@@ -100,12 +100,8 @@ export default function OnboardingPage() {
       }));
 
       setStep("review");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "We couldn't upload your resume. Please try again."
-      );
+    } catch {
+      setError(USER_MESSAGES.resumeExtract);
     } finally {
       setUploading(false);
     }

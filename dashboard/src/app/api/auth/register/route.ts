@@ -3,7 +3,12 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { createSession, hashPassword, getUserFromApiToken } from "@/lib/auth";
-import { friendlyUserMessage, USER_MESSAGES, zodUserMessage } from "@/lib/user-messages";
+import {
+  apiError,
+  apiZodError,
+  friendlyUserMessage,
+  USER_MESSAGES,
+} from "@/lib/user-messages";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -16,7 +21,7 @@ function registrationError(error: unknown) {
   console.error("Registration error:", error);
 
   if (error instanceof z.ZodError) {
-    return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
+    return apiZodError(error);
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -54,10 +59,7 @@ export async function POST(request: NextRequest) {
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json(
-        { error: "Email already registered" },
-        { status: 400 }
-      );
+      return apiError("Email already registered", 400);
     }
 
     let referredById: string | undefined;
@@ -67,16 +69,10 @@ export async function POST(request: NextRequest) {
         select: { id: true, email: true },
       });
       if (!referrer) {
-        return NextResponse.json(
-          { error: "Invalid referral code" },
-          { status: 400 }
-        );
+        return apiError("Invalid referral code", 400);
       }
       if (referrer.email.toLowerCase() === email.toLowerCase()) {
-        return NextResponse.json(
-          { error: "You cannot use your own referral code" },
-          { status: 400 }
-        );
+        return apiError("You cannot use your own referral code", 400);
       }
       referredById = referrer.id;
     }
@@ -132,12 +128,12 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const token = request.headers.get("x-api-token");
   if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   const user = await getUserFromApiToken(token);
   if (!user) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    return apiError("Invalid token", 401);
   }
 
   return NextResponse.json({

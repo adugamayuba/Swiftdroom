@@ -2,18 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/lib/auth";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getAppUrl } from "@/lib/app-url";
+import { apiError } from "@/lib/user-messages";
 
 export async function POST(request: NextRequest) {
   const user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   if (!isStripeConfigured() || !user.stripeCustomerId) {
-    return NextResponse.json(
-      { error: "No billing account found" },
-      { status: 400 }
-    );
+    return apiError("No billing account found", 400);
   }
 
   const stripe = getStripe();

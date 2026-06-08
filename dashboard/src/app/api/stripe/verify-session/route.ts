@@ -8,7 +8,7 @@ import {
 } from "@/lib/stripe-subscription";
 import { db } from "@/lib/db";
 import { hasActiveSubscription } from "@/lib/subscription";
-import { friendlyUserMessage } from "@/lib/user-messages";
+import { apiError, apiZodError, friendlyUserMessage } from "@/lib/user-messages";
 
 const schema = z.object({
   sessionId: z.string().min(1),
@@ -40,10 +40,7 @@ export async function POST(request: NextRequest) {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.metadata?.userId !== user.id) {
-      return NextResponse.json(
-        { error: "This payment does not match your account." },
-        { status: 403 }
-      );
+      return apiError("This payment does not match your account.", 403);
     }
 
     if (session.payment_status !== "paid") {
@@ -62,7 +59,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+      return apiZodError(error);
     }
     console.error("Verify session error:", error);
     return NextResponse.json(

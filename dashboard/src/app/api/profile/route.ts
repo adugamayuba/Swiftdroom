@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { resolveUser } from "@/lib/auth";
 import { parseName } from "@/lib/utils";
+import { apiError, apiZodError } from "@/lib/user-messages";
 
 function isProfileComplete(profile: {
   fullName: string;
@@ -48,7 +49,7 @@ const profileSchema = z.object({
 export async function GET(request: NextRequest) {
   const user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   return NextResponse.json({ profile: user.profile });
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   try {
@@ -106,8 +107,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ profile: fresh, onboardingComplete: complete, missing });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return apiZodError(error);
     }
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return apiError("Update failed", 500);
   }
 }

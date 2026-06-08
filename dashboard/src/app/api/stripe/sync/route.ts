@@ -4,12 +4,13 @@ import { hasActiveSubscription } from "@/lib/subscription";
 import { syncSubscriptionFromStripe } from "@/lib/stripe-subscription";
 import { db } from "@/lib/db";
 import { isStripeConfigured } from "@/lib/stripe";
+import { apiError } from "@/lib/user-messages";
 
 /** Recover subscription from Stripe when webhooks were missed. */
 export async function POST(request: NextRequest) {
   let user = await resolveUser(request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", 401);
   }
 
   if (!isStripeConfigured()) {
