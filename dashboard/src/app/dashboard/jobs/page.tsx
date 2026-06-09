@@ -48,6 +48,7 @@ export default function JobsPage() {
   const [region, setRegion] = useState<JobRegion>("all");
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [personaId, setPersonaId] = useState<string>("");
+  const [targetRole, setTargetRole] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const autoRefreshed = useRef(false);
@@ -85,6 +86,7 @@ export default function JobsPage() {
       setRegion(data.preferences.region || "all");
       setRemoteOnly(Boolean(data.preferences.remoteOnly));
       setPersonaId(data.preferences.personaId || "");
+      setTargetRole(data.preferences.targetRole || "");
     }
     setLoading(false);
   }, []);
@@ -100,6 +102,7 @@ export default function JobsPage() {
   }, [loadPrefs, loadFeed, runRefresh]);
 
   async function savePreferences(updates: {
+    targetRole?: string;
     region?: JobRegion;
     remoteOnly?: boolean;
     personaId?: string | null;
@@ -108,6 +111,12 @@ export default function JobsPage() {
       method: "PUT",
       body: JSON.stringify(updates),
     });
+  }
+
+  async function handleTargetRoleBlur() {
+    const trimmed = targetRole.trim();
+    if (!trimmed) return;
+    await savePreferences({ targetRole: trimmed });
   }
 
   async function handleRegionChange(next: JobRegion) {
@@ -165,6 +174,17 @@ export default function JobsPage() {
 
       <DashboardCard className="mt-6 p-4">
         <div className="flex flex-wrap gap-4">
+          <div className="min-w-[220px] flex-1">
+            <label className="app-label">Looking for</label>
+            <input
+              type="text"
+              className="app-input mt-1"
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value)}
+              onBlur={() => void handleTargetRoleBlur()}
+              placeholder="e.g. Software Engineer"
+            />
+          </div>
           <div>
             <label className="app-label">Region</label>
             <select
@@ -212,7 +232,7 @@ export default function JobsPage() {
       ) : items.length === 0 ? (
         <DashboardEmpty
           className="mt-8"
-          message="No jobs in your feed yet. Update your persona focus to a role title (e.g. Software Engineer), then refresh."
+          message="No jobs in your feed yet. Set your target role above, then refresh."
         />
       ) : (
         <ul className="mt-6 space-y-4">

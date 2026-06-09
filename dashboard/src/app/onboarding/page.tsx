@@ -45,6 +45,8 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
   const [extractedKeys, setExtractedKeys] = useState<string[]>([]);
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
+  const [targetRole, setTargetRole] = useState("");
+  const [suggestedRole, setSuggestedRole] = useState("");
 
   useEffect(() => {
     apiFetch("/api/me").then(async (r) => {
@@ -85,6 +87,11 @@ export default function OnboardingPage() {
         .map(([k]) => k);
       setExtractedKeys(keys);
 
+      if (data.suggestedJobTitle) {
+        setSuggestedRole(data.suggestedJobTitle);
+        setTargetRole((prev) => prev || data.suggestedJobTitle);
+      }
+
       // Merge extracted into profile state — only fill blanks
       setProfile((p) => ({
         ...p,
@@ -111,6 +118,7 @@ export default function OnboardingPage() {
     e.preventDefault();
     if (!profile.fullName.trim()) { setError("Full name is required."); return; }
     if (!profile.email.trim()) { setError("Email is required."); return; }
+    if (!targetRole.trim()) { setError("Tell us what job you're looking for."); return; }
 
     setSaving(true);
     setError("");
@@ -119,8 +127,8 @@ export default function OnboardingPage() {
       method: "PUT",
       body: JSON.stringify({
         ...profile,
-        // Always include resumeText explicitly so the PUT never clears it
         resumeText: profile.resumeText || undefined,
+        targetRole: targetRole.trim(),
       }),
     });
     const data = await res.json();
@@ -198,7 +206,7 @@ export default function OnboardingPage() {
             </span>
             <span>→</span>
             <span className={step === "review" ? "font-semibold text-neutral-900" : ""}>
-              2. Confirm details
+              2. Your role
             </span>
             <span>→</span>
             <span className="text-neutral-300">3. Subscribe</span>
@@ -288,7 +296,38 @@ export default function OnboardingPage() {
               Review what we found and fill in anything that's missing.
             </p>
 
-            <div className="mt-8 space-y-6">
+            <h1 className="text-2xl font-bold text-neutral-900">What job are you looking for?</h1>
+            <p className="mt-1 text-neutral-500">
+              We use this to find matching roles. You can change it anytime from the Jobs page.
+            </p>
+
+            <div className="mt-8 rounded-xl border border-neutral-200 bg-white p-6">
+              <label className="text-sm font-medium text-neutral-700">
+                Target role <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                placeholder="e.g. Software Engineer, Product Manager"
+                className="mt-2 w-full rounded-lg border border-neutral-300 px-3 py-2.5 text-sm outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              />
+              {suggestedRole && (
+                <p className="mt-2 text-sm text-neutral-500">
+                  Suggested from your resume:{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-neutral-800 underline"
+                    onClick={() => setTargetRole(suggestedRole)}
+                  >
+                    {suggestedRole}
+                  </button>
+                </p>
+              )}
+            </div>
+
+            <div className="mt-6 space-y-6">
               <div className="rounded-xl border border-neutral-200 bg-white p-6">
                 <h2 className="mb-5 text-sm font-semibold uppercase tracking-wider text-neutral-400">
                   Contact

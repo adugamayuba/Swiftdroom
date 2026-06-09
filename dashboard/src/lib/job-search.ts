@@ -298,51 +298,22 @@ async function fetchTopCompanyJobs(
   return jobs;
 }
 
-const GENERIC_FOCUS = /^(general|default|other|any|misc|n\/a|none)$/i;
+import { resolveTargetRole } from "@/lib/job-title";
 
 export function buildSearchQuery(
   personaFocus: string,
   personaName: string,
   resumeSnippet: string,
-  skills = ""
+  skills = "",
+  targetRole = ""
 ): string {
-  const focus = personaFocus.trim();
-  if (focus && !GENERIC_FOCUS.test(focus)) return focus.slice(0, 120);
-
-  const skillLine = skills
-    .split(/[,;\n]/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 2)
-    .slice(0, 3)
-    .join(" ");
-  if (skillLine) return skillLine.slice(0, 120);
-
-  const resumeWords = tokenizeResumeForQuery(resumeSnippet);
-  if (resumeWords.length > 0) return resumeWords.slice(0, 120);
-
-  const name = personaName.replace(/resume|cv|default/gi, "").trim();
-  if (name && !GENERIC_FOCUS.test(name)) return name.slice(0, 120);
-
-  return "software engineer";
-}
-
-function tokenizeResumeForQuery(text: string): string {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  for (const line of lines.slice(0, 8)) {
-    const lower = line.toLowerCase();
-    if (
-      lower.includes("engineer") ||
-      lower.includes("developer") ||
-      lower.includes("manager") ||
-      lower.includes("designer") ||
-      lower.includes("analyst") ||
-      lower.includes("specialist")
-    ) {
-      return line.slice(0, 120);
-    }
-  }
-  const first = lines.find((l) => l.length > 3);
-  return first?.slice(0, 120) || "";
+  return resolveTargetRole(
+    targetRole,
+    personaFocus,
+    personaName,
+    resumeSnippet,
+    skills
+  );
 }
 
 export type JobFetchStats = {

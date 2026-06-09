@@ -3,9 +3,12 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { getOrCreatePreferences } from "@/lib/job-feed";
+import { syncTargetRole } from "@/lib/sync-target-role";
+import { normalizeRole } from "@/lib/job-title";
 import { apiError, apiZodError } from "@/lib/user-messages";
 
 const prefsSchema = z.object({
+  targetRole: z.string().optional(),
   region: z.enum(["us", "international", "all"]).optional(),
   remoteOnly: z.boolean().optional(),
   personaId: z.string().nullable().optional(),
@@ -42,15 +45,23 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    if (data.targetRole !== undefined) {
+      await syncTargetRole(gate.user.id, data.targetRole);
+    }
+
     const prefs = await db.jobSearchPreference.upsert({
       where: { userId: gate.user.id },
       create: {
         userId: gate.user.id,
+        targetRole: data.targetRole ? normalizeRole(data.targetRole) : "",
         region: data.region ?? "all",
         remoteOnly: data.remoteOnly ?? false,
         personaId: data.personaId ?? null,
       },
       update: {
+        ...(data.targetRole !== undefined
+          ? { targetRole: normalizeRole(data.targetRole) }
+          : {}),
         ...(data.region !== undefined ? { region: data.region } : {}),
         ...(data.remoteOnly !== undefined ? { remoteOnly: data.remoteOnly } : {}),
         ...(data.personaId !== undefined ? { personaId: data.personaId } : {}),

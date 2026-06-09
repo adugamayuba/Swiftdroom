@@ -216,6 +216,7 @@ model JobFeedItem {
 model JobSearchPreference {
   userId          String    @id
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetRole      String    @default("")
   region          String    @default("all")
   remoteOnly      Boolean   @default(false)
   personaId       String?

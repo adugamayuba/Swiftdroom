@@ -5,6 +5,7 @@ import { parseName } from "@/lib/utils";
 import { uploadResume, isFirebaseConfigured } from "@/lib/firebase";
 import { extractTextFromBuffer } from "@/lib/pdf-extract";
 import { extractContactFromResume } from "@/lib/resume-parser";
+import { extractJobTitleFromResume } from "@/lib/job-title";
 import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
 
 export async function POST(request: NextRequest) {
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Extract contact details from resume text
     const extracted = extractContactFromResume(text);
+    const suggestedJobTitle = extractJobTitleFromResume(text);
 
     let resumeUrl = "";
     if (isFirebaseConfigured()) {
@@ -94,6 +96,7 @@ export async function POST(request: NextRequest) {
       resumeFileName: file.name,
       resumeUrl,
       extracted,
+      suggestedJobTitle,
     });
   } catch (error) {
     console.error("Upload error:", error);

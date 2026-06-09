@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { extractJobTitleFromResume, isGenericRole, normalizeRole } from "./job-title";
 
 /** Keep the default persona in sync with profile data from onboarding. */
 export async function syncDefaultPersonaFromProfile(userId: string) {
@@ -18,6 +19,9 @@ export async function syncDefaultPersonaFromProfile(userId: string) {
     .filter(Boolean)
     .join(" — ");
 
+  const suggestedFocus =
+    extractJobTitleFromResume(profile.resumeText || "") || "General";
+
   return db.persona.update({
     where: { id: defaultPersona.id },
     data: {
@@ -25,7 +29,10 @@ export async function syncDefaultPersonaFromProfile(userId: string) {
       resumeFileName: profile.resumeFileName || defaultPersona.resumeFileName,
       resumeUrl: profile.resumeUrl || defaultPersona.resumeUrl,
       summary: defaultPersona.summary.trim() || profileSummary,
-      focus: defaultPersona.focus.trim() || "General",
+      focus:
+        isGenericRole(defaultPersona.focus)
+          ? normalizeRole(suggestedFocus) || "General"
+          : defaultPersona.focus,
     },
   });
 }

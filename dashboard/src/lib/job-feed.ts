@@ -6,6 +6,7 @@ import {
   type JobRegion,
 } from "@/lib/job-search";
 import { scoreJobForPersona } from "@/lib/job-matching";
+import { fetchCachedJobsForRole } from "@/lib/job-ingest";
 
 const REFRESH_COOLDOWN_MS = 15 * 60 * 1000;
 
@@ -59,16 +60,29 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
     persona.focus,
     persona.name,
     persona.resumeText || user.profile?.resumeText || "",
-    persona.skills
+    persona.skills,
+    prefs.targetRole
   );
 
   const region = (prefs.region || "all") as JobRegion;
-  const { jobs: rawJobs, stats } = await fetchJobsForRegion(
+  const { jobs: liveJobs, stats } = await fetchJobsForRegion(
     query,
     region,
     prefs.remoteOnly,
     user.id
   );
+
+  const cachedJobs = await fetchCachedJobsForRole(
+    query,
+    region === "international" ? "international" : region === "us" ? "us" : "all"
+  );
+
+  const seenUrls = new Set<string>();
+  const rawJobs = [...liveJobs, ...cachedJobs].filter((job) => {
+    if (seenUrls.has(job.applyUrl)) return false;
+    seenUrls.add(job.applyUrl);
+    return true;
+  });
 
   const appliedUrls = new Set(
     (

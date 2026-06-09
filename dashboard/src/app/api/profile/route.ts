@@ -44,6 +44,7 @@ const profileSchema = z.object({
   resumeText: z.string().optional(),
   resumeFileName: z.string().optional(),
   resumeUrl: z.string().optional(),
+  targetRole: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -63,7 +64,12 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const data = profileSchema.parse(body);
+    const parsed = profileSchema.parse(body);
+    const targetRole =
+      typeof body === "object" && body && "targetRole" in body
+        ? String((body as { targetRole?: string }).targetRole || "")
+        : "";
+    const data = parsed;
 
     if (data.fullName && !data.firstName) {
       const { firstName, lastName } = parseName(data.fullName);
@@ -85,6 +91,11 @@ export async function PUT(request: NextRequest) {
 
     const { syncDefaultPersonaFromProfile } = await import("@/lib/persona-sync");
     await syncDefaultPersonaFromProfile(user.id);
+
+    if (targetRole?.trim()) {
+      const { syncTargetRole } = await import("@/lib/sync-target-role");
+      await syncTargetRole(user.id, targetRole);
+    }
 
     if (complete !== user.onboardingComplete) {
       await db.user.update({
