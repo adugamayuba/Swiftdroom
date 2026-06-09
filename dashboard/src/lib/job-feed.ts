@@ -3,6 +3,7 @@ import type { Persona, Profile, User } from "@prisma/client";
 import {
   buildSearchQuery,
   fetchJobsForRegion,
+  isJSearchConfigured,
   type JobRegion,
 } from "@/lib/job-search";
 import { scoreJobForPersona } from "@/lib/job-matching";
@@ -74,7 +75,11 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
   );
 
   const region = (prefs.region || "all") as JobRegion;
-  const rawJobs = await fetchJobsForRegion(query, region, prefs.remoteOnly);
+  const { jobs: rawJobs, stats } = await fetchJobsForRegion(
+    query,
+    region,
+    prefs.remoteOnly
+  );
 
   const usCount = rawJobs.filter((j) => j.region === "us").length;
   const intlCount = rawJobs.length - usCount;
@@ -179,17 +184,34 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
           .join(", ")})`
       : "";
 
+  let message: string;
+  if (added > 0) {
+    message = `Found ${added} matching jobs${breakdown}.`;
+  } else if (rawJobs.length > 0) {
+    message =
+      "Jobs were found but you've already saved or hidden them. Try a different region filter.";
+  } else if (stats.jsearchError === "rate_limited") {
+    message =
+      "Job search quota reached for now. International listings may still appear — try again later.";
+  } else if (!stats.jsearchConfigured && (region === "us" || region === "all")) {
+    message =
+      "Only international remote jobs are available right now — US search isn't connected on the server yet.";
+  } else if (stats.jsearchConfigured && stats.jsearch === 0 && (region === "us" || region === "all")) {
+    message =
+      'No US jobs matched — set persona focus to a role title (e.g. "Developer") and try USA only.';
+  } else {
+    message =
+      'No jobs matched your search — update your persona focus (e.g. "Product Manager") and try again.';
+  }
+
   return {
     refreshed: true,
     added,
     query,
     fetched: rawJobs.length,
-    message:
-      added > 0
-        ? `Found ${added} matching jobs${breakdown}.`
-        : rawJobs.length > 0
-          ? "Jobs were found but you've already saved or hidden them. Try a different region filter."
-          : 'No jobs matched your search — update your persona focus (e.g. "Product Manager") and try again.',
+    stats,
+    jsearchConfigured: isJSearchConfigured(),
+    message,
   };
 }
 

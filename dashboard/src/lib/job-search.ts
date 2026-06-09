@@ -113,35 +113,62 @@ function pickApplyUrl(job: {
   return normalizeApplyUrl(preferred) || "";
 }
 
-/** JSearch via RapidAPI — strong US coverage when key is set. */
-async function fetchJSearchJobs(
-  query: string,
-  region: JobRegion,
-  remoteOnly: boolean
-): Promise<RawJobListing[]> {
-  const apiKey = process.env.JSEARCH_RAPIDAPI_KEY?.trim();
-  if (!apiKey) {
-    console.warn("JSearch skipped: JSEARCH_RAPIDAPI_KEY is not set");
-    return [];
-  }
+export function isJSearchConfigured(): boolean {
+  return Boolean(process.env.JSEARCH_RAPIDAPI_KEY?.trim());
+}
 
-  const params = new URLSearchParams({
-    query: query || "software engineer",
-    page: "1",
-    num_pages: "3",
-    date_posted: "month",
-  });
+type JSearchJob = {
+  job_id: string;
+  employer_name?: string;
+  job_title?: string;
+  job_description?: string;
+  job_apply_link?: string;
+  apply_options?: Array<{ apply_link?: string; is_direct?: boolean }>;
+  job_city?: string;
+  job_state?: string;
+  job_country?: string;
+  job_is_remote?: boolean | null;
+  job_posted_at_datetime_utc?: string;
+};
 
-  if (region === "us") {
-    params.set("country", "us");
-  }
+function mapJSearchJob(job: JSearchJob): RawJobListing | null {
+  const applyUrl = pickApplyUrl(job);
+  if (!applyUrl) return null;
 
-  if (remoteOnly) {
-    params.set("work_from_home", "true");
-  }
+  const country = (job.job_country || "").toLowerCase();
+  const isUs =
+    country === "united states" ||
+    country === "us" ||
+    country === "usa" ||
+    Boolean(job.job_state);
+  const location = [job.job_city, job.job_state, job.job_country]
+    .filter(Boolean)
+    .join(", ");
 
+  return {
+    externalId: job.job_id,
+    source: "jsearch",
+    company: job.employer_name || "Company",
+    title: job.job_title || "Role",
+    description: (job.job_description || "").slice(0, 12000),
+    applyUrl,
+    location,
+    region: isUs ? "us" : "international",
+    remote: job.job_is_remote === true,
+    postedAt: job.job_posted_at_datetime_utc
+      ? new Date(job.job_posted_at_datetime_utc)
+      : undefined,
+    atsType: detectAts(applyUrl),
+  };
+}
+
+async function callJSearchEndpoint(
+  apiKey: string,
+  path: "search" | "search-v2",
+  params: URLSearchParams
+): Promise<{ jobs: RawJobListing[]; status: number; apiStatus?: string }> {
   const res = await fetch(
-    `https://jsearch.p.rapidapi.com/search?${params.toString()}`,
+    `https://jsearch.p.rapidapi.com/${path}?${params.toString()}`,
     {
       headers: {
         "X-RapidAPI-Key": apiKey,
@@ -154,59 +181,70 @@ async function fetchJSearchJobs(
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    console.error("JSearch error:", res.status, body.slice(0, 300));
-    return [];
+    console.error(`JSearch ${path} error:`, res.status, body.slice(0, 300));
+    return { jobs: [], status: res.status };
   }
 
-  const data = (await res.json()) as {
-    data?: Array<{
-      job_id: string;
-      employer_name?: string;
-      job_title?: string;
-      job_description?: string;
-      job_apply_link?: string;
-      apply_options?: Array<{ apply_link?: string; is_direct?: boolean }>;
-      job_city?: string;
-      job_state?: string;
-      job_country?: string;
-      job_is_remote?: boolean;
-      job_posted_at_datetime_utc?: string;
-    }>;
+  const payload = (await res.json()) as {
+    status?: string;
+    data?: JSearchJob[];
   };
 
-  const jobs = (data.data || [])
-    .map((job) => {
-      const applyUrl = pickApplyUrl(job);
-      const country = (job.job_country || "").toLowerCase();
-      const isUs =
-        country === "united states" ||
-        country === "us" ||
-        country === "usa" ||
-        Boolean(job.job_state);
-      const location = [job.job_city, job.job_state, job.job_country]
-        .filter(Boolean)
-        .join(", ");
+  const jobs = (payload.data || [])
+    .map(mapJSearchJob)
+    .filter((j): j is RawJobListing => j !== null);
 
-      return {
-        externalId: job.job_id,
-        source: "jsearch",
-        company: job.employer_name || "Company",
-        title: job.job_title || "Role",
-        description: (job.job_description || "").slice(0, 12000),
-        applyUrl,
-        location,
-        region: isUs ? ("us" as const) : ("international" as const),
-        remote: Boolean(job.job_is_remote),
-        postedAt: job.job_posted_at_datetime_utc
-          ? new Date(job.job_posted_at_datetime_utc)
-          : undefined,
-        atsType: applyUrl ? detectAts(applyUrl) : "",
-      };
-    })
-    .filter((j) => j.applyUrl);
+  return { jobs, status: res.status, apiStatus: payload.status };
+}
 
-  console.info(`JSearch returned ${jobs.length} jobs for query "${query}" (${region})`);
-  return jobs;
+/** JSearch via RapidAPI — strong US coverage when key is set. */
+async function fetchJSearchJobs(
+  query: string,
+  region: JobRegion,
+  remoteOnly: boolean
+): Promise<{ jobs: RawJobListing[]; error?: string }> {
+  const apiKey = process.env.JSEARCH_RAPIDAPI_KEY?.trim();
+  if (!apiKey) {
+    console.warn("JSearch skipped: JSEARCH_RAPIDAPI_KEY is not set");
+    return { jobs: [], error: "not_configured" };
+  }
+
+  const params = new URLSearchParams({
+    query: query || "software engineer",
+    page: "1",
+    num_pages: "2",
+    date_posted: "all",
+    language: "en",
+  });
+
+  if (region === "us") {
+    params.set("country", "us");
+  }
+
+  if (remoteOnly) {
+    params.set("work_from_home", "true");
+  }
+
+  let result = await callJSearchEndpoint(apiKey, "search", params);
+
+  if (result.jobs.length === 0 && result.status !== 429) {
+    const v2 = await callJSearchEndpoint(apiKey, "search-v2", params);
+    if (v2.jobs.length > 0) {
+      result = v2;
+    } else if (v2.status === 429 || result.status === 429) {
+      return { jobs: [], error: "rate_limited" };
+    }
+  }
+
+  if (result.status === 429) {
+    return { jobs: [], error: "rate_limited" };
+  }
+
+  console.info(
+    `JSearch returned ${result.jobs.length} jobs for query "${query}" (${region})`
+  );
+
+  return { jobs: result.jobs };
 }
 
 const GENERIC_FOCUS = /^(general|default|other|any|misc|n\/a|none)$/i;
@@ -256,25 +294,44 @@ function tokenizeResumeForQuery(text: string): string {
   return first?.slice(0, 120) || "";
 }
 
+export type JobFetchStats = {
+  jsearchConfigured: boolean;
+  jsearch: number;
+  remotive: number;
+  jsearchError?: string;
+};
+
 export async function fetchJobsForRegion(
   query: string,
   region: JobRegion,
   remoteOnly: boolean
-): Promise<RawJobListing[]> {
+): Promise<{ jobs: RawJobListing[]; stats: JobFetchStats }> {
   const results: RawJobListing[] = [];
+  const stats: JobFetchStats = {
+    jsearchConfigured: isJSearchConfigured(),
+    jsearch: 0,
+    remotive: 0,
+  };
 
   if (region === "us" || region === "all") {
-    const usJobs = await fetchJSearchJobs(query, "us", remoteOnly);
-    results.push(...usJobs);
+    const { jobs, error } = await fetchJSearchJobs(query, "us", remoteOnly);
+    stats.jsearch += jobs.length;
+    if (error) stats.jsearchError = error;
+    results.push(...jobs);
   }
 
   if (region === "international" || region === "all") {
-    const intlJSearch =
+    const { jobs: intlJobs, error: intlError } =
       region === "international"
         ? await fetchJSearchJobs(query, "international", remoteOnly)
-        : [];
+        : { jobs: [] as RawJobListing[] };
+    stats.jsearch += intlJobs.length;
+    if (intlError && !stats.jsearchError) stats.jsearchError = intlError;
+    results.push(...intlJobs);
+
     const remotive = await fetchRemotiveJobs(query);
-    results.push(...intlJSearch, ...remotive);
+    stats.remotive = remotive.length;
+    results.push(...remotive);
   }
 
   const seen = new Set<string>();
@@ -295,5 +352,5 @@ export async function fetchJobsForRegion(
     filtered = filtered.filter((j) => j.remote);
   }
 
-  return filtered.slice(0, 50);
+  return { jobs: filtered.slice(0, 50), stats };
 }
