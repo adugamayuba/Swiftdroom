@@ -35,13 +35,21 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
   const prefs = await getOrCreatePreferences(user.id);
   const now = new Date();
 
-  if (
+  const feedCount = await db.jobFeedItem.count({
+    where: {
+      userId: user.id,
+      status: { in: ["recommended", "active", "saved", "clicked"] },
+    },
+  });
+
+  const onCooldown =
     prefs.lastRefreshedAt &&
-    now.getTime() - prefs.lastRefreshedAt.getTime() < REFRESH_COOLDOWN_MS
-  ) {
+    now.getTime() - prefs.lastRefreshedAt.getTime() < REFRESH_COOLDOWN_MS;
+
+  if (onCooldown && feedCount > 0) {
     const waitMin = Math.ceil(
       (REFRESH_COOLDOWN_MS -
-        (now.getTime() - prefs.lastRefreshedAt.getTime())) /
+        (now.getTime() - prefs.lastRefreshedAt!.getTime())) /
         60000
     );
     return {
@@ -61,11 +69,15 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
   const query = buildSearchQuery(
     persona.focus,
     persona.name,
-    persona.resumeText || user.profile?.resumeText || ""
+    persona.resumeText || user.profile?.resumeText || "",
+    persona.skills
   );
 
   const region = (prefs.region || "all") as JobRegion;
   const rawJobs = await fetchJobsForRegion(query, region, prefs.remoteOnly);
+
+  const usCount = rawJobs.filter((j) => j.region === "us").length;
+  const intlCount = rawJobs.length - usCount;
 
   const appliedUrls = new Set(
     (
@@ -157,14 +169,27 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
     data: { lastRefreshedAt: now },
   });
 
+  const breakdown =
+    usCount || intlCount
+      ? ` (${[
+          usCount ? `${usCount} US` : "",
+          intlCount ? `${intlCount} international` : "",
+        ]
+          .filter(Boolean)
+          .join(", ")})`
+      : "";
+
   return {
     refreshed: true,
     added,
     query,
+    fetched: rawJobs.length,
     message:
       added > 0
-        ? `Found ${added} matching jobs.`
-        : "No new jobs right now — try a different region or update your persona focus.",
+        ? `Found ${added} matching jobs${breakdown}.`
+        : rawJobs.length > 0
+          ? "Jobs were found but you've already saved or hidden them. Try a different region filter."
+          : 'No jobs matched your search — update your persona focus (e.g. "Product Manager") and try again.',
   };
 }
 

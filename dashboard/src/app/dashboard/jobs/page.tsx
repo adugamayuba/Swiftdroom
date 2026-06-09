@@ -55,7 +55,15 @@ export default function JobsPage() {
 
   const loadFeed = useCallback(async () => {
     const res = await apiFetch("/api/jobs/feed");
-    if (!res.ok) return;
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        setMessage(
+          friendlyUserMessage(data.error, "An active subscription is required for the job feed.")
+        );
+      }
+      return;
+    }
     const data = await res.json();
     setItems(data.items || []);
   }, []);
@@ -117,9 +125,9 @@ export default function JobsPage() {
       return;
     }
     setMessage(data.message || "");
+    await loadFeed();
     if (data.refreshed) {
       trackEvent("job_feed_refresh", { region });
-      await loadFeed();
     }
   }
 
