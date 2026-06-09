@@ -3,7 +3,6 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { getOrCreatePreferences } from "@/lib/job-feed";
-import { isJSearchConfigured } from "@/lib/job-search";
 import { apiError, apiZodError } from "@/lib/user-messages";
 
 const prefsSchema = z.object({
@@ -23,11 +22,7 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  return NextResponse.json({
-    preferences: prefs,
-    personas,
-    jsearchConfigured: isJSearchConfigured(),
-  });
+  return NextResponse.json({ preferences: prefs, personas });
 }
 
 export async function PUT(request: NextRequest) {

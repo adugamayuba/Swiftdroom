@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ExternalLink,
   MapPin,
@@ -9,7 +9,6 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
-import { friendlyUserMessage } from "@/lib/user-messages";
 import { trackEvent } from "@/lib/analytics";
 import {
   DashboardCard,
@@ -51,22 +50,28 @@ export default function JobsPage() {
   const [personaId, setPersonaId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [message, setMessage] = useState("");
+  const autoRefreshed = useRef(false);
 
   const loadFeed = useCallback(async () => {
     const res = await apiFetch("/api/jobs/feed");
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 403) {
-        setMessage(
-          friendlyUserMessage(data.error, "An active subscription is required for the job feed.")
-        );
-      }
-      return;
-    }
+    if (!res.ok) return;
     const data = await res.json();
     setItems(data.items || []);
+    return (data.items || []) as FeedItem[];
   }, []);
+
+  const runRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const res = await apiFetch("/api/jobs/refresh", { method: "POST" });
+    setRefreshing(false);
+    if (!res.ok) return false;
+    const data = await res.json();
+    await loadFeed();
+    if (data.refreshed) {
+      trackEvent("job_feed_refresh", { region });
+    }
+    return Boolean(data.refreshed);
+  }, [loadFeed, region]);
 
   const loadPrefs = useCallback(async () => {
     const res = await apiFetch("/api/jobs/preferences");
@@ -85,8 +90,14 @@ export default function JobsPage() {
   }, []);
 
   useEffect(() => {
-    loadPrefs().then(loadFeed);
-  }, [loadPrefs, loadFeed]);
+    loadPrefs().then(async () => {
+      const current = await loadFeed();
+      if (!autoRefreshed.current && (!current || current.length === 0)) {
+        autoRefreshed.current = true;
+        await runRefresh();
+      }
+    });
+  }, [loadPrefs, loadFeed, runRefresh]);
 
   async function savePreferences(updates: {
     region?: JobRegion;
@@ -112,23 +123,6 @@ export default function JobsPage() {
   async function handlePersonaChange(id: string) {
     setPersonaId(id);
     await savePreferences({ personaId: id || null });
-  }
-
-  async function handleRefresh() {
-    setRefreshing(true);
-    setMessage("");
-    const res = await apiFetch("/api/jobs/refresh", { method: "POST" });
-    const data = await res.json();
-    setRefreshing(false);
-    if (!res.ok) {
-      setMessage(friendlyUserMessage(data.error));
-      return;
-    }
-    setMessage(data.message || "");
-    await loadFeed();
-    if (data.refreshed) {
-      trackEvent("job_feed_refresh", { region });
-    }
   }
 
   async function updateItem(
@@ -159,7 +153,7 @@ export default function JobsPage() {
         action={
           <button
             type="button"
-            onClick={() => void handleRefresh()}
+            onClick={() => void runRefresh()}
             disabled={refreshing}
             className="app-btn-primary !py-2"
           >
@@ -209,15 +203,16 @@ export default function JobsPage() {
             Remote only
           </label>
         </div>
-        {message && (
-          <p className="mt-3 text-sm text-[var(--brand-header)]/60">{message}</p>
-        )}
       </DashboardCard>
 
-      {items.length === 0 ? (
+      {refreshing && items.length === 0 ? (
+        <div className="mt-8 flex justify-center">
+          <DashboardSpinner />
+        </div>
+      ) : items.length === 0 ? (
         <DashboardEmpty
           className="mt-8"
-          message="No jobs in your feed yet. Hit Refresh feed to find roles matched to your persona — update your persona focus for better results."
+          message="No jobs in your feed yet. Update your persona focus to a role title (e.g. Software Engineer), then refresh."
         />
       ) : (
         <ul className="mt-6 space-y-4">

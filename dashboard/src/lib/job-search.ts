@@ -114,7 +114,26 @@ function pickApplyUrl(job: {
 }
 
 export function isJSearchConfigured(): boolean {
-  return Boolean(process.env.JSEARCH_RAPIDAPI_KEY?.trim());
+  return Boolean(getJSearchApiKey());
+}
+
+function getJSearchApiKey(): string {
+  const raw =
+    process.env.JSEARCH_RAPIDAPI_KEY?.trim() ||
+    process.env.RAPIDAPI_KEY?.trim() ||
+    "";
+  return raw.replace(/^["']+|["']+$/g, "").replace(/\s+/g, "");
+}
+
+function extractJSearchJobs(payload: unknown): JSearchJob[] {
+  if (!payload || typeof payload !== "object") return [];
+  const root = payload as Record<string, unknown>;
+  if (Array.isArray(root.data)) return root.data as JSearchJob[];
+  if (root.data && typeof root.data === "object") {
+    const nested = root.data as Record<string, unknown>;
+    if (Array.isArray(nested.jobs)) return nested.jobs as JSearchJob[];
+  }
+  return [];
 }
 
 type JSearchJob = {
@@ -185,16 +204,17 @@ async function callJSearchEndpoint(
     return { jobs: [], status: res.status };
   }
 
-  const payload = (await res.json()) as {
-    status?: string;
-    data?: JSearchJob[];
-  };
-
-  const jobs = (payload.data || [])
+  const payload = await res.json();
+  const jobs = extractJSearchJobs(payload)
     .map(mapJSearchJob)
     .filter((j): j is RawJobListing => j !== null);
 
-  return { jobs, status: res.status, apiStatus: payload.status };
+  const apiStatus =
+    payload && typeof payload === "object" && "status" in payload
+      ? String((payload as { status?: string }).status)
+      : undefined;
+
+  return { jobs, status: res.status, apiStatus };
 }
 
 /** JSearch via RapidAPI — strong US coverage when key is set. */
@@ -203,16 +223,16 @@ async function fetchJSearchJobs(
   region: JobRegion,
   remoteOnly: boolean
 ): Promise<{ jobs: RawJobListing[]; error?: string }> {
-  const apiKey = process.env.JSEARCH_RAPIDAPI_KEY?.trim();
+  const apiKey = getJSearchApiKey();
   if (!apiKey) {
-    console.warn("JSearch skipped: JSEARCH_RAPIDAPI_KEY is not set");
+    console.warn("JSearch skipped: no API key configured");
     return { jobs: [], error: "not_configured" };
   }
 
   const params = new URLSearchParams({
     query: query || "software engineer",
     page: "1",
-    num_pages: "2",
+    num_pages: "3",
     date_posted: "all",
     language: "en",
   });
@@ -225,15 +245,12 @@ async function fetchJSearchJobs(
     params.set("work_from_home", "true");
   }
 
-  let result = await callJSearchEndpoint(apiKey, "search", params);
-
+  // v3 API — prefer search-v2, fall back to search
+  let result = await callJSearchEndpoint(apiKey, "search-v2", params);
   if (result.jobs.length === 0 && result.status !== 429) {
-    const v2 = await callJSearchEndpoint(apiKey, "search-v2", params);
-    if (v2.jobs.length > 0) {
-      result = v2;
-    } else if (v2.status === 429 || result.status === 429) {
-      return { jobs: [], error: "rate_limited" };
-    }
+    const legacy = await callJSearchEndpoint(apiKey, "search", params);
+    if (legacy.jobs.length > 0) result = legacy;
+    else if (legacy.status === 429) result = legacy;
   }
 
   if (result.status === 429) {

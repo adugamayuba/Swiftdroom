@@ -3,12 +3,11 @@ import type { Persona, Profile, User } from "@prisma/client";
 import {
   buildSearchQuery,
   fetchJobsForRegion,
-  isJSearchConfigured,
   type JobRegion,
 } from "@/lib/job-search";
 import { scoreJobForPersona } from "@/lib/job-matching";
 
-const REFRESH_COOLDOWN_MS = 60 * 60 * 1000;
+const REFRESH_COOLDOWN_MS = 15 * 60 * 1000;
 
 export async function getOrCreatePreferences(userId: string) {
   return db.jobSearchPreference.upsert({
@@ -48,23 +47,12 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
     now.getTime() - prefs.lastRefreshedAt.getTime() < REFRESH_COOLDOWN_MS;
 
   if (onCooldown && feedCount > 0) {
-    const waitMin = Math.ceil(
-      (REFRESH_COOLDOWN_MS -
-        (now.getTime() - prefs.lastRefreshedAt!.getTime())) /
-        60000
-    );
-    return {
-      refreshed: false,
-      message: `Feed refreshes every hour. Try again in ~${waitMin} min.`,
-    };
+    return { refreshed: false, added: 0 };
   }
 
   const persona = await resolvePersona(user.id, prefs.personaId);
   if (!persona) {
-    return {
-      refreshed: false,
-      message: "Create a persona first so we can match jobs to your focus.",
-    };
+    return { refreshed: false, added: 0 };
   }
 
   const query = buildSearchQuery(
@@ -80,9 +68,6 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
     region,
     prefs.remoteOnly
   );
-
-  const usCount = rawJobs.filter((j) => j.region === "us").length;
-  const intlCount = rawJobs.length - usCount;
 
   const appliedUrls = new Set(
     (
@@ -174,44 +159,13 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
     data: { lastRefreshedAt: now },
   });
 
-  const breakdown =
-    usCount || intlCount
-      ? ` (${[
-          usCount ? `${usCount} US` : "",
-          intlCount ? `${intlCount} international` : "",
-        ]
-          .filter(Boolean)
-          .join(", ")})`
-      : "";
-
-  let message: string;
-  if (added > 0) {
-    message = `Found ${added} matching jobs${breakdown}.`;
-  } else if (rawJobs.length > 0) {
-    message =
-      "Jobs were found but you've already saved or hidden them. Try a different region filter.";
-  } else if (stats.jsearchError === "rate_limited") {
-    message =
-      "Job search quota reached for now. International listings may still appear — try again later.";
-  } else if (!stats.jsearchConfigured && (region === "us" || region === "all")) {
-    message =
-      "Only international remote jobs are available right now — US search isn't connected on the server yet.";
-  } else if (stats.jsearchConfigured && stats.jsearch === 0 && (region === "us" || region === "all")) {
-    message =
-      'No US jobs matched — set persona focus to a role title (e.g. "Developer") and try USA only.';
-  } else {
-    message =
-      'No jobs matched your search — update your persona focus (e.g. "Product Manager") and try again.';
-  }
+  console.info(
+    `Job refresh for ${user.id}: query="${query}" region=${region} fetched=${rawJobs.length} jsearch=${stats.jsearch} remotive=${stats.remotive} added=${added}`
+  );
 
   return {
     refreshed: true,
     added,
-    query,
-    fetched: rawJobs.length,
-    stats,
-    jsearchConfigured: isJSearchConfigured(),
-    message,
   };
 }
 
