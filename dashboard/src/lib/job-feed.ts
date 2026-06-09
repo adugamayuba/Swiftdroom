@@ -66,7 +66,8 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
   const { jobs: rawJobs, stats } = await fetchJobsForRegion(
     query,
     region,
-    prefs.remoteOnly
+    prefs.remoteOnly,
+    user.id
   );
 
   const appliedUrls = new Set(

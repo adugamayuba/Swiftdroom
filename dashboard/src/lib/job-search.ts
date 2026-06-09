@@ -1,3 +1,5 @@
+import { pickCompaniesForRefresh } from "@/lib/top-companies";
+
 export type JobRegion = "us" | "international" | "all";
 
 export interface RawJobListing {
@@ -221,7 +223,8 @@ async function callJSearchEndpoint(
 async function fetchJSearchJobs(
   query: string,
   region: JobRegion,
-  remoteOnly: boolean
+  remoteOnly: boolean,
+  options?: { numPages?: number }
 ): Promise<{ jobs: RawJobListing[]; error?: string }> {
   const apiKey = getJSearchApiKey();
   if (!apiKey) {
@@ -232,7 +235,7 @@ async function fetchJSearchJobs(
   const params = new URLSearchParams({
     query: query || "software engineer",
     page: "1",
-    num_pages: "3",
+    num_pages: String(options?.numPages ?? 2),
     date_posted: "all",
     language: "en",
   });
@@ -262,6 +265,37 @@ async function fetchJSearchJobs(
   );
 
   return { jobs: result.jobs };
+}
+
+/** Extra searches like "software engineer Google" for popular employers. */
+async function fetchTopCompanyJobs(
+  baseQuery: string,
+  region: JobRegion,
+  remoteOnly: boolean,
+  seed: string
+): Promise<RawJobListing[]> {
+  if (!isJSearchConfigured()) return [];
+  if (region === "international") return [];
+
+  const role = baseQuery.trim() || "software engineer";
+  const companies = pickCompaniesForRefresh(seed, 5);
+  const jobs: RawJobListing[] = [];
+
+  for (const company of companies) {
+    const { jobs: batch, error } = await fetchJSearchJobs(
+      `${role} ${company}`,
+      "us",
+      remoteOnly,
+      { numPages: 1 }
+    );
+    if (error === "rate_limited") break;
+    jobs.push(...batch);
+  }
+
+  console.info(
+    `Top-company search returned ${jobs.length} jobs (${companies.join(", ")})`
+  );
+  return jobs;
 }
 
 const GENERIC_FOCUS = /^(general|default|other|any|misc|n\/a|none)$/i;
@@ -321,7 +355,8 @@ export type JobFetchStats = {
 export async function fetchJobsForRegion(
   query: string,
   region: JobRegion,
-  remoteOnly: boolean
+  remoteOnly: boolean,
+  seed = "default"
 ): Promise<{ jobs: RawJobListing[]; stats: JobFetchStats }> {
   const results: RawJobListing[] = [];
   const stats: JobFetchStats = {
@@ -334,7 +369,11 @@ export async function fetchJobsForRegion(
     const { jobs, error } = await fetchJSearchJobs(query, "us", remoteOnly);
     stats.jsearch += jobs.length;
     if (error) stats.jsearchError = error;
-    results.push(...jobs);
+
+    const companyJobs = await fetchTopCompanyJobs(query, region, remoteOnly, seed);
+    stats.jsearch += companyJobs.length;
+
+    results.push(...jobs, ...companyJobs);
   }
 
   if (region === "international" || region === "all") {
@@ -369,5 +408,5 @@ export async function fetchJobsForRegion(
     filtered = filtered.filter((j) => j.remote);
   }
 
-  return { jobs: filtered.slice(0, 50), stats };
+  return { jobs: filtered.slice(0, 60), stats };
 }

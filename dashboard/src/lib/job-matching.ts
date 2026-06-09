@@ -1,5 +1,6 @@
 import type { Persona, Profile } from "@prisma/client";
 import type { RawJobListing } from "@/lib/job-search";
+import { isTopTechCompany } from "@/lib/top-companies";
 
 const ATS_BOOST: Record<string, number> = {
   greenhouse: 12,
@@ -66,6 +67,12 @@ export function scoreJobForPersona(
   }
 
   if (job.remote) score += 4;
+
+  const topCompany = isTopTechCompany(job.company);
+  if (topCompany) {
+    score += 14;
+    reasons.push(topCompany);
+  }
 
   score = Math.min(100, Math.round(score));
 
