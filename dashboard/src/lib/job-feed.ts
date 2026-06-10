@@ -175,7 +175,7 @@ export async function refreshJobFeed(user: User & { profile: Profile | null }) {
   });
 
   console.info(
-    `Job refresh for ${user.id}: query="${query}" region=${region} fetched=${rawJobs.length} jsearch=${stats.jsearch} remotive=${stats.remotive} added=${added}`
+    `Job refresh for ${user.id}: query="${query}" region=${region} fetched=${rawJobs.length} jsearch=${stats.jsearch} remotive=${stats.remotive} ats=${stats.ats} added=${added}`
   );
 
   return {

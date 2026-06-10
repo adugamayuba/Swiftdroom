@@ -65,11 +65,8 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const parsed = profileSchema.parse(body);
-    const targetRole =
-      typeof body === "object" && body && "targetRole" in body
-        ? String((body as { targetRole?: string }).targetRole || "")
-        : "";
-    const data = parsed;
+    const targetRole = (parsed.targetRole || "").trim();
+    const { targetRole: _ignored, ...data } = parsed;
 
     if (data.fullName && !data.firstName) {
       const { firstName, lastName } = parseName(data.fullName);
@@ -92,7 +89,7 @@ export async function PUT(request: NextRequest) {
     const { syncDefaultPersonaFromProfile } = await import("@/lib/persona-sync");
     await syncDefaultPersonaFromProfile(user.id);
 
-    if (targetRole?.trim()) {
+    if (targetRole) {
       const { syncTargetRole } = await import("@/lib/sync-target-role");
       await syncTargetRole(user.id, targetRole);
     }
@@ -120,6 +117,7 @@ export async function PUT(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return apiZodError(error);
     }
+    console.error("Profile update error:", error);
     return apiError("Update failed", 500);
   }
 }

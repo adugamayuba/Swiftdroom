@@ -1,3 +1,4 @@
+import { fetchAtsBoardJobsForIngest } from "@/lib/ats-boards";
 import { db } from "@/lib/db";
 import { fetchJobsForRegion } from "@/lib/job-search";
 import { TOP_TECH_COMPANIES } from "@/lib/top-companies";
@@ -92,7 +93,15 @@ export async function ingestGlobalJobCache(): Promise<{ ingested: number; querie
     }
   }
 
-  console.info(`Job ingest complete: ${ingested} listings from ${queries} queries`);
+  const { jobs: atsJobs, stats: atsStats } = await fetchAtsBoardJobsForIngest();
+  for (const raw of atsJobs) {
+    await upsertListing(raw);
+    ingested++;
+  }
+
+  console.info(
+    `Job ingest complete: ${ingested} listings from ${queries} queries + ${atsJobs.length} ATS (gh=${atsStats.greenhouse} lever=${atsStats.lever})`
+  );
   return { ingested, queries };
 }
 

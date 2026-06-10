@@ -1,3 +1,4 @@
+import { fetchAtsBoardJobs } from "@/lib/ats-boards";
 import { pickCompaniesForRefresh } from "@/lib/top-companies";
 
 export type JobRegion = "us" | "international" | "all";
@@ -320,6 +321,7 @@ export type JobFetchStats = {
   jsearchConfigured: boolean;
   jsearch: number;
   remotive: number;
+  ats: number;
   jsearchError?: string;
 };
 
@@ -334,6 +336,7 @@ export async function fetchJobsForRegion(
     jsearchConfigured: isJSearchConfigured(),
     jsearch: 0,
     remotive: 0,
+    ats: 0,
   };
 
   if (region === "us" || region === "all") {
@@ -360,6 +363,14 @@ export async function fetchJobsForRegion(
     stats.remotive = remotive.length;
     results.push(...remotive);
   }
+
+  const { jobs: atsJobs, stats: atsStats } = await fetchAtsBoardJobs({
+    roleFilter: query,
+    seed,
+    maxCompanies: 5,
+  });
+  stats.ats = atsStats.greenhouse + atsStats.lever;
+  results.push(...atsJobs);
 
   const seen = new Set<string>();
   let filtered = results.filter((job) => {
