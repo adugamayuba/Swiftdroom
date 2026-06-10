@@ -11,7 +11,11 @@ export type AnalyticsEvent =
   | "extension_install_click"
   | "referral_link_visit"
   | "job_feed_refresh"
-  | "job_apply_click";
+  | "job_apply_click"
+  | "page_view"
+  | "promo_shown"
+  | "promo_click"
+  | "promo_dismissed";
 
 export function trackEvent(
   name: AnalyticsEvent,

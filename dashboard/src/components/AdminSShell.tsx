@@ -105,6 +105,12 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
               >
                 Subscription recovery
               </Link>
+              <Link
+                href="/admin/s/analytics"
+                className="text-neutral-600 hover:text-neutral-900"
+              >
+                Site analytics
+              </Link>
             </nav>
           </div>
           <button

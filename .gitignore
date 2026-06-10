@@ -6,3 +6,7 @@ node_modules/
 dist/
 .DS_Store
 swiftdroom-extension.zip
+
+# Marketing assets — keep locally, do not commit generated videos/flyers
+assets/marketing/output/tiktok/main/
+assets/flyer-*.png

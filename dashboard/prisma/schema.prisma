@@ -223,3 +223,39 @@ model JobSearchPreference {
   lastRefreshedAt DateTime?
   updatedAt       DateTime  @updatedAt
 }
+
+model VisitorSession {
+  id          String         @id @default(cuid())
+  visitorId   String
+  landingPath String         @default("/")
+  referrer    String         @default("")
+  utmSource   String         @default("")
+  utmMedium   String         @default("")
+  utmCampaign String         @default("")
+  userAgent   String         @default("")
+  startedAt   DateTime       @default(now())
+  lastSeenAt  DateTime       @default(now())
+  endedAt     DateTime?
+  durationSec Int            @default(0)
+  pageViews   Int            @default(0)
+  events      VisitorEvent[]
+
+  @@index([startedAt])
+  @@index([visitorId])
+  @@index([utmSource, utmMedium])
+}
+
+model VisitorEvent {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type      String
+  path      String         @default("")
+  label     String         @default("")
+  meta      Json?
+  createdAt DateTime       @default(now())
+
+  @@index([sessionId])
+  @@index([type, createdAt])
+  @@index([path])
+}

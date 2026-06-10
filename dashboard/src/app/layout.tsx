@@ -10,6 +10,7 @@ import {
 } from "@/lib/seo";
 import SessionKeeper from "@/components/SessionKeeper";
 import { MobileDesktopBanner } from "@/components/MobileDesktopNotice";
+import { MarketingWidgets } from "@/components/MarketingWidgets";
 import { getApiUrlEnv } from "@/lib/env";
 
 const geistSans = Geist({
@@ -84,6 +85,7 @@ export default function RootLayout({
         <SessionKeeper />
         {children}
         <MobileDesktopBanner />
+        <MarketingWidgets />
         <Analytics />
       </body>
     </html>
