@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { PLANS, type PlanId } from "./plans";
 import type { User } from "@prisma/client";
+import { isWelcomePromoCode } from "@/lib/promo";
 
 const REFERRAL_HOLD_DAYS = 30;
 const REFERRER_COMMISSION_PERCENT = 10;
@@ -34,6 +35,17 @@ export function getReferralLink(code: string): string {
 
 export function refereeGetsDiscount(user: User): boolean {
   return Boolean(user.referredById) && !user.referralDiscountUsed;
+}
+
+/** 20% off first subscription — friend referral or WELCOME promo at signup. */
+export function userGetsCheckoutDiscount(user: User): boolean {
+  if (user.referralDiscountUsed) return false;
+  if (user.referredById) return true;
+  return isWelcomePromoCode(user.signupPromoCode);
+}
+
+export function welcomePromoGetsDiscount(user: User): boolean {
+  return isWelcomePromoCode(user.signupPromoCode) && !user.referralDiscountUsed;
 }
 
 export function getRefereeDiscountCouponId(): string | null {

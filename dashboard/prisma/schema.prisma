@@ -63,6 +63,7 @@ model User {
   referredBy               User?              @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals                User[]             @relation("UserReferrals")
   referralDiscountUsed     Boolean            @default(false)
+  signupPromoCode          String             @default("")
   referralEarnings         ReferralEarning[]  @relation("ReferrerEarnings")
   earningsAsReferee        ReferralEarning[]  @relation("RefereeEarnings")
   emailNotifyLogin         Boolean            @default(true)

@@ -6,8 +6,8 @@ Organic social content for **10 TikTok accounts** (3 posts each = 30 slideshows)
 
 | | |
 |---|---|
-| **Code** | `LAXJSLCA` |
-| **URL** | https://www.swiftdroom.com/register?ref=LAXJSLCA |
+| **Code** | `WELCOME` |
+| **URL** | https://www.swiftdroom.com/register?code=WELCOME |
 | **Offer** | 20% off first month |
 
 ## Quick start

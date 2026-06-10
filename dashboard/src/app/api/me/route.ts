@@ -10,7 +10,7 @@ import {
   syncExpiredSubscription,
 } from "@/lib/subscription";
 import { syncSubscriptionFromStripe } from "@/lib/stripe-subscription";
-import { refereeGetsDiscount } from "@/lib/referrals";
+import { userGetsCheckoutDiscount } from "@/lib/referrals";
 import { getPostAuthRedirect } from "@/lib/user-flow";
 import { db } from "@/lib/db";
 import { apiError } from "@/lib/user-messages";
@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
     hasActiveSubscription: hasActiveSubscription(user),
     redirectTo: getPostAuthRedirect(user),
     usage: getUsageSummary(user),
-    referralDiscountAvailable: refereeGetsDiscount(user),
+    referralDiscountAvailable: userGetsCheckoutDiscount(user),
+    signupPromoCode: user.signupPromoCode,
     referralCode: user.referralCode,
     emailNotifications: {
       login: user.emailNotifyLogin,

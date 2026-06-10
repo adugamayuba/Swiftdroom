@@ -17,6 +17,7 @@ export default function SubscribePageContent() {
     onboardingComplete: boolean;
     hasActiveSubscription: boolean;
     referralDiscountAvailable?: boolean;
+    signupPromoCode?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -139,7 +140,9 @@ export default function SubscribePageContent() {
 
         {userState.referralDiscountAvailable && (
           <div className="mt-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-            Your referral discount is applied — 20% off your first subscription.
+            {userState.signupPromoCode === "WELCOME"
+              ? "Code WELCOME applied — 20% off your first subscription."
+              : "Your referral discount is applied — 20% off your first subscription."}
           </div>
         )}
 

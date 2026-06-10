@@ -1,7 +1,7 @@
 # Meta Ads Manager — copy-paste ad text
 
-**Destination URL:** `https://www.swiftdroom.com/register?ref=LAXJSLCA`  
-**Referral code:** `LAXJSLCA` (20% off first month)  
+**Destination URL:** `https://www.swiftdroom.com/register?code=WELCOME`  
+**Promo code:** `WELCOME` (20% off first month)  
 **CTA button:** Sign Up  
 **Images:** `assets/marketing/output/meta/link-ads/` or `meta/feed/`  
 **Video:** `assets/demo/swiftdroom-demo.mp4`
@@ -166,7 +166,7 @@ Add to Chrome today
 
 | Field | Paste |
 |-------|--------|
-| **Website URL** | `https://www.swiftdroom.com/register?ref=LAXJSLCA` |
+| **Website URL** | `https://www.swiftdroom.com/register?code=WELCOME` |
 | **CTA** | Sign Up |
 | **Primary text 1** | How I got a $200k job in 2 weeks: I applied to 50 companies a day. Swiftdroom autofills Workday, Greenhouse & Lever in ~3 seconds + writes AI essays. Code LAXJSLCA for 20% off. |
 | **Primary text 2** | Still copy-pasting your resume? 20+ fields per form. 50 apps/day is impossible manually. Swiftdroom does it in 3 sec. LAXJSLCA = 20% off. |

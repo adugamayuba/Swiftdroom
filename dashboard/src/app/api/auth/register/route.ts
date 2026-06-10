@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { createSession, hashPassword, getUserFromApiToken } from "@/lib/auth";
+import { isWelcomePromoCode, normalizePromoOrReferralCode } from "@/lib/promo";
 import {
   apiError,
   apiZodError,
@@ -63,18 +64,26 @@ export async function POST(request: NextRequest) {
     }
 
     let referredById: string | undefined;
+    let signupPromoCode = "";
+
     if (referralCode?.trim()) {
-      const referrer = await db.user.findUnique({
-        where: { referralCode: referralCode.trim().toUpperCase() },
-        select: { id: true, email: true },
-      });
-      if (!referrer) {
-        return apiError("Invalid referral code", 400);
+      const code = normalizePromoOrReferralCode(referralCode);
+
+      if (isWelcomePromoCode(code)) {
+        signupPromoCode = code;
+      } else {
+        const referrer = await db.user.findUnique({
+          where: { referralCode: code },
+          select: { id: true, email: true },
+        });
+        if (!referrer) {
+          return apiError("Invalid referral code", 400);
+        }
+        if (referrer.email.toLowerCase() === email.toLowerCase()) {
+          return apiError("You cannot use your own referral code", 400);
+        }
+        referredById = referrer.id;
       }
-      if (referrer.email.toLowerCase() === email.toLowerCase()) {
-        return apiError("You cannot use your own referral code", 400);
-      }
-      referredById = referrer.id;
     }
 
     const passwordHash = await hashPassword(password);
@@ -93,6 +102,7 @@ export async function POST(request: NextRequest) {
         role: isAdmin ? "ADMIN" : "USER",
         referralCode: newReferralCode,
         referredById,
+        signupPromoCode,
         profile: { create: { email, fullName: name || "" } },
         personas: {
           create: {

@@ -9,7 +9,10 @@ import { apiError, apiZodError, friendlyUserMessage } from "@/lib/user-messages"
 import {
   getRefereeDiscountCouponId,
   refereeGetsDiscount,
+  userGetsCheckoutDiscount,
+  welcomePromoGetsDiscount,
 } from "@/lib/referrals";
+import { getWelcomeStripePromotionId } from "@/lib/promo";
 
 const checkoutSchema = z.object({
   planId: z.enum(["STARTER", "PRO", "BUSINESS"]),
@@ -62,6 +65,8 @@ export async function POST(request: NextRequest) {
     );
     await recordReferralCommission(user.id, planId);
     if (refereeGetsDiscount(user)) {
+      await markRefereeDiscountUsed(user.id);
+    } else if (welcomePromoGetsDiscount(user)) {
       await markRefereeDiscountUsed(user.id);
     }
 
@@ -117,10 +122,17 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    if (refereeGetsDiscount(user)) {
-      const couponId = getRefereeDiscountCouponId();
-      if (couponId) {
-        sessionParams.discounts = [{ coupon: couponId }];
+    if (userGetsCheckoutDiscount(user)) {
+      if (refereeGetsDiscount(user)) {
+        const couponId = getRefereeDiscountCouponId();
+        if (couponId) {
+          sessionParams.discounts = [{ coupon: couponId }];
+        }
+      } else if (welcomePromoGetsDiscount(user)) {
+        const promoId = getWelcomeStripePromotionId();
+        if (promoId) {
+          sessionParams.discounts = [{ promotion_code: promoId }];
+        }
       }
     }
 

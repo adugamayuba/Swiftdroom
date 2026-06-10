@@ -61,14 +61,31 @@ A restricted key works fine. Enable **Write** access for:
 
 Webhook signing still uses `STRIPE_WEBHOOK_SECRET` from the webhook endpoint, not the API key.
 
-## 2. Referral coupon (20% off first month)
+## 2. Discount codes (20% off first month)
+
+### Friend referrals (optional)
 
 1. Go to [Coupons](https://dashboard.stripe.com/coupons) → **Create coupon**.
 2. Settings:
    - **Percent off:** 20%
    - **Duration:** Once (first invoice only)
    - Name: `Referral 20% first month`
-3. Copy the **Coupon ID** (starts with `coupon_`).
+3. Copy the **Coupon ID** (starts with `coupon_`) → `STRIPE_COUPON_REFEREE_20`.
+
+Used when a user signs up with a **friend's referral code** (not WELCOME).
+
+### WELCOME promo (website / ads)
+
+1. In Stripe, create a **Promotion code** named `WELCOME` linked to your 20% off coupon.
+2. Copy the **Promotion ID** (starts with `promo_`) → `STRIPE_PROMO_WELCOME`.
+
+Example:
+
+```env
+STRIPE_PROMO_WELCOME=promo_1TgtY2E1gbGoJXOAWt84xU2O
+```
+
+Users enter `WELCOME` at signup or visit `?code=WELCOME`. The discount is applied automatically at Stripe Checkout.
 
 ## 3. Railway environment variables
 
@@ -81,6 +98,7 @@ STRIPE_PRICE_STARTER=price_...
 STRIPE_PRICE_PRO=price_...
 STRIPE_PRICE_BUSINESS=price_...
 STRIPE_COUPON_REFEREE_20=coupon_...
+STRIPE_PROMO_WELCOME=promo_1TgtY2E1gbGoJXOAWt84xU2O
 
 ADMIN_PASSWORD=your-strong-admin-password
 CRON_SECRET=random-string-for-monthly-cron

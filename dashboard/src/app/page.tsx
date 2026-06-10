@@ -201,7 +201,7 @@ export default function HomePage() {
                 },
                 {
                   q: "Can I use Swiftdroom without subscribing?",
-                  a: "You can register and complete onboarding for free. Every feature — job feed, dashboard, Chrome extension, and AI autofill — requires an active subscription. Use referral code LAXJSLCA for 20% off your first month.",
+                  a: "You can register and complete onboarding for free. Every feature — job feed, dashboard, Chrome extension, and AI autofill — requires an active subscription. Use promo code WELCOME for 20% off your first month.",
                 },
                 {
                   q: "Which job boards are supported?",

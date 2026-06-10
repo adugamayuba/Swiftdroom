@@ -10,6 +10,7 @@ import { broadcastAuthChange } from "@/lib/auth-session";
 import { persistApiToken } from "@/lib/extension-client";
 import { trackEvent } from "@/lib/analytics";
 import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
+import { isWelcomePromoCode, WELCOME_PROMO_CODE } from "@/lib/promo";
 
 function RegisterForm() {
   const router = useRouter();
@@ -127,17 +128,19 @@ function RegisterForm() {
             />
           </div>
           <div>
-            <label className="app-label">Referral code (optional)</label>
+            <label className="app-label">Promo or referral code (optional)</label>
             <input
               type="text"
               value={referralCode}
               onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-              placeholder="Friend's invite code"
+              placeholder={`${WELCOME_PROMO_CODE} for 20% off`}
               className="app-input"
             />
             {referralCode && (
               <p className="mt-1 text-xs text-[var(--brand-header)]/45">
-                You&apos;ll get 20% off your first subscription.
+                {isWelcomePromoCode(referralCode)
+                  ? "WELCOME applied — 20% off your first subscription."
+                  : "Friend referral applied — 20% off your first subscription."}
               </p>
             )}
           </div>

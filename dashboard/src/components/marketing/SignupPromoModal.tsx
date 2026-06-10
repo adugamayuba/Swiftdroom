@@ -8,7 +8,9 @@ import { getSessionToken } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { trackVisitorEvent } from "@/components/VisitorTracker";
 
-const PROMO_CODE = "LAXJSLCA";
+import { WELCOME_PROMO_CODE } from "@/lib/promo";
+
+const PROMO_CODE = WELCOME_PROMO_CODE;
 const DISMISS_KEY = "swiftdroom_promo_dismissed_until";
 const DEADLINE_KEY = "swiftdroom_promo_deadline";
 const OFFER_MINUTES = 10;
@@ -145,7 +147,7 @@ export function SignupPromoModal() {
         </div>
 
         <Link
-          href={`/register?ref=${PROMO_CODE}`}
+          href={`/register?code=${PROMO_CODE}`}
           onClick={onCtaClick}
           className="al-btn-white mt-5 block w-full py-3 text-center text-sm font-semibold"
         >
