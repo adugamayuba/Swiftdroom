@@ -11,6 +11,7 @@ import {
 import SessionKeeper from "@/components/SessionKeeper";
 import { MobileDesktopBanner } from "@/components/MobileDesktopNotice";
 import { MarketingWidgets } from "@/components/MarketingWidgets";
+import { GoogleAdsTag } from "@/components/GoogleAdsTag";
 import { getApiUrlEnv } from "@/lib/env";
 
 const geistSans = Geist({
@@ -82,6 +83,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <GoogleAdsTag />
         <SessionKeeper />
         {children}
         <MobileDesktopBanner />
