@@ -1,16 +1,16 @@
 const COMPANIES = [
-  { name: "Google", color: "text-[#4285F4]" },
-  { name: "Meta", color: "text-[#0668E1]" },
-  { name: "Amazon", color: "text-[#FF9900]" },
-  { name: "Microsoft", color: "text-[#00A4EF]" },
-  { name: "Apple", color: "text-[#f5f5f7]" },
-  { name: "Stripe", color: "text-[#635BFF]" },
-  { name: "Salesforce", color: "text-[#00A1E0]" },
-  { name: "Netflix", color: "text-[#E50914]" },
-  { name: "Spotify", color: "text-[#1DB954]" },
-  { name: "HubSpot", color: "text-[#FF7A59]" },
-  { name: "Airbnb", color: "text-[#FF5A5F]" },
-  { name: "Coinbase", color: "text-[#0052FF]" },
+  { name: "Google", logo: "/logos/companies/google.png" },
+  { name: "Meta", logo: "/logos/companies/meta.png" },
+  { name: "Amazon", logo: "/logos/companies/amazon.webp" },
+  { name: "Microsoft", logo: "/logos/companies/microsoft.webp" },
+  { name: "Apple", logo: "/logos/companies/apple.png" },
+  { name: "Stripe", logo: "/logos/companies/stripe.png" },
+  { name: "Salesforce", logo: "/logos/companies/salesforce.png" },
+  { name: "Netflix", logo: "/logos/companies/netflix.svg" },
+  { name: "Spotify", logo: "/logos/companies/spotify.png" },
+  { name: "HubSpot", logo: "/logos/companies/hubspot.png" },
+  { name: "Airbnb", logo: "/logos/companies/airbnb.png" },
+  { name: "Coinbase", logo: "/logos/companies/coinbase.png" },
 ];
 
 export function CompaniesSection() {
@@ -28,14 +28,19 @@ export function CompaniesSection() {
         </p>
 
         <div className="mt-14 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {COMPANIES.map(({ name, color }) => (
+          {COMPANIES.map(({ name, logo }) => (
             <div
               key={name}
-              className="flex h-14 items-center justify-center rounded-md border border-white/10 bg-white/5 px-3"
+              className="flex h-16 items-center justify-center rounded-md border border-white/10 bg-white px-4 py-3"
+              title={name}
             >
-              <span className={`text-base font-semibold tracking-tight ${color}`}>
-                {name}
-              </span>
+              <img
+                src={logo}
+                alt={`${name} logo`}
+                className="max-h-9 w-full max-w-[7.5rem] object-contain object-center"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           ))}
         </div>
