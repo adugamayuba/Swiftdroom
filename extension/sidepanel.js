@@ -154,6 +154,7 @@ function bindMain() {
   document.getElementById("rescan-btn").addEventListener("click", scanForm);
   document.getElementById("fill-form-btn").addEventListener("click", fillApplicationMagic);
   document.getElementById("generate-all-btn").addEventListener("click", generateAllGhostwriter);
+  document.getElementById("cover-letter-btn")?.addEventListener("click", generateCoverLetter);
 }
 
 async function getActiveTab() {
@@ -267,7 +268,7 @@ function applySuggestionsToFields(domain) {
       domain
     );
 
-    let draft = value || field.value || "";
+    let draft = value || "";
     if (isDropdownField(field) && field.options?.length) {
       draft = matchDraftToSelectOption(draft, field.options);
     }
@@ -275,7 +276,29 @@ function applySuggestionsToFields(domain) {
     field._draftValue = draft;
     field._source = source;
     field._status = field._draftValue ? (source === "empty" ? "empty" : "suggested") : "empty";
+    field._needsAI = SwiftdroomFieldMapper.needsAIGeneration(field) && !field._draftValue;
   }
+}
+
+async function resolveFieldBinding(tabId, field) {
+  const result = await runInFrame(
+    tabId,
+    field.frameId ?? 0,
+    (fieldId, label) => {
+      if (!window.SwiftdroomFormDetector) return { ok: false };
+      let el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+      if (!el && label) el = window.SwiftdroomFormDetector.findFieldByLabel(label);
+      if (!el || !window.SwiftdroomFormDetector.isVisible(el)) return { ok: false, visible: false };
+      return { ok: true, fieldId: el.dataset.swiftdroomId, visible: true };
+    },
+    [field.id, field.label || ""]
+  );
+
+  if (result?.ok && result.fieldId) {
+    field.id = result.fieldId;
+    return true;
+  }
+  return false;
 }
 
 async function captureFormSnapshot(tabId) {
@@ -407,6 +430,18 @@ async function scanForm() {
 
   await scanFields();
   applySuggestionsToFields(getDomainFromTab(tab));
+
+  const suggestedPersona = SwiftdroomFieldMapper.suggestPersonaId(
+    { personas: state.personas },
+    state.pageContext
+  );
+  if (suggestedPersona && suggestedPersona !== state.selectedPersonaId) {
+    state.selectedPersonaId = suggestedPersona;
+    const select = document.getElementById("persona-select");
+    if (select) select.value = suggestedPersona;
+    applySuggestionsToFields(getDomainFromTab(tab));
+  }
+
   updateStats();
   renderFields();
   renderGhostwriter(tab.id);
@@ -437,36 +472,32 @@ async function scrollToFieldInFrame(tabId, field) {
 }
 
 async function setFieldValueInFrame(tabId, field, value) {
-  await runInFrame(
+  const result = await runInFrame(
     tabId,
     field.frameId ?? 0,
-    (fieldId, val) => {
-      const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+    (fieldId, val, label) => {
+      let el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+      if (!el && label && window.SwiftdroomFormDetector) {
+        el = window.SwiftdroomFormDetector.findFieldByLabel(label);
+      }
       if (!el || !window.SwiftdroomFormDetector) return false;
-      window.SwiftdroomFormDetector.setElementValue(el, val);
-      return true;
+      if (!window.SwiftdroomFormDetector.isVisible(el)) return false;
+      return window.SwiftdroomFormDetector.setElementValue(el, val);
     },
-    [field.id, value]
+    [field.id, value, field.label || ""]
   );
+  return Boolean(result);
 }
 
 async function fillDropdownField(tabId, field, value) {
   const text = (value || "").trim();
   if (!text) return false;
 
+  await resolveFieldBinding(tabId, field);
   await scrollToFieldInFrame(tabId, field);
   await sleep(200);
 
-  const ok = await runInFrame(
-    tabId,
-    field.frameId ?? 0,
-    (fieldId, val) => {
-      const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
-      if (!el || !window.SwiftdroomFormDetector) return false;
-      return window.SwiftdroomFormDetector.setElementValue(el, val);
-    },
-    [field.id, text]
-  );
+  const ok = await setFieldValueInFrame(tabId, field, text);
 
   if (ok) {
     await runInFrame(
@@ -486,9 +517,42 @@ async function fillDropdownField(tabId, field, value) {
   return Boolean(ok);
 }
 
+async function fillFieldInstant(tabId, field, text) {
+  const value = (text || "").trim();
+  if (!value) return false;
+
+  const bound = await resolveFieldBinding(tabId, field);
+  if (!bound) return false;
+
+  if (isDropdownField(field)) {
+    return fillDropdownField(tabId, field, value);
+  }
+
+  await scrollToFieldInFrame(tabId, field);
+  await sleep(120);
+  const ok = await setFieldValueInFrame(tabId, field, value);
+  if (ok) {
+    await runInFrame(
+      tabId,
+      field.frameId ?? 0,
+      (fieldId) => {
+        const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+        if (el && window.SwiftdroomFormDetector) {
+          window.SwiftdroomFormDetector.highlightField(fieldId, "#8b5cf6");
+        }
+      },
+      [field.id]
+    );
+  }
+  return ok;
+}
+
 async function typeFieldMagically(tabId, field, text) {
-  const value = text || "";
-  if (!value.trim()) return false;
+  const value = (text || "").trim();
+  if (!value) return false;
+
+  const bound = await resolveFieldBinding(tabId, field);
+  if (!bound) return false;
 
   if (isDropdownField(field)) {
     return fillDropdownField(tabId, field, value);
@@ -579,6 +643,13 @@ function renderFields() {
         <div class="field-label-text">${escapeHtml(field.label || "Field")}${dropdown ? ' <span class="field-type-tag">Dropdown</span>' : ""}</div>
         <div class="field-source">${sourceLabel(field._source)}</div>
         ${control}
+        <div class="field-actions">
+          <button type="button" class="btn btn-sm btn-insert btn-fill-one" data-field-id="${field.id}">Fill this field</button>
+          <select class="field-mapping-select" data-field-id="${field.id}" title="Save mapping for this site">
+            <option value="">Remember as…</option>
+            ${SwiftdroomFieldMapper.FIELD_KEYS.map((k) => `<option value="${k}">${k}</option>`).join("")}
+          </select>
+        </div>
       </div>`;
     })
     .join("");
@@ -609,6 +680,55 @@ function renderFields() {
       handleDraftChange(e.target.dataset.fieldId, e.target.value);
     });
   });
+
+  list.querySelectorAll(".btn-fill-one").forEach((btn) => {
+    btn.addEventListener("click", () => fillSingleField(btn.dataset.fieldId, btn));
+  });
+
+  list.querySelectorAll(".field-mapping-select").forEach((el) => {
+    el.addEventListener("change", async (e) => {
+      const fieldKey = e.target.value;
+      if (!fieldKey) return;
+      const field = state.fields.find((f) => f.id === e.target.dataset.fieldId);
+      if (!field) return;
+      const tab = await getActiveTab();
+      const domain = getDomainFromTab(tab);
+      try {
+        await SwiftdroomAPI.saveFieldMapping({
+          domain,
+          labelPattern: field.label,
+          fieldKey,
+        });
+        state.fieldMappings.push({ domain, labelPattern: field.label, fieldKey });
+        e.target.value = "";
+      } catch (err) {
+        console.error("Save mapping failed", err);
+      }
+    });
+  });
+}
+
+async function fillSingleField(fieldId, btn) {
+  const tab = await getActiveTab();
+  if (!tab?.id) return;
+  const field = state.fields.find((f) => f.id === fieldId);
+  if (!field || !(field._draftValue || "").trim()) return;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Filling…";
+  }
+
+  await injectDetectorAllFrames(tab.id);
+  const ok = await typeFieldMagically(tab.id, field, field._draftValue.trim());
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = ok ? "Filled ✓" : "Not visible";
+    setTimeout(() => {
+      btn.textContent = "Fill this field";
+    }, 2000);
+  }
 }
 
 function renderGhostwriter(tabId) {
@@ -632,7 +752,10 @@ function renderGhostwriter(tabId) {
     <div class="ghostwriter-item" data-field-id="${field.id}">
       <div class="ghostwriter-question">${escapeHtml(field.label || "Question")}</div>
       <textarea class="ghostwriter-draft" rows="4" data-field-id="${field.id}" placeholder="Write your answer or generate below…">${escapeHtml(field._draftValue || "")}</textarea>
-      <button type="button" class="btn btn-sm btn-generate" data-field-id="${field.id}">Generate</button>
+      <div class="ghostwriter-actions">
+        <button type="button" class="btn btn-sm btn-generate" data-field-id="${field.id}">Generate</button>
+        <button type="button" class="btn btn-sm btn-insert btn-fill-one" data-field-id="${field.id}">Fill this field</button>
+      </div>
     </div>`
     )
     .join("");
@@ -649,6 +772,10 @@ function renderGhostwriter(tabId) {
 
   list.querySelectorAll(".btn-generate").forEach((btn) => {
     btn.addEventListener("click", () => generateOneAnswer(btn.dataset.fieldId, tabId, btn));
+  });
+
+  list.querySelectorAll(".btn-fill-one").forEach((btn) => {
+    btn.addEventListener("click", () => fillSingleField(btn.dataset.fieldId, btn));
   });
 }
 
@@ -671,6 +798,7 @@ async function generateOneAnswer(fieldId, tabId, btn) {
       jobDescription: state.pageContext?.jobDescription || "",
       personaId: state.selectedPersonaId,
       company: state.pageContext?.meta?.company || "",
+      type: SwiftdroomFieldMapper.isCoverLetterField(field) ? "cover_letter" : "answer",
     });
 
     field._draftValue = data.answer;
@@ -696,6 +824,38 @@ async function generateOneAnswer(fieldId, tabId, btn) {
   }
 }
 
+async function generateCoverLetter() {
+  const tab = await getActiveTab();
+  const btn = document.getElementById("cover-letter-btn");
+  const output = document.getElementById("cover-letter-output");
+  if (!btn || !output) return;
+
+  btn.disabled = true;
+  btn.textContent = "Writing…";
+
+  try {
+    const data = await SwiftdroomAPI.generate({
+      question: "Cover letter",
+      jobDescription: state.pageContext?.jobDescription || "",
+      personaId: state.selectedPersonaId,
+      company: state.pageContext?.meta?.company || "",
+      type: "cover_letter",
+    });
+    output.value = data.answer;
+    output.classList.remove("hidden");
+  } catch (err) {
+    output.value = SwiftdroomFriendlyErrors.message(
+      err.message,
+      err.code,
+      "Could not generate cover letter."
+    );
+    output.classList.remove("hidden");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Generate cover letter";
+}
+
 async function generateAllGhostwriter() {
   const tab = await getActiveTab();
   const openFields = state.fields.filter(SwiftdroomFieldMapper.isOpenEndedField);
@@ -704,11 +864,11 @@ async function generateAllGhostwriter() {
   if (!openFields.length) return;
 
   btn.disabled = true;
-  btn.textContent = "Generating all…";
+  btn.textContent = "Generating…";
 
   for (let i = 0; i < openFields.length; i++) {
     const field = openFields[i];
-    btn.textContent = `Generating ${i + 1}/${openFields.length}…`;
+    btn.textContent = `${i + 1} of ${openFields.length}`;
     const itemBtn = document.querySelector(
       `.ghostwriter-item[data-field-id="${field.id}"] .btn-generate`
     );
@@ -719,6 +879,12 @@ async function generateAllGhostwriter() {
   btn.disabled = false;
   btn.textContent = "Generate all answers";
 }
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "FORM_STEP_CHANGED") {
+    scanForm();
+  }
+});
 
 async function fillApplicationMagic() {
   const tab = await getActiveTab();
@@ -747,18 +913,27 @@ async function fillApplicationMagic() {
     await injectDetectorAllFrames(tab.id);
 
     let filledCount = 0;
+    let attemptedCount = 0;
+
     for (let i = 0; i < ordered.length; i++) {
       const field = ordered[i];
       btn.textContent = `Filling ${i + 1}/${ordered.length}…`;
+
+      const visible = await resolveFieldBinding(tab.id, field);
+      if (!visible) continue;
+
+      attemptedCount += 1;
       const ok = await typeFieldMagically(tab.id, field, field._draftValue.trim());
       if (ok) filledCount += 1;
-      await sleep(isDropdownField(field) ? 500 : 350);
+      await sleep(isDropdownField(field) ? 400 : 350);
     }
 
-    const saved = await recordApplicationAfterFill(tab.id, filledCount, ordered.length);
+    const saved = await recordApplicationAfterFill(tab.id, filledCount, attemptedCount || ordered.length);
     btn.textContent = saved
-      ? "Done — application counted"
-      : "Done — review & submit";
+      ? `Done — ${filledCount} fields filled`
+      : filledCount > 0
+        ? `Filled ${filledCount} visible fields — review & submit`
+        : "No visible fields — go to the form step and try again";
   } catch (err) {
     btn.textContent = SwiftdroomFriendlyErrors.message(
       err.message,

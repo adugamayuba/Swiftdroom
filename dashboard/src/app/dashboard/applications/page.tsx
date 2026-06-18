@@ -59,18 +59,34 @@ function statusLabel(status: string) {
   return STATUS_OPTIONS.find((s) => s.value === status)?.label || status;
 }
 
+const KANBAN_COLUMNS = [
+  { id: "pipeline", label: "Applied", statuses: ["filled", "applied"] },
+  { id: "screening", label: "Screening", statuses: ["screening", "invited"] },
+  { id: "interview", label: "Interview", statuses: ["interview"] },
+  { id: "outcome", label: "Outcome", statuses: ["offer", "hired", "rejected", "withdrawn"] },
+];
+
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [view, setView] = useState<"list" | "kanban">("kanban");
+  const [stats, setStats] = useState<{
+    totalApplications: number;
+    applicationsThisWeek: number;
+    interviews: number;
+    minutesSavedThisWeek: number;
+  } | null>(null);
 
   function loadApplications() {
-    apiFetch("/api/applications")
-      .then((r) => r.json())
-      .then((data) => {
-        setApplications(data.applications || []);
-        setLoading(false);
-      });
+    Promise.all([
+      apiFetch("/api/applications").then((r) => r.json()),
+      apiFetch("/api/applications/stats").then((r) => (r.ok ? r.json() : null)),
+    ]).then(([appsData, statsData]) => {
+      setApplications(appsData.applications || []);
+      if (statsData) setStats(statsData);
+      setLoading(false);
+    });
   }
 
   useEffect(() => {
@@ -104,7 +120,41 @@ export default function ApplicationsPage() {
       <DashboardPageHeader
         title="Applications"
         subtitle="Track every job you apply to — answers are saved to improve your AI over time"
+        action={
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setView("kanban")}
+              className={`app-btn-secondary !py-1.5 !text-xs ${view === "kanban" ? "!border-[var(--brand-header)]" : ""}`}
+            >
+              Board
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              className={`app-btn-secondary !py-1.5 !text-xs ${view === "list" ? "!border-[var(--brand-header)]" : ""}`}
+            >
+              List
+            </button>
+          </div>
+        }
       />
+
+      {stats && (
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            ["This week", stats.applicationsThisWeek],
+            ["Total", stats.totalApplications],
+            ["Interviews", stats.interviews],
+            ["Min saved", stats.minutesSavedThisWeek],
+          ].map(([label, value]) => (
+            <DashboardCard key={label as string} className="p-4 text-center">
+              <p className="text-2xl font-semibold text-[var(--brand-header)]">{value}</p>
+              <p className="mt-1 text-xs text-[var(--brand-header)]/45">{label}</p>
+            </DashboardCard>
+          ))}
+        </div>
+      )}
 
       {statusCounts.length > 0 && (
         <div className="mt-6 flex flex-wrap gap-2">
@@ -124,6 +174,36 @@ export default function ApplicationsPage() {
           className="mt-12"
           message="No applications tracked yet. Use the extension to fill a form — your answers and job details are saved here automatically."
         />
+      ) : view === "kanban" ? (
+        <div className="mt-8 grid gap-4 overflow-x-auto md:grid-cols-4">
+          {KANBAN_COLUMNS.map((col) => {
+            const colApps = applications.filter((a) => col.statuses.includes(a.status));
+            return (
+              <div key={col.id} className="min-w-[220px]">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--brand-header)]/45">
+                  {col.label} ({colApps.length})
+                </p>
+                <div className="space-y-2">
+                  {colApps.map((app) => (
+                    <DashboardCard key={app.id} className="p-3">
+                      <p className="text-sm font-semibold text-[var(--brand-header)]">{app.company}</p>
+                      <p className="text-xs text-[var(--brand-header)]/65">{app.role}</p>
+                      <select
+                        value={app.status}
+                        onChange={(e) => updateStatus(app.id, e.target.value)}
+                        className="mt-2 w-full rounded-md border border-[var(--border)] px-2 py-1 text-xs"
+                      >
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
+                    </DashboardCard>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div className="mt-8 space-y-3">
           {applications.map((app) => {

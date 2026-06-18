@@ -70,6 +70,8 @@ model User {
   emailNotifyApplications  Boolean            @default(true)
   emailNotifyBilling       Boolean            @default(true)
   welcomeEmailSent         Boolean            @default(false)
+  subscribeNudgeCount      Int                @default(0)
+  subscribeNudgeLastSentAt DateTime?
   passwordResetToken       String?            @unique
   passwordResetExpiresAt   DateTime?
 }
@@ -148,8 +150,9 @@ model Application {
   jobDescription   String   @default("")
   submittedAnswers Json?
   fieldsFilled     Int      @default(0)
-  fieldsAttempted  Int      @default(0)
-  appliedAt        DateTime @default(now())
+  fieldsAttempted        Int       @default(0)
+  followUpReminderSentAt DateTime?
+  appliedAt              DateTime  @default(now())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

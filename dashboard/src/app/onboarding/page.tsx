@@ -193,23 +193,36 @@ export default function OnboardingPage() {
 
   const wasExtracted = (key: string) => extractedKeys.includes(key);
 
+  const stepIndex = step === "upload" ? 0 : 1;
+  const steps = ["Upload resume", "Review profile", "Subscribe"];
+
   return (
     <div className="min-h-screen bg-neutral-50">
       <header className="sticky top-0 z-10 border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-base font-bold tracking-tight text-neutral-900">
-            Swiftdroom
-          </Link>
-          <div className="flex items-center gap-2 text-sm text-neutral-400">
-            <span className={step === "upload" ? "font-semibold text-neutral-900" : ""}>
-              1. Resume
-            </span>
-            <span>→</span>
-            <span className={step === "review" ? "font-semibold text-neutral-900" : ""}>
-              2. Your role
-            </span>
-            <span>→</span>
-            <span className="text-neutral-300">3. Subscribe</span>
+        <div className="mx-auto max-w-2xl px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="text-base font-bold tracking-tight text-neutral-900">
+              Swiftdroom
+            </Link>
+            <span className="text-xs text-neutral-400">Step {stepIndex + 1} of 3</span>
+          </div>
+          <div className="mt-3 flex gap-2">
+            {steps.map((label, i) => (
+              <div key={label} className="flex-1">
+                <div
+                  className={`h-1.5 rounded-full ${
+                    i <= stepIndex ? "bg-neutral-900" : "bg-neutral-200"
+                  }`}
+                />
+                <p
+                  className={`mt-1.5 text-xs ${
+                    i === stepIndex ? "font-semibold text-neutral-900" : "text-neutral-400"
+                  }`}
+                >
+                  {label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </header>

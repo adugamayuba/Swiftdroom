@@ -175,6 +175,73 @@ interface ReferralRedemptionEmailParams {
   amount: number;
 }
 
+export async function sendSubscribeNudgeEmail(
+  user: { email: string; name: string | null },
+  nudgeNumber: number
+) {
+  const displayName = user.name || "there";
+  const appUrl = getAppUrl();
+  const subjects = [
+    "Your Swiftdroom profile is ready — unlock autofill",
+    "Still applying manually? Your profile is waiting",
+    "20% off your first month — finish setting up Swiftdroom",
+  ];
+  const bodies = [
+    `Hi ${displayName},
+
+You finished setting up your profile — nice work. Subscribe to unlock the Chrome extension and autofill Workday, Greenhouse, and Lever forms in seconds.
+
+Use code WELCOME for 20% off your first month:
+${appUrl}/subscribe?code=WELCOME
+
+— The Swiftdroom team`,
+    `Hi ${displayName},
+
+Job applications still eating your evenings? Swiftdroom autofills forms and writes tailored answers from your resume.
+
+Your profile is saved and ready:
+${appUrl}/subscribe?code=WELCOME
+
+— The Swiftdroom team`,
+    `Hi ${displayName},
+
+Last reminder — start applying faster this week. Swiftdroom users fill 40+ field Workday forms in under a minute.
+
+20% off with WELCOME:
+${appUrl}/subscribe?code=WELCOME
+
+— The Swiftdroom team`,
+  ];
+
+  const idx = Math.min(nudgeNumber - 1, 2);
+  await sendEmail({
+    to: user.email,
+    subject: subjects[idx],
+    text: bodies[idx],
+  });
+}
+
+export async function sendFollowUpReminderEmail(
+  user: { email: string; name: string | null },
+  application: { company: string; role: string; appliedAt: Date }
+) {
+  const displayName = user.name || "there";
+  const days = Math.floor(
+    (Date.now() - application.appliedAt.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  await sendEmail({
+    to: user.email,
+    subject: `Follow up on ${application.role} at ${application.company}?`,
+    text: `Hi ${displayName},
+
+You applied to ${application.role} at ${application.company} about ${days} days ago. A short follow-up message can help you stand out.
+
+View your application: ${getAppUrl()}/dashboard/applications
+
+— The Swiftdroom team`,
+  });
+}
+
 export async function sendReferralRedemptionEmail(
   params: ReferralRedemptionEmailParams
 ) {

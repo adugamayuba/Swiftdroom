@@ -35,14 +35,27 @@ const SwiftdroomFormDetector = (() => {
     return elements;
   }
 
+  function isUsableLabel(text) {
+    if (!text || text.length > 120) return false;
+    if (/https?:\/\//.test(text)) return false;
+    if ((text.match(/\n/g) || []).length > 2) return false;
+    return true;
+  }
+
   function getLabelText(element) {
     if (element.id) {
       const label = document.querySelector(`label[for="${CSS.escape(element.id)}"]`);
-      if (label) return cleanText(label.textContent);
+      if (label) {
+        const text = cleanText(label.textContent);
+        if (isUsableLabel(text)) return text;
+      }
     }
 
     const ariaLabel = element.getAttribute("aria-label");
-    if (ariaLabel) return cleanText(ariaLabel);
+    if (ariaLabel) {
+      const text = cleanText(ariaLabel);
+      if (isUsableLabel(text)) return text;
+    }
 
     const labelledBy = element.getAttribute("aria-labelledby");
     if (labelledBy) {
@@ -51,11 +64,14 @@ const SwiftdroomFormDetector = (() => {
         return el ? el.textContent : "";
       });
       const text = parts.join(" ").trim();
-      if (text) return cleanText(text);
+      if (text && isUsableLabel(text)) return cleanText(text);
     }
 
     const placeholder = element.getAttribute("placeholder");
-    if (placeholder) return cleanText(placeholder);
+    if (placeholder) {
+      const text = cleanText(placeholder);
+      if (isUsableLabel(text)) return text;
+    }
 
     const parentLabel = element.closest("label");
     if (parentLabel) return cleanText(parentLabel.textContent);
@@ -67,13 +83,13 @@ const SwiftdroomFormDetector = (() => {
       );
       if (labelEl && !labelEl.contains(element)) {
         const text = cleanText(labelEl.textContent);
-        if (text && text.length < 200) return text;
+        if (isUsableLabel(text)) return text;
       }
 
       const prev = node.previousElementSibling;
       if (prev) {
         const text = cleanText(prev.textContent);
-        if (text && text.length < 200 && !text.includes("\n\n")) return text;
+        if (isUsableLabel(text) && !text.includes("\n\n")) return text;
       }
 
       node = node.parentElement;
@@ -112,6 +128,44 @@ const SwiftdroomFormDetector = (() => {
       element.dataset.swiftdroomId = "sd-" + Math.random().toString(36).slice(2, 11);
     }
     return element.dataset.swiftdroomId;
+  }
+
+  function normalizeLabelKey(label) {
+    return (label || "").toLowerCase().replace(/\*/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  function findFieldByLabel(labelHint) {
+    const target = normalizeLabelKey(labelHint);
+    if (!target) return null;
+
+    const elements = queryDeepRoots(document).filter(isVisible);
+    let best = null;
+    let bestScore = 0;
+
+    for (const element of elements) {
+      const label = normalizeLabelKey(getLabelText(element));
+      if (!label) continue;
+
+      let score = 0;
+      if (label === target) score = 100;
+      else if (label.includes(target) || target.includes(label)) score = 70;
+      else {
+        const targetWords = target.split(/\s+/).filter((w) => w.length > 2);
+        const overlap = targetWords.filter((w) => label.includes(w)).length;
+        if (overlap) score = 30 + overlap * 10;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = element;
+      }
+    }
+
+    if (best && bestScore >= 40) {
+      assignFieldId(best);
+      return best;
+    }
+    return null;
   }
 
   function detectFields() {
@@ -372,6 +426,11 @@ const SwiftdroomFormDetector = (() => {
     return { company, role, title };
   }
 
+  function isFieldVisible(fieldId) {
+    const el = document.querySelector(`[data-swiftdroom-id="${fieldId}"]`);
+    return isVisible(el);
+  }
+
   return {
     detectFields,
     getLabelText,
@@ -380,6 +439,9 @@ const SwiftdroomFormDetector = (() => {
     setElementValue,
     setSelectValue,
     isDropdownField,
+    isVisible,
+    isFieldVisible,
+    findFieldByLabel,
     highlightField,
     clearHighlights,
     scrapeJobDescription,

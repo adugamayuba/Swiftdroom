@@ -54,5 +54,10 @@ const SwiftdroomAPI = (() => {
         method: "POST",
         body: JSON.stringify(body),
       }),
+    tailorResume: (body) =>
+      request("/api/resume/tailor", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
   };
 })();

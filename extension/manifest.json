@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Swiftdroom — Job Application Co-Pilot",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Autofill Workday, Greenhouse, and Lever job applications from your profile. Generate tailored AI answers in one click.",
   "permissions": ["storage", "activeTab", "sidePanel", "scripting"],
   "host_permissions": [

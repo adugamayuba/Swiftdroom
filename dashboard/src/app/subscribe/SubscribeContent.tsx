@@ -7,6 +7,8 @@ import { PLANS, type PlanId } from "@/lib/plans";
 import { apiFetch } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
 import { USER_MESSAGES, friendlyUserMessage } from "@/lib/user-messages";
+import { formatPlanPrice } from "@/lib/regional-pricing";
+import { useRegionalPricing } from "@/hooks/useRegionalPricing";
 
 export default function SubscribePageContent() {
   const router = useRouter();
@@ -106,6 +108,7 @@ export default function SubscribePageContent() {
   }
 
   const canceled = searchParams.get("canceled");
+  const { countryCode, isMena } = useRegionalPricing();
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -114,6 +117,13 @@ export default function SubscribePageContent() {
           <Link href="/" className="text-lg font-semibold text-neutral-900">
             Swiftdroom
           </Link>
+          <div className="flex items-center gap-2 text-sm text-neutral-400">
+            <span className="text-emerald-600">✓ Resume</span>
+            <span>→</span>
+            <span className="text-emerald-600">✓ Profile</span>
+            <span>→</span>
+            <span className="font-semibold text-neutral-900">3. Subscribe</span>
+          </div>
         </div>
       </header>
 
@@ -125,6 +135,11 @@ export default function SubscribePageContent() {
           Subscribe to unlock everything — matched job feed, dashboard, Chrome
           extension, and AI autofill. No free tier.
         </p>
+        {isMena && (
+          <p className="mt-1 text-sm text-neutral-500">
+            Prices shown in AED · charged in USD at checkout
+          </p>
+        )}
 
         {canceled && (
           <div className="mt-6 rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-600">
@@ -149,6 +164,7 @@ export default function SubscribePageContent() {
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {(["STARTER", "PRO", "BUSINESS"] as PlanId[]).map((planId) => {
             const plan = PLANS[planId];
+            const regional = formatPlanPrice(plan, countryCode);
             return (
               <div
                 key={planId}
@@ -163,9 +179,12 @@ export default function SubscribePageContent() {
                 )}
                 <h2 className="mt-1 text-lg font-semibold">{plan.name}</h2>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl font-semibold">{plan.priceLabel}</span>
-                  <span className="text-sm text-neutral-500">/mo</span>
+                  <span className="text-3xl font-semibold">{regional.priceLabel}</span>
+                  <span className="text-sm text-neutral-500">{regional.suffix.replace("month", "mo")}</span>
                 </div>
+                {regional.sublabel && (
+                  <p className="mt-1 text-xs text-neutral-400">{regional.sublabel}</p>
+                )}
                 <p className="mt-2 text-sm text-neutral-600">
                   {plan.applicationsLimit} applications per month
                 </p>

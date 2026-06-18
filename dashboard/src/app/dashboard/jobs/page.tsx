@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   ExternalLink,
   MapPin,
@@ -278,9 +279,15 @@ export default function JobsPage() {
                       }
                       className="app-btn-primary !px-4 !py-2 text-sm"
                     >
-                      Apply
+                      Apply now
                       <ExternalLink className="h-3.5 w-3.5" />
                     </button>
+                    <Link
+                      href={`/dashboard/jobs/tailor?company=${encodeURIComponent(job.company)}&role=${encodeURIComponent(job.title)}&jd=${encodeURIComponent(job.description.slice(0, 3000))}`}
+                      className="app-btn-secondary !px-4 !py-1.5 text-center text-xs"
+                    >
+                      Tailor resume
+                    </Link>
                     <button
                       type="button"
                       onClick={() => void updateItem(job.id, "saved")}

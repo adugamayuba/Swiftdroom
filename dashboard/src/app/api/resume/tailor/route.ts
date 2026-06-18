@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getUserFromApiToken } from "@/lib/auth";
-import { generateAnswer } from "@/lib/ai";
-import { getSubmissionExamplesForAI } from "@/lib/application-learning";
+import { tailorResume } from "@/lib/ai";
 import {
   canUseExtension,
   hasApplicationQuota,
@@ -10,58 +9,43 @@ import {
 } from "@/lib/subscription";
 import { friendlyUserMessage, zodUserMessage } from "@/lib/user-messages";
 
-const generateSchema = z.object({
-  question: z.string().min(1),
+const schema = z.object({
   jobDescription: z.string().optional(),
-  personaId: z.string().optional(),
   company: z.string().optional(),
   role: z.string().optional(),
-  type: z.enum(["answer", "cover_letter", "smart_field"]).optional(),
+  personaId: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get("x-api-token");
   if (!token) {
-    return NextResponse.json(
-      { error: friendlyUserMessage("Unauthorized") },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: friendlyUserMessage("Unauthorized") }, { status: 401 });
   }
 
   let user = await getUserFromApiToken(token);
   if (!user) {
-    return NextResponse.json(
-      { error: friendlyUserMessage("Invalid token") },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: friendlyUserMessage("Invalid token") }, { status: 401 });
   }
 
   user = await syncExpiredSubscription(user);
 
   if (!canUseExtension(user)) {
     return NextResponse.json(
-      {
-        error: friendlyUserMessage("Active subscription required"),
-        code: "SUBSCRIPTION_REQUIRED",
-      },
+      { error: friendlyUserMessage("Active subscription required"), code: "SUBSCRIPTION_REQUIRED" },
       { status: 403 }
     );
   }
 
   if (!hasApplicationQuota(user)) {
     return NextResponse.json(
-      {
-        error: friendlyUserMessage("Monthly application limit reached"),
-        code: "QUOTA_EXCEEDED",
-      },
+      { error: friendlyUserMessage("Monthly application limit reached"), code: "QUOTA_EXCEEDED" },
       { status: 429 }
     );
   }
 
   try {
     const body = await request.json();
-    const { question, jobDescription, personaId, company, role, type } =
-      generateSchema.parse(body);
+    const { jobDescription, company, role, personaId } = schema.parse(body);
 
     let persona = user.personas.find((p) => p.isDefault);
     if (personaId) {
@@ -73,29 +57,27 @@ export async function POST(request: NextRequest) {
       user.profile?.resumeText ||
       "";
 
-    const pastAnswers = await getSubmissionExamplesForAI(user.id, 10, question);
+    if (!resumeText.trim()) {
+      return NextResponse.json(
+        { error: friendlyUserMessage("Upload a resume first") },
+        { status: 400 }
+      );
+    }
 
-    const answer = await generateAnswer({
-      question,
-      jobDescription: jobDescription || "",
+    const result = await tailorResume({
       resumeText,
-      personaSummary: persona?.summary || "",
-      personaFocus: persona?.focus || "",
+      jobDescription: jobDescription || "",
       company,
       role,
-      pastAnswers,
-      type: type || "answer",
+      personaFocus: persona?.focus || "",
     });
 
-    return NextResponse.json({ answer });
+    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: zodUserMessage(error) }, { status: 400 });
     }
-    return NextResponse.json(
-      { error: friendlyUserMessage("Generation failed") },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: friendlyUserMessage("Tailoring failed") }, { status: 500 });
   }
 }
 

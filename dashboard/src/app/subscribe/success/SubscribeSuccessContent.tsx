@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
+import { trackGoogleAdsConversion } from "@/lib/google-ads-conversion";
 
 export default function SubscribeSuccessContent() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function SubscribeSuccessContent() {
   const [status, setStatus] = useState<"waiting" | "active" | "timeout">("waiting");
   const [activating, setActivating] = useState(false);
   const [activationError, setActivationError] = useState("");
+  const conversionFired = useRef(false);
 
   const tryActivate = useCallback(async () => {
     if (sessionId) {
@@ -25,6 +27,10 @@ export default function SubscribeSuccessContent() {
     if (res.ok) {
       const data = await res.json();
       if (data.hasActiveSubscription) {
+        if (!conversionFired.current) {
+          conversionFired.current = true;
+          trackGoogleAdsConversion();
+        }
         return true;
       }
     }

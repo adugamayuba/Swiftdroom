@@ -77,12 +77,21 @@
         <section id="ghostwriter-section" class="section hidden">
           <div class="section-head">
             <h2>Ghostwriter</h2>
-            <button type="button" id="generate-all-btn" class="btn btn-sm btn-generate hidden">
+            <button type="button" id="generate-all-btn" class="btn btn-sm btn-generate-all hidden">
               Generate all
             </button>
           </div>
           <p class="hint">Open-ended questions — edit or generate drafts.</p>
           <div id="ghostwriter-list"></div>
+        </section>
+
+        <section id="cover-letter-section" class="section">
+          <h2>Cover letter</h2>
+          <p class="hint">Tailored to this job — copy into the form or generate a field below.</p>
+          <button type="button" id="cover-letter-btn" class="btn btn-secondary btn-block">
+            Generate cover letter
+          </button>
+          <textarea id="cover-letter-output" class="ghostwriter-draft hidden mt-2" rows="8" placeholder="Your cover letter will appear here…"></textarea>
         </section>
 
         <section id="fill-section" class="section">
