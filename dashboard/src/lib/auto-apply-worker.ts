@@ -34,14 +34,23 @@ function getMonthlyLimit(plan: SubscriptionPlan): number {
 /**
  * Enqueue new pending auto-apply jobs for a user based on their current feed.
  * Picks "recommended" feed items above minMatchScore that aren't already queued.
+ * Guards against duplicate submission at two levels:
+ *   1. AutoApplyJob already exists for this (userId, jobListingId)
+ *   2. Application record already exists with the same applyUrl
  */
 export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
   const settings = await db.autoApplySettings.findUnique({ where: { userId } });
   if (!settings?.enabled) return 0;
 
+  // Existing AutoApplyJob rows (any status) — keyed by jobListingId
   const existingJobIds = await db.autoApplyJob
     .findMany({ where: { userId }, select: { jobListingId: true } })
     .then((rows) => new Set(rows.map((r) => r.jobListingId)));
+
+  // Already-submitted applyUrls from the Application table (manual + auto)
+  const submittedUrls = await db.application
+    .findMany({ where: { userId }, select: { url: true } })
+    .then((rows) => new Set(rows.map((r) => r.url.trim().toLowerCase())));
 
   const feedItems = await db.jobFeedItem.findMany({
     where: {
@@ -57,6 +66,7 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
   const toQueue = feedItems.filter(
     (item) =>
       !existingJobIds.has(item.jobListingId) &&
+      !submittedUrls.has(item.jobListing.applyUrl.trim().toLowerCase()) &&
       SUPPORTED_ATS.includes(item.jobListing.atsType.toLowerCase())
   );
 
@@ -174,6 +184,24 @@ async function processUser(
   for (const job of pendingJobs) {
     const ats = job.jobListing.atsType.toLowerCase();
     let applyResult: { success: boolean; error?: string };
+
+    // Extra guard: don't apply if Application already exists with this URL
+    const alreadyApplied = await db.application.findFirst({
+      where: {
+        userId,
+        url: { equals: job.jobListing.applyUrl, mode: "insensitive" },
+      },
+      select: { id: true },
+    });
+
+    if (alreadyApplied) {
+      await db.autoApplyJob.update({
+        where: { id: job.id },
+        data: { status: "skipped", error: "Already applied to this job" },
+      });
+      result.skipped++;
+      continue;
+    }
 
     if (ats === "lever") {
       applyResult = await applyViaLever(job.jobListing.applyUrl, payload);

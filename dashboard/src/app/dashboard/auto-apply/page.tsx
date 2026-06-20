@@ -110,7 +110,7 @@ export default function AutoApplyPage() {
   const failedJobs  = jobs.filter((j) => j.status === "failed");
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl pb-4">
       {/* Header */}
       <DashboardPageHeader
         title="Auto Apply"
@@ -139,7 +139,7 @@ export default function AutoApplyPage() {
       />
 
       {/* Stats row */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: "Applied today",   value: appliedToday },
           { label: "In queue",        value: totalPending },
