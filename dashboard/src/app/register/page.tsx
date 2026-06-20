@@ -139,8 +139,8 @@ function RegisterForm() {
             {referralCode && (
               <p className="mt-1 text-xs text-[var(--brand-header)]/45">
                 {isWelcomePromoCode(referralCode)
-                  ? "WELCOME applied — 20% off your first subscription."
-                  : "Friend referral applied — 20% off your first subscription."}
+                  ? "WELCOME applied. 20% off your first subscription."
+                  : "Friend referral applied. 20% off your first subscription."}
               </p>
             )}
           </div>

@@ -14,7 +14,7 @@ export function DemoVideoSection() {
             See Swiftdroom in action
           </h2>
           <p className="mt-4 text-[var(--brand-header)]/65">
-            Watch how autofill and AI ghostwriter handle a real job application — from
+            Watch how autofill and AI ghostwriter handle a real job application, from
             login to tracked submission in under a minute.
           </p>
         </div>

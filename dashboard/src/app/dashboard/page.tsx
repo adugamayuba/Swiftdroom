@@ -80,7 +80,7 @@ export default function DashboardOverview() {
     {
       done: data.profileComplete,
       label: "Complete your profile",
-      sub: "Upload your resume — the AI agent needs it to fill applications.",
+      sub: "Upload your resume so Swiftdroom can fill applications for you.",
       href: "/dashboard/profile",
       cta: "Go to Profile",
     },
@@ -140,8 +140,8 @@ export default function DashboardOverview() {
                 <p className="text-sm font-semibold text-white">Auto Apply</p>
                 <p className="mt-0.5 text-xs text-white/55">
                   {autoApply?.enabled
-                    ? "On — finding and submitting jobs for you"
-                    : "Off — turn on to start applying automatically"}
+                    ? "On, finding and submitting jobs for you"
+                    : "Off, turn on to start applying automatically"}
                 </p>
               </div>
             </div>

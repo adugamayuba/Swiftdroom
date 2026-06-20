@@ -151,7 +151,7 @@ export function SignupPromoModal() {
           onClick={onCtaClick}
           className="al-btn-white mt-5 block w-full py-3 text-center text-sm font-semibold"
         >
-          Claim 20% off — create account
+          Claim 20% off, create account
         </Link>
         <button
           type="button"

@@ -119,7 +119,7 @@ export default function ApplicationsPage() {
     <div className="max-w-4xl">
       <DashboardPageHeader
         title="Applications"
-        subtitle="Track every job you apply to — answers are saved to improve your AI over time"
+        subtitle="Track every job you apply to. Your answers are saved and improve over time"
         action={
           <div className="flex gap-2">
             <button
@@ -172,7 +172,7 @@ export default function ApplicationsPage() {
       {applications.length === 0 ? (
         <DashboardEmpty
           className="mt-12"
-          message="No applications tracked yet. Use the extension to fill a form — your answers and job details are saved here automatically."
+          message="No applications tracked yet. Use the extension to fill a form. Your answers and job details are saved here automatically."
         />
       ) : view === "kanban" ? (
         <div className="mt-8 grid gap-4 overflow-x-auto md:grid-cols-4">

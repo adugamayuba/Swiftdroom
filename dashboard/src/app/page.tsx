@@ -24,11 +24,7 @@ export default function HomePage() {
         <section className="relative flex min-h-[calc(100dvh-4.25rem)] items-center overflow-hidden bg-[var(--brand-dark)]">
           <HeroBackground />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-6 py-16 md:py-20">
-            <div className="mx-auto max-w-3xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
-                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                Your AI agent is ready to apply to jobs right now
-              </div>
+              <div className="mx-auto max-w-3xl">
               <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--brand-hero-accent)] md:text-6xl md:leading-[1.05]">
                 Your AI agent applies
                 <br />
@@ -36,7 +32,7 @@ export default function HomePage() {
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
                 Swiftdroom automatically finds matching jobs, fills every field, writes
-                tailored answers, and submits applications on your behalf — 24 hours a day.
+                tailored answers, and submits applications on your behalf. Available 24 hours a day.
                 You get email updates on every submission.
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -82,7 +78,7 @@ export default function HomePage() {
                 <p className="mt-4 leading-relaxed text-[var(--brand-header)]/70">
                   The average job seeker spends 20–40 minutes per application re-entering
                   the same information and writing custom answers. At 10 applications a week,
-                  that's hours you'll never get back — every single week.
+                  that's hours you'll never get back. Every single week.
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--brand-header)]/10 bg-white/60 p-8 backdrop-blur-sm">
@@ -127,7 +123,7 @@ export default function HomePage() {
                 {
                   step: "03",
                   title: "Get email updates on submissions",
-                  desc: "While you focus on your day, the agent fills every field, generates tailored answers, and submits — then emails you a summary of every application sent.",
+                  desc: "While you focus on your day, the agent fills every field, generates tailored answers, and submits. You then get an email summary of every application sent.",
                 },
               ].map(({ step, title, desc }) => (
                 <div key={step} className="border-t border-white/20 pt-6">
@@ -148,13 +144,13 @@ export default function HomePage() {
             </h2>
             <p className="mt-4 max-w-2xl text-[var(--brand-header)]/65">
               Not just an autofill tool. A server-side agent that actively searches, matches,
-              applies, and reports — without you lifting a finger.
+              applies, and reports. No effort required on your end.
             </p>
             <div className="mt-12 grid gap-6 md:grid-cols-2">
               {[
                 {
                   title: "Applies to jobs automatically",
-                  desc: "The agent runs every 15 minutes on our servers. It finds Greenhouse and Lever roles that match your profile and submits full applications — no browser open needed.",
+                  desc: "The agent runs on our servers. It finds Greenhouse and Lever roles that match your profile and submits full applications. No browser open needed.",
                 },
                 {
                   title: "AI-written tailored answers",
@@ -162,11 +158,11 @@ export default function HomePage() {
                 },
                 {
                   title: "Email digest after every batch",
-                  desc: "You get an email for every batch of applications submitted — company name, role title, and your monthly usage at a glance.",
+                  desc: "You get an email for every batch of applications submitted, including the company name, role title, and your monthly usage.",
                 },
                 {
                   title: "Chrome extension for everything else",
-                  desc: "For Workday and other platforms, install the extension. One click fills every field and writes AI answers — you review and submit.",
+                  desc: "For Workday and other platforms, install the extension. One click fills every field and writes AI answers. You review and submit.",
                 },
               ].map(({ title, desc }) => (
                 <div
@@ -200,7 +196,7 @@ export default function HomePage() {
                 },
                 {
                   q: "Which job platforms can the agent apply to?",
-                  a: "The auto-apply agent works on Greenhouse and Lever job postings — two of the most common ATS platforms used by tech companies. For Workday, LinkedIn, and other platforms, the Chrome extension autofills forms so you can review and submit in seconds.",
+                  a: "The auto-apply agent works on Greenhouse and Lever job postings, two of the most common ATS platforms used by tech companies. For Workday, LinkedIn, and other platforms, the Chrome extension autofills forms so you can review and submit in seconds.",
                 },
                 {
                   q: "What counts as an application toward my monthly limit?",

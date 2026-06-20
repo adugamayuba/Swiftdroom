@@ -93,7 +93,7 @@ export default function ProfilePage() {
     <div className="max-w-2xl">
       <DashboardPageHeader
         title="Profile"
-        subtitle="Your baseline data — the source of truth for autofill"
+        subtitle="Your baseline data, the source of truth for autofill"
       />
 
       <form onSubmit={handleSave} className="mt-8 space-y-6">

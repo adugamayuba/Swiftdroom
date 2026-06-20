@@ -216,7 +216,7 @@ export default function SettingsPage() {
         ) : (
           <>
             <p className="mt-2 text-sm text-[var(--brand-header)]/65">
-              Install the extension, then visit any page on your dashboard — it connects
+              Install the extension, then visit any page on your dashboard. It connects
               automatically. No API keys needed.
             </p>
             <a
@@ -230,7 +230,7 @@ export default function SettingsPage() {
               <ExternalLink className="h-4 w-4" />
             </a>
             <p className="mt-3 text-xs text-[var(--brand-header)]/45">
-              After installing, refresh this page — the extension connects automatically.
+              After installing, refresh this page. The extension connects automatically.
             </p>
           </>
         )}
