@@ -57,7 +57,7 @@ export default function AutoApplyPage() {
   const [saving, setSaving] = useState(false);
 
   const [enabled, setEnabled] = useState(false);
-  const [minScore, setMinScore] = useState(75);
+  const [minScore, setMinScore] = useState(60);
   const [dailyLimit, setDailyLimit] = useState(10);
   const [coverLetter, setCoverLetter] = useState("");
 

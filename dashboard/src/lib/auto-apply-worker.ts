@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { applyViaLever } from "@/lib/apply-lever";
 import { applyViaGreenhouse } from "@/lib/apply-greenhouse";
 import { sendAutoApplyDigestEmail } from "@/lib/email";
+import { refreshJobFeed } from "@/lib/job-feed";
 import { PLANS } from "@/lib/plans";
 import type { ApplyPayload } from "@/lib/apply-lever";
 import type { SubscriptionPlan } from "@prisma/client";
@@ -129,10 +130,16 @@ async function processUser(
   ]);
 
   if (!settings?.enabled || !user) return result;
-  if (settings.pausedUntil && settings.pausedUntil > new Date()) return result;
+  if (settings.pausedUntil && settings.pausedUntil > new Date()) {
+    console.info(`[auto-apply] ${userId} is paused until ${settings.pausedUntil.toISOString()}`);
+    return result;
+  }
 
   const monthlyLimit = getMonthlyLimit(user.plan);
-  if (monthlyLimit === 0) return result; // no active plan
+  if (monthlyLimit === 0) {
+    console.info(`[auto-apply] ${userId} has no active plan (plan=${user.plan}), skipping`);
+    return result;
+  }
 
   const appliedThisMonth = await countAppliedThisMonth(
     userId,
@@ -153,7 +160,10 @@ async function processUser(
   const toProcess = Math.min(remainingToday, remainingMonthly, MAX_PER_RUN);
 
   const profile = await db.profile.findUnique({ where: { userId } });
-  if (!profile?.email) return result;
+  if (!profile?.email) {
+    console.warn(`[auto-apply] ${userId} has no profile email, skipping`);
+    return result;
+  }
 
   const payload: ApplyPayload & { resumeText: string } = {
     fullName:
@@ -301,9 +311,30 @@ export async function runAutoApplyWorker(): Promise<WorkerStats> {
     select: { userId: true },
   });
 
+  if (enabledUsers.length === 0) return stats;
+
+  console.info(`[auto-apply] ${enabledUsers.length} user(s) with auto-apply enabled`);
+
   for (const { userId } of enabledUsers) {
     try {
-      await enqueueAutoApplyJobs(userId);
+      // Refresh job feed first so there are jobs to queue even if user hasn't
+      // visited the Jobs page. refreshJobFeed has its own 15-min cooldown.
+      const userWithProfile = await db.user.findUnique({
+        where: { id: userId },
+        include: { profile: true },
+      });
+      if (userWithProfile) {
+        const feedResult = await refreshJobFeed(userWithProfile);
+        if (feedResult.added > 0) {
+          console.info(`[auto-apply] feed refresh for ${userId}: +${feedResult.added} jobs`);
+        }
+      }
+
+      const queued = await enqueueAutoApplyJobs(userId);
+      if (queued > 0) {
+        console.info(`[auto-apply] queued ${queued} jobs for ${userId}`);
+      }
+
       const userResult = await processUser(userId);
       stats.usersProcessed++;
       stats.applied += userResult.applied.length;

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     settings: settings ?? {
       enabled: false,
-      minMatchScore: 75,
+      minMatchScore: 60,
       dailyLimit: 10,
       coverLetter: "",
       totalApplied: 0,
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
       create: {
         userId: gate.user.id,
         enabled: data.enabled ?? false,
-        minMatchScore: data.minMatchScore ?? 75,
+        minMatchScore: data.minMatchScore ?? 60,
         dailyLimit: data.dailyLimit ?? 10,
         coverLetter: data.coverLetter ?? "",
       },
