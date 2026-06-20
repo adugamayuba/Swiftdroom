@@ -43,10 +43,10 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
   const settings = await db.autoApplySettings.findUnique({ where: { userId } });
   if (!settings?.enabled) return 0;
 
-  // Existing AutoApplyJob rows that are already pending or successfully applied.
-  // "failed" jobs are NOT excluded so they can be retried.
+  // Existing AutoApplyJob rows that are already pending or successfully applied or skipped (closed).
+  // "failed" jobs are NOT excluded so they can be retried on transient errors.
   const existingJobIds = await db.autoApplyJob
-    .findMany({ where: { userId, status: { in: ["pending", "applied"] } }, select: { jobListingId: true } })
+    .findMany({ where: { userId, status: { in: ["pending", "applied", "skipped"] } }, select: { jobListingId: true } })
     .then((rows) => new Set(rows.map((r) => r.jobListingId)));
 
   // Already-submitted applyUrls from the Application table (manual + auto)
@@ -276,12 +276,16 @@ async function processUser(
       });
     } else {
       const errMsg = applyResult.error || "Unknown error";
-      console.warn(`[auto-apply] FAILED ${ats} — ${job.jobListing.company} "${job.jobListing.title}": ${errMsg}`);
+      const isClosedJob = errMsg === "Job closed";
+      console.warn(
+        `[auto-apply] ${isClosedJob ? "CLOSED" : "FAILED"} ${ats} — ${job.jobListing.company} "${job.jobListing.title}": ${errMsg}`
+      );
       await db.autoApplyJob.update({
         where: { id: job.id },
-        data: { status: "failed", error: errMsg },
+        data: { status: isClosedJob ? "skipped" : "failed", error: errMsg },
       });
-      result.failed++;
+      if (isClosedJob) result.skipped++;
+      else result.failed++;
     }
 
     await new Promise((r) => setTimeout(r, 1200));

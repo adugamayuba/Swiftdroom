@@ -187,8 +187,25 @@ export async function applyViaGreenhouse(
     }
   }
 
-  // Submit to Greenhouse boards apply endpoint
-  const submitUrl = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}/applications`;
+  // Verify the job still exists before attempting to submit.
+  // 404 here means the job was closed/removed since we ingested it.
+  if (!jobDetails) {
+    try {
+      const probe = await fetch(
+        `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}`,
+        { headers: { "User-Agent": "Swiftdroom/1.0" }, cache: "no-store" }
+      );
+      if (probe.status === 404) {
+        return { success: false, error: "Job closed" };
+      }
+    } catch {
+      // network error — allow the submission attempt anyway
+    }
+  }
+
+  // Submit to Greenhouse boards apply endpoint.
+  // boards.greenhouse.io hosts the apply forms; boards-api is read-only for listings.
+  const submitUrl = `https://boards.greenhouse.io/api/v1/boards/${boardToken}/jobs/${jobId}/applications`;
 
   try {
     const res = await fetch(submitUrl, {
@@ -201,10 +218,15 @@ export async function applyViaGreenhouse(
       return { success: true };
     }
 
+    // 404 = job no longer accepting applications
+    if (res.status === 404) {
+      return { success: false, error: "Job closed" };
+    }
+
     const text = await res.text().catch(() => "");
     return {
       success: false,
-      error: `Greenhouse API ${res.status}: ${text.slice(0, 200)}`,
+      error: `Greenhouse API ${res.status}: ${text.slice(0, 300)}`,
     };
   } catch (err) {
     return {
