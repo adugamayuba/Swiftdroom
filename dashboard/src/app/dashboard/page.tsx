@@ -128,19 +128,17 @@ export default function DashboardOverview() {
         )}
       </div>
 
-      {/* Auto Apply hero card */}
-      <DashboardCard className="mt-6 overflow-hidden">
-        <div className={`px-5 py-4 ${autoApply?.enabled ? "bg-emerald-50" : "bg-[var(--brand-mint)]/40"}`}>
+      {/* Auto Apply card */}
+      <div className="mt-6 overflow-hidden rounded-xl bg-[var(--brand-header)]">
+        <div className="px-5 py-5">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${autoApply?.enabled ? "bg-emerald-100" : "bg-[var(--brand-header)]/10"}`}>
-                <Send className={`h-4 w-4 ${autoApply?.enabled ? "text-emerald-600" : "text-[var(--brand-header)]/60"}`} />
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
+                <Send className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[var(--brand-header)]">
-                  Auto Apply
-                </p>
-                <p className="text-xs text-[var(--brand-header)]/55">
+                <p className="text-sm font-semibold text-white">Auto Apply</p>
+                <p className="mt-0.5 text-xs text-white/55">
                   {autoApply?.enabled
                     ? "On — finding and submitting jobs for you"
                     : "Off — turn on to start applying automatically"}
@@ -149,28 +147,34 @@ export default function DashboardOverview() {
             </div>
             <Link
               href="/dashboard/auto-apply"
-              className="app-btn-primary !px-3 !py-1.5 !text-xs"
+              className="shrink-0 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[var(--brand-header)] transition hover:bg-white/90"
             >
               {autoApply?.enabled ? "View" : "Set up"}
-              <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         </div>
         {autoApply?.enabled && (
-          <div className="grid grid-cols-3 divide-x divide-[var(--border)] border-t border-[var(--border)]">
+          <div className="grid grid-cols-3 divide-x divide-white/10 border-t border-white/10">
             {[
-              { label: "Applied today",  value: autoApply.appliedToday },
-              { label: "In queue",       value: autoApply.totalPending },
-              { label: "All time",       value: autoApply.totalApplied },
+              { label: "Applied today", value: autoApply.appliedToday },
+              { label: "In queue",      value: autoApply.totalPending },
+              { label: "All time",      value: autoApply.totalApplied },
             ].map(({ label, value }) => (
               <div key={label} className="px-4 py-3 text-center">
-                <p className="text-xl font-semibold text-[var(--brand-header)]">{value}</p>
-                <p className="text-xs text-[var(--brand-header)]/40">{label}</p>
+                <p className="text-xl font-semibold text-white">{value}</p>
+                <p className="text-xs text-white/45">{label}</p>
               </div>
             ))}
           </div>
         )}
-      </DashboardCard>
+        {!autoApply?.enabled && (
+          <div className="border-t border-white/10 px-5 py-3">
+            <p className="text-xs text-white/40">
+              Complete your profile and subscribe to get started
+            </p>
+          </div>
+        )}
+      </div>
 
       {!allDone && (
         <DashboardCard className="mt-4 overflow-hidden">
