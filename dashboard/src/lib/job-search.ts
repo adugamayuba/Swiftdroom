@@ -364,19 +364,22 @@ async function fetchAdzunaJobs(
         app_key: appKey,
         results_per_page: "25",
         what: query || "software engineer",
-        ...(remoteOnly ? { title_only: "1", what_and: "remote" } : {}),
-        content_type: "application/json",
         sort_by: "date",
       });
+      if (remoteOnly) params.set("what_and", "remote");
 
       const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params.toString()}`;
       const res = await fetch(url, {
-        headers: { "User-Agent": "Swiftdroom/1.0" },
+        headers: {
+          "User-Agent": "Swiftdroom/1.0",
+          Accept: "application/json",
+        },
         cache: "no-store",
       });
 
       if (!res.ok) {
-        console.error(`Adzuna (${country}) error:`, res.status);
+        const body = await res.text().catch(() => "");
+        console.warn(`Adzuna (${country}) ${res.status}: ${body.slice(0, 120)}`);
         continue;
       }
 
