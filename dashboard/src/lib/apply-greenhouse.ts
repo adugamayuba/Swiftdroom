@@ -33,17 +33,27 @@ interface GreenhouseJobDetails {
 
 /**
  * Extract the Greenhouse board token and job ID from a Greenhouse apply URL.
- * Handles formats like:
- *   https://boards.greenhouse.io/acme/jobs/1234567
- *   https://job-boards.greenhouse.io/acme/jobs/1234567
+ * Handles multiple formats:
+ *   https://boards.greenhouse.io/acme/jobs/1234567        (standard)
+ *   https://job-boards.greenhouse.io/acme/jobs/1234567   (alternate)
+ *   https://acme.greenhouse.io/jobs/1234567               (company subdomain)
  */
 function parseGreenhouseUrl(
   applyUrl: string
 ): { boardToken: string; jobId: string } | null {
   try {
     const url = new URL(applyUrl);
-    const match = url.pathname.match(/^\/([^/]+)\/jobs\/(\d+)/);
-    if (match) return { boardToken: match[1], jobId: match[2] };
+
+    // Format 1: boards.greenhouse.io/{token}/jobs/{id}  (most common)
+    const pathMatch = url.pathname.match(/^\/([^/]+)\/jobs\/(\d+)/);
+    if (pathMatch) return { boardToken: pathMatch[1], jobId: pathMatch[2] };
+
+    // Format 2: {token}.greenhouse.io/jobs/{id}  (company-hosted subdomain, e.g. instacart)
+    const subMatch = url.hostname.match(/^([^.]+)\.greenhouse\.io$/);
+    if (subMatch && subMatch[1] !== "boards" && subMatch[1] !== "job-boards") {
+      const jobIdMatch = url.pathname.match(/\/jobs\/(\d+)/);
+      if (jobIdMatch) return { boardToken: subMatch[1], jobId: jobIdMatch[1] };
+    }
   } catch {
     // fall through
   }

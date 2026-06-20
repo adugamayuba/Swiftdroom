@@ -43,9 +43,10 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
   const settings = await db.autoApplySettings.findUnique({ where: { userId } });
   if (!settings?.enabled) return 0;
 
-  // Existing AutoApplyJob rows (any status) — keyed by jobListingId
+  // Existing AutoApplyJob rows that are already pending or successfully applied.
+  // "failed" jobs are NOT excluded so they can be retried.
   const existingJobIds = await db.autoApplyJob
-    .findMany({ where: { userId }, select: { jobListingId: true } })
+    .findMany({ where: { userId, status: { in: ["pending", "applied"] } }, select: { jobListingId: true } })
     .then((rows) => new Set(rows.map((r) => r.jobListingId)));
 
   // Already-submitted applyUrls from the Application table (manual + auto)
@@ -78,15 +79,19 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
 
   if (toQueue.length === 0) return 0;
 
-  await db.autoApplyJob.createMany({
-    data: toQueue.map((item) => ({
-      userId,
-      jobListingId: item.jobListingId,
-      atsType: item.jobListing.atsType.toLowerCase(),
-      status: "pending",
-    })),
-    skipDuplicates: true,
-  });
+  // Reset any previously-failed rows back to pending, create new rows for truly new jobs.
+  for (const item of toQueue) {
+    await db.autoApplyJob.upsert({
+      where: { userId_jobListingId: { userId, jobListingId: item.jobListingId } },
+      create: {
+        userId,
+        jobListingId: item.jobListingId,
+        atsType: item.jobListing.atsType.toLowerCase(),
+        status: "pending",
+      },
+      update: { status: "pending", error: undefined, appliedAt: null },
+    });
+  }
 
   return toQueue.length;
 }
