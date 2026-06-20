@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
       create: {
         userId: gate.user.id,
         enabled: data.enabled ?? false,
-        minMatchScore: data.minMatchScore ?? 60,
+        minMatchScore: data.minMatchScore ?? 35,
         dailyLimit: data.dailyLimit ?? 10,
         coverLetter: data.coverLetter ?? "",
       },
