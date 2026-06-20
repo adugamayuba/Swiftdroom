@@ -15,7 +15,7 @@ import type { SubscriptionPlan } from "@prisma/client";
 const SUPPORTED_ATS = ["lever", "greenhouse"];
 
 /** Max jobs processed per run per user (prevents single-run timeouts). */
-const MAX_PER_RUN = 8;
+const MAX_PER_RUN = 15;
 
 export interface WorkerStats {
   usersProcessed: number;
@@ -54,16 +54,17 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     .findMany({ where: { userId }, select: { url: true } })
     .then((rows) => new Set(rows.map((r) => r.url.trim().toLowerCase())));
 
-  // Score filter removed — we queue ALL greenhouse/lever jobs in the feed.
-  // The monthly plan limit is the only throttle that matters.
+  // Query ONLY Greenhouse/Lever feed items — other sources can't be auto-applied.
+  // Filtering here instead of post-hoc so the take limit doesn't crowd out ATS jobs.
   const feedItems = await db.jobFeedItem.findMany({
     where: {
       userId,
       status: { in: ["recommended", "active", "saved", "clicked"] },
+      jobListing: { atsType: { in: ["greenhouse", "lever"] } },
     },
     include: { jobListing: true },
     orderBy: { score: "desc" },
-    take: 200,
+    take: 500,
   });
 
   const toQueue = feedItems.filter(
