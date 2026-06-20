@@ -71,6 +71,10 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
       SUPPORTED_ATS.includes(item.jobListing.atsType.toLowerCase())
   );
 
+  console.info(
+    `[auto-apply] enqueue for ${userId}: feedItems=${feedItems.length} eligible=${toQueue.length} minScore=${settings.minMatchScore}`
+  );
+
   if (toQueue.length === 0) return 0;
 
   await db.autoApplyJob.createMany({
