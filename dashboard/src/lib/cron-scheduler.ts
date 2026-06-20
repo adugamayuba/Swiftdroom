@@ -7,8 +7,8 @@ export function scheduleAutoApplyCron() {
   if (started) return;
   started = true;
 
-  // Run every hour at minute 5 (give the server a moment after deploy)
-  cron.schedule("5 * * * *", async () => {
+  // Run every 15 minutes
+  cron.schedule("*/15 * * * *", async () => {
     console.log("[auto-apply cron] starting worker run");
     try {
       const stats = await runAutoApplyWorker();
@@ -18,5 +18,5 @@ export function scheduleAutoApplyCron() {
     }
   });
 
-  console.log("[auto-apply cron] scheduled — runs every hour");
+  console.log("[auto-apply cron] scheduled — runs every 15 minutes");
 }

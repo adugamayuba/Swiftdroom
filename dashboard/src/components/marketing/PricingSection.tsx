@@ -14,11 +14,10 @@ export function PricingSection() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-[var(--brand-header)]">
-            Simple, transparent pricing
+            Plans that do the applying for you
           </h2>
           <p className="mt-4 text-[var(--brand-header)]/65">
-            Pay for applications you actually use. Every plan includes the Chrome extension,
-            AI answer generation, and application tracking.
+            Every plan includes your AI auto-apply agent, Chrome extension, email updates on submissions, and application tracking.
           </p>
           {isMena && (
             <p className="mt-2 text-sm font-medium text-[var(--brand-header)]/70">

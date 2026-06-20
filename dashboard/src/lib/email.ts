@@ -261,3 +261,33 @@ Thank you for spreading the word about Swiftdroom!
 — The Swiftdroom team`,
   });
 }
+
+export async function sendAutoApplyDigestEmail(
+  user: { email: string; name: string | null },
+  applied: Array<{ company: string; role: string }>,
+  failed: number,
+  totalApplied: number,
+  monthlyLimit: number
+) {
+  const displayName = user.name || "there";
+  const lines = applied
+    .map((a, i) => `${i + 1}. ${a.role} at ${a.company}`)
+    .join("\n");
+
+  await sendEmail({
+    to: user.email,
+    subject: `Your AI agent submitted ${applied.length} application${applied.length !== 1 ? "s" : ""}`,
+    text: `Hi ${displayName},
+
+Your Swiftdroom AI agent just submitted ${applied.length} job application${applied.length !== 1 ? "s" : ""} on your behalf:
+
+${lines}${failed > 0 ? `\n\n${failed} application${failed !== 1 ? "s" : ""} could not be submitted (the job may have closed or changed).` : ""}
+
+Monthly progress: ${totalApplied}/${monthlyLimit} applications used.
+
+View all your applications: ${getAppUrl()}/dashboard/applications
+Manage auto-apply settings: ${getAppUrl()}/dashboard/auto-apply
+
+— The Swiftdroom team`,
+  });
+}

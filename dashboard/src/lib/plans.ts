@@ -6,6 +6,7 @@ export interface Plan {
   price: number;
   priceLabel: string;
   applicationsLimit: number;
+  autoApplyLimit: number;
   description: string;
   features: string[];
   popular?: boolean;
@@ -18,13 +19,15 @@ export const PLANS: Record<PlanId, Plan> = {
     price: 9.99,
     priceLabel: "$9.99",
     applicationsLimit: 50,
-    description: "For active job seekers applying weekly",
+    autoApplyLimit: 50,
+    description: "Your AI agent applies to 50 jobs a month",
     features: [
-      "50 applications per month",
-      "Chrome extension access",
+      "50 auto-applications per month",
+      "AI agent finds and applies to jobs 24/7",
+      "Greenhouse & Lever auto-submit",
+      "Chrome extension autofill",
       "AI answer generation",
-      "Application tracking",
-      "1 persona profile",
+      "Application tracking & email updates",
     ],
   },
   PRO: {
@@ -33,9 +36,10 @@ export const PLANS: Record<PlanId, Plan> = {
     price: 19.99,
     priceLabel: "$19.99",
     applicationsLimit: 150,
-    description: "For intensive search campaigns",
+    autoApplyLimit: 150,
+    description: "Your AI agent applies to 150 jobs a month",
     features: [
-      "150 applications per month",
+      "150 auto-applications per month",
       "Everything in Starter",
       "Unlimited personas",
       "Priority AI generation",
@@ -49,9 +53,10 @@ export const PLANS: Record<PlanId, Plan> = {
     price: 39.99,
     priceLabel: "$39.99",
     applicationsLimit: 500,
-    description: "For recruiters, coaches, and power users",
+    autoApplyLimit: 500,
+    description: "Your AI agent applies to 500 jobs a month",
     features: [
-      "500 applications per month",
+      "500 auto-applications per month",
       "Everything in Pro",
       "Bulk profile management",
       "Usage analytics",

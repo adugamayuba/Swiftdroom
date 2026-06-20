@@ -20,40 +20,44 @@ export default function HomePage() {
       <MarketingHeader />
 
       <main>
-        {/* Hero — fills viewport below header; stats appear on scroll */}
+        {/* Hero */}
         <section className="relative flex min-h-[calc(100dvh-4.25rem)] items-center overflow-hidden bg-[var(--brand-dark)]">
           <HeroBackground />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-6 py-16 md:py-20">
             <div className="mx-auto max-w-3xl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70">
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                Your AI agent is ready to apply to jobs right now
+              </div>
               <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--brand-hero-accent)] md:text-6xl md:leading-[1.05]">
-                Stop retyping your resume.
+                Your AI agent applies
                 <br />
-                <span className="text-white">Start getting interviews.</span>
+                <span className="text-white">to jobs while you sleep.</span>
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
-                Swiftdroom is a Chrome extension and dashboard that autofills Workday,
-                Greenhouse, and Lever forms from your profile — and writes tailored answers
-                to open-ended questions using your resume and the job description.
+                Swiftdroom automatically finds matching jobs, fills every field, writes
+                tailored answers, and submits applications on your behalf — 24 hours a day.
+                You get email updates on every submission.
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
                 <TrackedRegisterLink source="hero" className="al-btn-white">
-                  Create your account
+                  Start your AI agent
                 </TrackedRegisterLink>
                 <p className="text-sm text-white/50">
-                  Set up your profile first. Subscribe when you are ready to apply.
+                  Set up your profile once. The agent handles the rest.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Social proof stats */}
+        {/* Stats */}
         <section className="bg-[var(--brand-olive)] py-20">
           <div className="mx-auto max-w-6xl px-6">
             <div className="grid gap-12 sm:grid-cols-3">
               {[
-                ["12,000+", "Applications autofilled"],
-                ["4.2 min", "Average time saved per app"],
+                ["24 / 7", "AI agent is always running"],
+                ["50–500", "Applications submitted per month"],
                 ["89%", "Users report more interviews"],
               ].map(([stat, label]) => (
                 <div key={label}>
@@ -73,20 +77,20 @@ export default function HomePage() {
             <div className="grid gap-12 md:grid-cols-2 md:items-center">
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight text-[var(--brand-header)]">
-                  The same fields. Every single time.
+                  Job searching is a full-time job. It shouldn't have to be.
                 </h2>
                 <p className="mt-4 leading-relaxed text-[var(--brand-header)]/70">
-                  Job seekers spend 20–40 minutes per application re-entering contact info,
-                  work history, and writing custom answers — often on platforms with
-                  inconsistent form structures that break standard autofill tools.
+                  The average job seeker spends 20–40 minutes per application re-entering
+                  the same information and writing custom answers. At 10 applications a week,
+                  that's hours you'll never get back — every single week.
                 </p>
               </div>
               <div className="rounded-lg border border-[var(--brand-header)]/10 bg-white/60 p-8 backdrop-blur-sm">
                 <dl className="space-y-6">
                   {[
-                    ["Average time per application", "32 min"],
-                    ["Fields re-entered manually", "40+"],
-                    ["Custom written answers per week", "15–30"],
+                    ["Time spent per manual application", "32 min"],
+                    ["Form fields re-entered per application", "40+"],
+                    ["Hours lost per week (10 apps)", "5–7 hrs"],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -112,18 +116,18 @@ export default function HomePage() {
               {[
                 {
                   step: "01",
-                  title: "Build your profile",
-                  desc: "Upload your resume and enter your details once. Swiftdroom uses this as the source of truth for every application.",
+                  title: "Build your profile once",
+                  desc: "Upload your resume and enter your details. This is the only time you'll ever fill in your experience, contact info, and preferences.",
                 },
                 {
                   step: "02",
-                  title: "Subscribe and install",
-                  desc: "Choose a plan based on how many applications you need. Install the Chrome extension and connect your account.",
+                  title: "Turn on the AI agent",
+                  desc: "Subscribe and enable auto-apply. Your agent instantly starts scanning job boards, scoring matches, and queuing applications.",
                 },
                 {
                   step: "03",
-                  title: "Apply with the sidebar",
-                  desc: "Open the side panel on any application page. Scan the form, review autofilled fields, and insert AI-written answers before you submit.",
+                  title: "Get email updates on submissions",
+                  desc: "While you focus on your day, the agent fills every field, generates tailored answers, and submits — then emails you a summary of every application sent.",
                 },
               ].map(({ step, title, desc }) => (
                 <div key={step} className="border-t border-white/20 pt-6">
@@ -140,30 +144,29 @@ export default function HomePage() {
         <section id="features" className="bg-white py-24">
           <div className="mx-auto max-w-6xl px-6">
             <h2 className="text-2xl font-semibold tracking-tight text-[var(--brand-header)]">
-              Built for real ATS platforms
+              A fully autonomous job application agent
             </h2>
             <p className="mt-4 max-w-2xl text-[var(--brand-header)]/65">
-              Modern applicant tracking systems use dynamic DOM structures, iframes, and
-              obfuscated field names. Swiftdroom reads visual labels on the page — not HTML
-              attributes — so it works where basic autofill fails.
+              Not just an autofill tool. A server-side agent that actively searches, matches,
+              applies, and reports — without you lifting a finger.
             </p>
             <div className="mt-12 grid gap-6 md:grid-cols-2">
               {[
                 {
-                  title: "Label-based field detection",
-                  desc: "Maps fields by what they say on screen, including Workday, Greenhouse, and Lever layouts.",
+                  title: "Applies to jobs automatically",
+                  desc: "The agent runs every 15 minutes on our servers. It finds Greenhouse and Lever roles that match your profile and submits full applications — no browser open needed.",
                 },
                 {
-                  title: "Persona-based AI answers",
-                  desc: "Maintain multiple focus profiles — full-stack, management, domain-specific — and switch per application.",
+                  title: "AI-written tailored answers",
+                  desc: "Custom cover letter questions? Our AI generates concise, resume-backed answers for every free-text field before submitting.",
                 },
                 {
-                  title: "Click-to-insert ghostwriter",
-                  desc: "Generate answers to open-ended questions from the job description and your resume. You review before inserting.",
+                  title: "Email digest after every batch",
+                  desc: "You get an email for every batch of applications submitted — company name, role title, and your monthly usage at a glance.",
                 },
                 {
-                  title: "Co-pilot, never autopilot",
-                  desc: "Swiftdroom fills fields and highlights uncertain mappings. You click submit yourself.",
+                  title: "Chrome extension for everything else",
+                  desc: "For Workday and other platforms, install the extension. One click fills every field and writes AI answers — you review and submit.",
                 },
               ].map(({ title, desc }) => (
                 <div
@@ -192,20 +195,24 @@ export default function HomePage() {
             <dl className="mt-10 space-y-8">
               {[
                 {
-                  q: "Does Swiftdroom submit applications for me?",
-                  a: "No. Swiftdroom is a co-pilot. It fills fields and generates draft answers, but you review everything and submit manually.",
+                  q: "Does Swiftdroom actually submit applications for me?",
+                  a: "Yes. The AI agent runs on our servers every 15 minutes, finds jobs that match your profile, fills every field, and submits. You receive an email summary after each batch.",
                 },
                 {
-                  q: "What counts as an application?",
-                  a: "Each time you log an application or generate an AI answer through the extension counts toward your monthly limit.",
+                  q: "Which job platforms can the agent apply to?",
+                  a: "The auto-apply agent works on Greenhouse and Lever job postings — two of the most common ATS platforms used by tech companies. For Workday, LinkedIn, and other platforms, the Chrome extension autofills forms so you can review and submit in seconds.",
+                },
+                {
+                  q: "What counts as an application toward my monthly limit?",
+                  a: "Every job the agent submits on your behalf counts. If you also apply manually via the extension, that counts too. Your usage resets at the start of each billing period.",
+                },
+                {
+                  q: "Can I pause or control which jobs the agent applies to?",
+                  a: "Yes. Set your minimum match score (50–100%), daily cap, and a custom cover note. You can pause the agent any time and resume it from the Auto Apply dashboard.",
                 },
                 {
                   q: "Can I use Swiftdroom without subscribing?",
-                  a: "You can register and complete onboarding for free. Every feature — job feed, dashboard, Chrome extension, and AI autofill — requires an active subscription. Use promo code WELCOME for 20% off your first month.",
-                },
-                {
-                  q: "Which job boards are supported?",
-                  a: "Swiftdroom works on most web-based application forms, including Workday, Greenhouse, Lever, and company career pages.",
+                  a: "You can register and build your profile for free. The AI agent and Chrome extension require an active subscription. Use promo code WELCOME for 20% off your first month.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="border-b border-[var(--border)] pb-8 last:border-0">
@@ -221,10 +228,10 @@ export default function HomePage() {
         <section className="bg-[var(--brand-dark)] py-20 text-white">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="text-2xl font-semibold tracking-tight">
-              Ready to spend less time on forms?
+              Start your AI agent today.
             </h2>
             <p className="mt-4 text-white/60">
-              Create your profile in five minutes. Start applying when you subscribe.
+              Build your profile in five minutes. Your agent starts applying immediately.
             </p>
             <TrackedRegisterLink source="footer_cta" className="al-btn-white mt-8">
               Create your account

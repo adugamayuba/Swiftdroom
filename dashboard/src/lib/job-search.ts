@@ -317,9 +317,113 @@ export function buildSearchQuery(
   );
 }
 
+// ── Adzuna global job API ─────────────────────────────────────────────────────
+// Free tier: register at developer.adzuna.com — set ADZUNA_APP_ID + ADZUNA_APP_KEY
+
+function isAdzunaConfigured(): boolean {
+  return Boolean(
+    process.env.ADZUNA_APP_ID?.trim() && process.env.ADZUNA_APP_KEY?.trim()
+  );
+}
+
+type AdzunaJob = {
+  id: string;
+  title: string;
+  company?: { display_name?: string };
+  description: string;
+  redirect_url: string;
+  location?: { display_name?: string; area?: string[] };
+  created?: string;
+  contract_time?: string;
+  salary_min?: number;
+};
+
+async function fetchAdzunaJobs(
+  query: string,
+  region: JobRegion,
+  remoteOnly: boolean
+): Promise<RawJobListing[]> {
+  const appId = process.env.ADZUNA_APP_ID?.trim();
+  const appKey = process.env.ADZUNA_APP_KEY?.trim();
+  if (!appId || !appKey) return [];
+
+  // Adzuna supports: us, gb, ca, au, de, fr, in, nl, nz, pl, ru, sg, za
+  const countryMap: Record<string, string[]> = {
+    us: ["us"],
+    international: ["gb", "ca", "au", "de", "in"],
+    all: ["us", "gb", "ca", "au"],
+  };
+  const countries = countryMap[region] ?? ["us"];
+
+  const jobs: RawJobListing[] = [];
+
+  for (const country of countries) {
+    try {
+      const params = new URLSearchParams({
+        app_id: appId,
+        app_key: appKey,
+        results_per_page: "25",
+        what: query || "software engineer",
+        ...(remoteOnly ? { title_only: "1", what_and: "remote" } : {}),
+        content_type: "application/json",
+        sort_by: "date",
+      });
+
+      const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params.toString()}`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Swiftdroom/1.0" },
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        console.error(`Adzuna (${country}) error:`, res.status);
+        continue;
+      }
+
+      const data = (await res.json()) as { results?: AdzunaJob[] };
+      const batch = (data.results ?? []).map((job): RawJobListing | null => {
+        const applyUrl = normalizeApplyUrl(job.redirect_url);
+        if (!applyUrl) return null;
+        const locationName =
+          job.location?.display_name ||
+          (job.location?.area ?? []).join(", ") ||
+          "";
+        const isUs = country === "us";
+        return {
+          externalId: `adzuna-${job.id}`,
+          source: "adzuna",
+          company: job.company?.display_name || "Company",
+          title: job.title || "Role",
+          description: (job.description || "").slice(0, 12000),
+          applyUrl,
+          location: locationName,
+          region: isUs ? "us" : "international",
+          remote:
+            remoteOnly ||
+            (job.title || "").toLowerCase().includes("remote") ||
+            (locationName || "").toLowerCase().includes("remote"),
+          postedAt: job.created ? new Date(job.created) : undefined,
+          atsType: detectAts(applyUrl),
+        };
+      });
+
+      jobs.push(...batch.filter((j): j is RawJobListing => j !== null));
+    } catch (err) {
+      console.error(`Adzuna (${country}) exception:`, err);
+    }
+  }
+
+  console.info(`Adzuna returned ${jobs.length} jobs for query "${query}"`);
+  return jobs;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type JobFetchStats = {
   jsearchConfigured: boolean;
+  adzunaConfigured: boolean;
   jsearch: number;
+  adzuna: number;
   remotive: number;
   ats: number;
   jsearchError?: string;
@@ -334,7 +438,9 @@ export async function fetchJobsForRegion(
   const results: RawJobListing[] = [];
   const stats: JobFetchStats = {
     jsearchConfigured: isJSearchConfigured(),
+    adzunaConfigured: isAdzunaConfigured(),
     jsearch: 0,
+    adzuna: 0,
     remotive: 0,
     ats: 0,
   };
@@ -362,6 +468,13 @@ export async function fetchJobsForRegion(
     const remotive = await fetchRemotiveJobs(query);
     stats.remotive = remotive.length;
     results.push(...remotive);
+  }
+
+  // Adzuna global jobs — massive coverage when key is configured
+  if (isAdzunaConfigured()) {
+    const adzunaJobs = await fetchAdzunaJobs(query, region, remoteOnly);
+    stats.adzuna = adzunaJobs.length;
+    results.push(...adzunaJobs);
   }
 
   const { jobs: atsJobs, stats: atsStats } = await fetchAtsBoardJobs({
