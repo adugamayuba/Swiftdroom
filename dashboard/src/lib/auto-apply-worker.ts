@@ -226,6 +226,7 @@ async function processUser(
       applyResult = await applyViaGreenhouse(job.jobListing.applyUrl, {
         ...payload,
         jobTitle: job.jobListing.title,
+        externalId: job.jobListing.externalId,
       });
     } else {
       await db.autoApplyJob.update({

@@ -89,11 +89,24 @@ async function aiAnswer(
   }
 }
 
+/**
+ * Extract board token + job ID from a Greenhouse job's externalId.
+ * ats-boards.ts stores externalId as "{boardToken}-{numericJobId}".
+ */
+function parseGreenhouseExternalId(externalId: string): { boardToken: string; jobId: string } | null {
+  const match = externalId.match(/^(.+)-(\d+)$/);
+  if (match) return { boardToken: match[1], jobId: match[2] };
+  return null;
+}
+
 export async function applyViaGreenhouse(
   applyUrl: string,
-  payload: ApplyPayload & { resumeText?: string; jobTitle?: string }
+  payload: ApplyPayload & { resumeText?: string; jobTitle?: string; externalId?: string }
 ): Promise<ApplyResult> {
-  const parsed = parseGreenhouseUrl(applyUrl);
+  // Prefer URL parsing; fall back to externalId (stored as "{boardToken}-{jobId}")
+  const parsed =
+    parseGreenhouseUrl(applyUrl) ??
+    (payload.externalId ? parseGreenhouseExternalId(payload.externalId) : null);
   if (!parsed) {
     return { success: false, error: "Could not parse Greenhouse URL" };
   }
