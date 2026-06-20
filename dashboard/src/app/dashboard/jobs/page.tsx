@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Sparkles,
   X,
+  Send,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { trackEvent } from "@/lib/analytics";
@@ -153,6 +154,11 @@ export default function JobsPage() {
     await loadFeed();
   }
 
+  async function queueForAutoApply(feedItemId: string) {
+    await updateItem(feedItemId, "saved");
+    await apiFetch("/api/auto-apply/run", { method: "POST" });
+  }
+
   if (loading) return <DashboardSpinner />;
 
   return (
@@ -282,6 +288,17 @@ export default function JobsPage() {
                       Apply now
                       <ExternalLink className="h-3.5 w-3.5" />
                     </button>
+                    {(job.atsType === "greenhouse" || job.atsType === "lever") && (
+                      <button
+                        type="button"
+                        onClick={() => void queueForAutoApply(job.id)}
+                        className="app-btn-secondary !px-4 !py-1.5 text-xs"
+                        title="Let Swiftdroom submit this application for you"
+                      >
+                        <Send className="h-3 w-3" />
+                        Auto apply
+                      </button>
+                    )}
                     <Link
                       href={`/dashboard/jobs/tailor?company=${encodeURIComponent(job.company)}&role=${encodeURIComponent(job.title)}&jd=${encodeURIComponent(job.description.slice(0, 3000))}`}
                       className="app-btn-secondary !px-4 !py-1.5 text-center text-xs"

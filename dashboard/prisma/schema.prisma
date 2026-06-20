@@ -48,6 +48,8 @@ model User {
   fieldMappings          FieldMapping[]
   jobFeedItems           JobFeedItem[]
   jobSearchPreference    JobSearchPreference?
+  autoApplySettings      AutoApplySettings?
+  autoApplyJobs          AutoApplyJob[]
   apiToken               String             @unique @default(cuid())
   onboardingComplete     Boolean            @default(false)
   stripeCustomerId       String?            @unique
@@ -193,6 +195,7 @@ model JobListing {
   postedAt    DateTime?
   atsType     String        @default("")
   feedItems   JobFeedItem[]
+  autoApplyJobs AutoApplyJob[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -226,6 +229,35 @@ model JobSearchPreference {
   personaId       String?
   lastRefreshedAt DateTime?
   updatedAt       DateTime  @updatedAt
+}
+
+model AutoApplySettings {
+  userId        String    @id
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled       Boolean   @default(false)
+  minMatchScore Int       @default(75)
+  dailyLimit    Int       @default(10)
+  coverLetter   String    @default("")
+  pausedUntil   DateTime?
+  totalApplied  Int       @default(0)
+  updatedAt     DateTime  @updatedAt
+}
+
+model AutoApplyJob {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobListingId String
+  jobListing   JobListing @relation(fields: [jobListingId], references: [id], onDelete: Cascade)
+  status       String     @default("pending")
+  atsType      String     @default("")
+  error        String     @default("")
+  appliedAt    DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([userId, jobListingId])
+  @@index([userId, status, createdAt])
 }
 
 model VisitorSession {

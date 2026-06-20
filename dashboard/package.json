@@ -28,6 +28,7 @@
     "jose": "^6.2.3",
     "lucide-react": "^1.17.0",
     "next": "16.2.6",
+    "node-cron": "^4.4.1",
     "openai": "^6.39.1",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^6.0.227",
@@ -41,6 +42,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "eslint": "^9",
     "eslint-config-next": "16.2.6"
   }
