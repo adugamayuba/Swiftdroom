@@ -269,9 +269,11 @@ async function processUser(
         role: job.jobListing.title,
       });
     } else {
+      const errMsg = applyResult.error || "Unknown error";
+      console.warn(`[auto-apply] FAILED ${ats} — ${job.jobListing.company} "${job.jobListing.title}": ${errMsg}`);
       await db.autoApplyJob.update({
         where: { id: job.id },
-        data: { status: "failed", error: applyResult.error || "Unknown error" },
+        data: { status: "failed", error: errMsg },
       });
       result.failed++;
     }

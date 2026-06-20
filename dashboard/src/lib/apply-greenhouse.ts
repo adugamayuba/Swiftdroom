@@ -165,7 +165,7 @@ export async function applyViaGreenhouse(
   }
 
   // Submit to Greenhouse boards apply endpoint
-  const submitUrl = `https://boards.greenhouse.io/api/v1/boards/${boardToken}/jobs/${jobId}/applications`;
+  const submitUrl = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}/applications`;
 
   try {
     const res = await fetch(submitUrl, {
