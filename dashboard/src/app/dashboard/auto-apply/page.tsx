@@ -11,9 +11,6 @@ import {
 
 interface AutoApplySettings {
   enabled: boolean;
-  minMatchScore: number;
-  dailyLimit: number;
-  coverLetter: string;
   totalApplied: number;
 }
 
@@ -57,8 +54,6 @@ export default function AutoApplyPage() {
   const [saving, setSaving] = useState(false);
 
   const [enabled, setEnabled] = useState(false);
-  const [minScore, setMinScore] = useState(35);
-  const [dailyLimit, setDailyLimit] = useState(10);
   const [coverLetter, setCoverLetter] = useState("");
 
   const loadData = useCallback(async () => {
@@ -72,8 +67,6 @@ export default function AutoApplyPage() {
       setAppliedToday(data.appliedToday);
       setTotalPending(data.totalPending);
       setEnabled(data.settings.enabled);
-      setMinScore(data.settings.minMatchScore);
-      setDailyLimit(data.settings.dailyLimit);
       setCoverLetter(data.settings.coverLetter || "");
     }
     if (queueRes.ok) {
@@ -89,7 +82,7 @@ export default function AutoApplyPage() {
     setSaving(true);
     await apiFetch("/api/auto-apply/settings", {
       method: "PUT",
-      body: JSON.stringify({ enabled, minMatchScore: minScore, dailyLimit, coverLetter }),
+      body: JSON.stringify({ enabled, coverLetter }),
     });
     await loadData();
     setSaving(false);
@@ -148,46 +141,6 @@ export default function AutoApplyPage() {
               }`}
             />
           </button>
-        </div>
-
-        {/* Controls */}
-        <div className="grid gap-5 px-5 py-5 sm:grid-cols-2">
-          <div>
-            <label className="app-label">Minimum match score to apply</label>
-            <div className="mt-2 flex items-center gap-3">
-              <input
-                type="range"
-                min={50}
-                max={100}
-                step={5}
-                value={minScore}
-                onChange={(e) => setMinScore(Number(e.target.value))}
-                className="flex-1 accent-[var(--brand-header)]"
-              />
-              <span className="w-10 text-right text-sm font-bold text-[var(--brand-header)]">
-                {minScore}%
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-[var(--brand-header)]/40">
-              Only apply to jobs above this match score
-            </p>
-          </div>
-          <div>
-            <label className="app-label">Daily application cap</label>
-            <input
-              type="number"
-              className="app-input mt-1"
-              min={1}
-              max={50}
-              value={dailyLimit}
-              onChange={(e) =>
-                setDailyLimit(Math.max(1, Math.min(50, Number(e.target.value))))
-              }
-            />
-            <p className="mt-1 text-xs text-[var(--brand-header)]/40">
-              Max applications per day (counts toward monthly plan limit)
-            </p>
-          </div>
         </div>
 
         {/* Cover letter */}

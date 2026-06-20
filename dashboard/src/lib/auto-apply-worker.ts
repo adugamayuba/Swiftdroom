@@ -53,15 +53,16 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     .findMany({ where: { userId }, select: { url: true } })
     .then((rows) => new Set(rows.map((r) => r.url.trim().toLowerCase())));
 
+  // Score filter removed — we queue ALL greenhouse/lever jobs in the feed.
+  // The monthly plan limit is the only throttle that matters.
   const feedItems = await db.jobFeedItem.findMany({
     where: {
       userId,
-      status: { in: ["recommended", "active"] },
-      score: { gte: settings.minMatchScore },
+      status: { in: ["recommended", "active", "saved", "clicked"] },
     },
     include: { jobListing: true },
     orderBy: { score: "desc" },
-    take: 100,
+    take: 200,
   });
 
   const toQueue = feedItems.filter(
@@ -72,7 +73,7 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
   );
 
   console.info(
-    `[auto-apply] enqueue for ${userId}: feedItems=${feedItems.length} eligible=${toQueue.length} minScore=${settings.minMatchScore}`
+    `[auto-apply] enqueue for ${userId}: feedItems=${feedItems.length} eligible=${toQueue.length}`
   );
 
   if (toQueue.length === 0) return 0;
@@ -153,11 +154,8 @@ async function processUser(
   if (remainingMonthly <= 0) return result;
 
   const appliedToday = await countAppliedToday(userId);
-  // Daily cap: ~1/3 of monthly limit, capped by MAX_PER_RUN
-  const dailyCap = Math.min(
-    settings.dailyLimit,
-    Math.ceil(monthlyLimit / 20)
-  );
+  // Hardcoded daily cap — roughly 1/10 of monthly limit, min 5
+  const dailyCap = Math.max(5, Math.ceil(monthlyLimit / 10));
   const remainingToday = dailyCap - appliedToday;
   if (remainingToday <= 0) return result;
 
