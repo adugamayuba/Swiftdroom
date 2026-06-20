@@ -21,6 +21,7 @@ export default function SubscribePageContent() {
     referralDiscountAvailable?: boolean;
     signupPromoCode?: string;
   } | null>(null);
+  const { countryCode, isMena } = useRegionalPricing();
 
   useEffect(() => {
     apiFetch("/api/me")
@@ -108,7 +109,6 @@ export default function SubscribePageContent() {
   }
 
   const canceled = searchParams.get("canceled");
-  const { countryCode, isMena } = useRegionalPricing();
 
   return (
     <div className="min-h-screen bg-neutral-50">
