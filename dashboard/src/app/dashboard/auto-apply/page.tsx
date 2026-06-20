@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ExternalLink, Play, RefreshCw, CheckCircle2, Clock, XCircle, SkipForward } from "lucide-react";
+import { ExternalLink, RefreshCw, CheckCircle2, Clock, XCircle, SkipForward } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import {
   DashboardCard,
@@ -55,7 +55,6 @@ export default function AutoApplyPage() {
   const [totalPending, setTotalPending] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [running, setRunning] = useState(false);
 
   const [enabled, setEnabled] = useState(false);
   const [minScore, setMinScore] = useState(75);
@@ -96,13 +95,6 @@ export default function AutoApplyPage() {
     setSaving(false);
   }
 
-  async function runNow() {
-    setRunning(true);
-    await apiFetch("/api/auto-apply/run", { method: "POST" });
-    await loadData();
-    setRunning(false);
-  }
-
   if (loading) return <DashboardSpinner />;
 
   const appliedJobs = jobs.filter((j) => j.status === "applied");
@@ -114,28 +106,7 @@ export default function AutoApplyPage() {
       {/* Header */}
       <DashboardPageHeader
         title="Auto Apply"
-        subtitle="Your AI agent finds matching jobs and submits applications for you — 24 hours a day"
-        action={
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-              enabled
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-neutral-100 text-neutral-500"
-            }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${enabled ? "bg-emerald-500 animate-pulse" : "bg-neutral-400"}`} />
-              {enabled ? "Agent running" : "Agent paused"}
-            </div>
-            <button
-              type="button"
-              onClick={() => void runNow()}
-              disabled={running || !enabled}
-              className="app-btn-primary !py-2"
-            >
-              <Play className={`h-4 w-4 ${running ? "animate-pulse" : ""}`} />
-              {running ? "Running…" : "Run now"}
-            </button>
-          </div>
-        }
+        subtitle="Swiftdroom finds matching jobs and submits applications for you automatically"
       />
 
       {/* Stats row */}
@@ -157,9 +128,9 @@ export default function AutoApplyPage() {
         {/* Toggle */}
         <div className="flex items-center justify-between px-5 py-4">
           <div>
-            <p className="text-sm font-semibold text-[var(--brand-header)]">AI agent</p>
+            <p className="text-sm font-semibold text-[var(--brand-header)]">Auto Apply</p>
             <p className="mt-0.5 text-xs text-[var(--brand-header)]/55">
-              Runs every 15 minutes, applies to matching Greenhouse &amp; Lever jobs
+              Finds and submits matching Greenhouse &amp; Lever jobs automatically
             </p>
           </div>
           <button

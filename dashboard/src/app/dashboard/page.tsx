@@ -94,9 +94,9 @@ export default function DashboardOverview() {
     {
       done: autoApply?.enabled ?? false,
       label: "Enable Auto Apply",
-      sub: "Turn on the AI agent — it applies to jobs every 15 minutes.",
+      sub: "Turn it on and Swiftdroom will start submitting applications for you.",
       href: "/dashboard/auto-apply",
-      cta: "Enable agent",
+      cta: "Enable",
     },
   ];
 
@@ -111,8 +111,8 @@ export default function DashboardOverview() {
           </h1>
           <p className="mt-1 text-sm text-[var(--brand-header)]/55">
             {autoApply?.enabled
-              ? "Your AI agent is running — applying to jobs every 15 minutes."
-              : "Set up your AI agent to apply to jobs automatically."}
+              ? "Swiftdroom is applying to jobs for you in the background."
+              : "Turn on Auto Apply to start submitting applications automatically."}
           </p>
         </div>
         {data.limit > 0 && (
@@ -138,30 +138,22 @@ export default function DashboardOverview() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-[var(--brand-header)]">
-                  AI Auto Apply
+                  Auto Apply
                 </p>
                 <p className="text-xs text-[var(--brand-header)]/55">
                   {autoApply?.enabled
-                    ? "Agent is active — runs every 15 min"
-                    : "Enable to apply to jobs automatically"}
+                    ? "On — finding and submitting jobs for you"
+                    : "Off — turn on to start applying automatically"}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {autoApply?.enabled && (
-                <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                  Running
-                </span>
-              )}
-              <Link
-                href="/dashboard/auto-apply"
-                className="app-btn-primary !px-3 !py-1.5 !text-xs"
-              >
-                {autoApply?.enabled ? "Manage" : "Set up"}
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
+            <Link
+              href="/dashboard/auto-apply"
+              className="app-btn-primary !px-3 !py-1.5 !text-xs"
+            >
+              {autoApply?.enabled ? "View" : "Set up"}
+              <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
         </div>
         {autoApply?.enabled && (
