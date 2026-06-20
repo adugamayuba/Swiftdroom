@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     settings: settings ?? {
       enabled: false,
-      minMatchScore: 60,
+      minMatchScore: 35,
       dailyLimit: 10,
       coverLetter: "",
       totalApplied: 0,
