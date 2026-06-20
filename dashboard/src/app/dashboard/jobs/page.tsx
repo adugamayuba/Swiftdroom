@@ -6,7 +6,6 @@ import {
   ExternalLink,
   MapPin,
   RefreshCw,
-  Sparkles,
   X,
   Send,
 } from "lucide-react";
@@ -249,8 +248,7 @@ export default function JobsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-mint)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-header)]">
-                        <Sparkles className="h-3 w-3" />
+                      <span className="rounded-full bg-[var(--brand-mint)] px-2.5 py-0.5 text-xs font-semibold text-[var(--brand-header)]">
                         {job.score}% match
                       </span>
                       {job.atsType && (
