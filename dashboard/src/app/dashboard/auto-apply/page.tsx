@@ -230,7 +230,9 @@ export default function AutoApplyPage() {
 
         {jobs.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[var(--border)] p-10 text-center text-sm text-[var(--brand-header)]/45">
-            No jobs in the queue yet. Enable the agent above, then click Run now to start.
+            {enabled
+              ? "Swiftdroom is scanning for matching jobs. Applications will appear here shortly."
+              : "Enable Auto Apply above to start. Swiftdroom will find and submit jobs for you automatically."}
           </div>
         ) : (
           <div className="space-y-4">
