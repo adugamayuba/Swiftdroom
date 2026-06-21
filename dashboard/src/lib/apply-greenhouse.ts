@@ -34,6 +34,19 @@ interface GreenhouseQuestion {
   fields: GreenhouseFieldQuestion[];
 }
 
+interface DemographicAnswerOption {
+  id: number;
+  free_form: boolean;
+  label: string;
+}
+
+interface DemographicQuestion {
+  id: number;
+  question: string;
+  required: boolean;
+  answer_options: DemographicAnswerOption[];
+}
+
 /**
  * Extract board token + job ID from a Greenhouse apply URL.
  * Handles boards.greenhouse.io, job-boards.greenhouse.io, and company subdomains.
@@ -68,6 +81,7 @@ interface LoaderData {
   fingerprint: string;
   submitPath: string;
   questions: GreenhouseQuestion[];
+  demographicQuestions: DemographicQuestion[];
 }
 
 /** Detect whether a Greenhouse URL uses the EU regional subdomain. */
@@ -114,8 +128,13 @@ async function getGreenhouseLoaderData(
     const ctx = JSON.parse(html.slice(jsonStart, end)) as {
       state?: {
         loaderData?: Record<string, {
-          jobPost?: { fingerprint?: string; questions?: GreenhouseQuestion[] };
+          jobPost?: {
+            fingerprint?: string;
+            questions?: GreenhouseQuestion[];
+            demographic_questions?: DemographicQuestion[];
+          };
           submitPath?: string;
+          demographicQuestions?: DemographicQuestion[];
         }>;
       };
     };
@@ -126,10 +145,18 @@ async function getGreenhouseLoaderData(
     const routeData = routeKey ? ctx.state?.loaderData?.[routeKey] : undefined;
     if (!routeData?.submitPath || !routeData.jobPost?.fingerprint) return null;
 
+    // Demographic questions may live at routeData.demographicQuestions or
+    // routeData.jobPost.demographic_questions depending on the Remix version
+    const demographicQuestions: DemographicQuestion[] =
+      routeData.demographicQuestions ??
+      routeData.jobPost?.demographic_questions ??
+      [];
+
     return {
       fingerprint: routeData.jobPost.fingerprint,
       submitPath: routeData.submitPath,
       questions: routeData.jobPost.questions ?? [],
+      demographicQuestions,
     };
   } catch {
     return null;
@@ -330,10 +357,24 @@ export async function applyViaGreenhouse(
     return { success: false, error: "Job closed" };
   }
 
-  const { fingerprint, submitPath, questions } = loaderData;
+  const { fingerprint, submitPath, questions, demographicQuestions } = loaderData;
   console.info(
     `[greenhouse] ${boardToken}/${jobId} fingerprint=${fingerprint.slice(0, 8)}… submitPath=${submitPath}`
   );
+
+  // Build demographic answers: always select the "decline / prefer not to say" option.
+  // Greenhouse rejects submissions with 422 invalid-attributes when required demographic
+  // questions are missing. Selecting "decline" is legal and avoids discrimination data.
+  const demographicAnswers = demographicQuestions.map((q) => {
+    const declineOption = q.answer_options.find(
+      (o) =>
+        /decline|prefer not|i don.t|not wish|not disclose/i.test(o.label) ||
+        o.label.toLowerCase().includes("no answer")
+    ) ?? q.answer_options[q.answer_options.length - 1]; // last option as fallback
+    return declineOption
+      ? { demographic_question_id: q.id, demographic_answer_option_id: declineOption.id }
+      : null;
+  }).filter(Boolean);
 
   // Step 2 — establish session (_jbs cookie)
   const sessionCookie = await getGreenhouseSession(boardToken, jobId, region);
@@ -364,7 +405,7 @@ export async function applyViaGreenhouse(
     email: payload.email,
     phone: payload.phone ?? "",
     answers_attributes: answersAttributes,
-    demographic_answers: [],
+    demographic_answers: demographicAnswers,
     data_compliance: {},
     attachments: {},
     from_job_board_renderer: true,

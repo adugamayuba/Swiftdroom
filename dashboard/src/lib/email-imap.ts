@@ -93,14 +93,17 @@ function isVerificationEmail(subject: string): boolean {
 
 async function autoCompleteApplication(
   userId: string,
-  code: string
+  code: string,
+  companyHint?: string
 ): Promise<void> {
-  // Get ALL jobs awaiting a security code, newest first.
-  // We try each one until the code is accepted — security codes are job-specific
-  // so a code for job A will be rejected by job B (invalid-security-code) and
-  // we need to fall through to the correct job.
+  // Build where clause — filter by company if we extracted a hint from the email subject
+  // e.g. "Security code for your application to Discord" → only try Discord jobs
+  const companyFilter = companyHint
+    ? { jobListing: { company: { contains: companyHint, mode: "insensitive" as const } } }
+    : {};
+
   const jobs = await db.autoApplyJob.findMany({
-    where: { userId, status: "failed", error: "security_code_required" },
+    where: { userId, status: "failed", error: "security_code_required", ...companyFilter },
     include: { jobListing: true },
     orderBy: { createdAt: "desc" },
     take: 5,
@@ -199,11 +202,23 @@ async function attemptComplete(
       `[email-imap] ✓ applied to ${job.jobListing.company} "${job.jobListing.title}"`
     );
   } else {
-    console.warn(`[email-imap] code completion failed: ${result.error}`);
-    await db.autoApplyJob.update({
-      where: { id: job.id },
-      data: { error: result.error ?? "Code verification failed" },
-    });
+    const isWrongJob =
+      result.error?.toLowerCase().includes("invalid-security-code") ||
+      result.error?.toLowerCase().includes("incorrect security code");
+
+    if (isWrongJob) {
+      // Code belongs to a different job — leave this job as security_code_required
+      // so it can be completed when its own code email arrives.
+      console.info(
+        `[email-imap] code rejected by ${job.jobListing.company}/${job.jobListing.externalId} — keeping as pending-code`
+      );
+    } else {
+      console.warn(`[email-imap] code completion failed: ${result.error}`);
+      await db.autoApplyJob.update({
+        where: { id: job.id },
+        data: { error: result.error ?? "Code verification failed" },
+      });
+    }
   }
 }
 
@@ -364,8 +379,11 @@ export async function pollInboxEmails(): Promise<void> {
       if (isVerificationEmail(subject)) {
         const code = extractVerificationCode(subject, bodyText, bodyHtml);
         if (code) {
-          console.info(`[email-imap] found code "${code}" for ${toAlias}`);
-          await autoCompleteApplication(targetUser.id, code);
+          // Extract company hint from subject: "Security code for your application to Discord"
+          const companyMatch = subject.match(/application to (.+?)(?:\s*$)/i);
+          const companyHint = companyMatch?.[1]?.trim();
+          console.info(`[email-imap] found code "${code}" for ${toAlias}${companyHint ? ` (company: ${companyHint})` : ""}`);
+          await autoCompleteApplication(targetUser.id, code, companyHint);
         } else {
           // Log stripped HTML preview so we can see the code format
           const strippedPreview = (bodyText.trim() || htmlToText(bodyHtml)).slice(0, 400);
