@@ -11,6 +11,7 @@
  */
 
 import type { ApplyPayload, ApplyResult } from "./apply-lever";
+import { solveGreenhouseCaptcha } from "./solve-captcha";
 import OpenAI from "openai";
 
 const openai = process.env.OPENAI_API_KEY
@@ -69,17 +70,27 @@ interface LoaderData {
   questions: GreenhouseQuestion[];
 }
 
+/** Detect whether a Greenhouse URL uses the EU regional subdomain. */
+function detectRegion(url: string): "eu" | "us" {
+  return url.includes(".eu.greenhouse.io") ? "eu" : "us";
+}
+
 /**
  * Fetch the Remix SSR loader data embedded in the job page HTML.
  * Contains the job fingerprint (required for submission), submit path, and question list.
  */
 async function getGreenhouseLoaderData(
   boardToken: string,
-  jobId: string
+  jobId: string,
+  region: "eu" | "us" = "us"
 ): Promise<LoaderData | null> {
+  const host =
+    region === "eu"
+      ? "job-boards.eu.greenhouse.io"
+      : "job-boards.greenhouse.io";
   try {
     const res = await fetch(
-      `https://job-boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+      `https://${host}/${boardToken}/jobs/${jobId}`,
       {
         headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,*/*" },
       }
@@ -127,15 +138,18 @@ async function getGreenhouseLoaderData(
 
 /**
  * GET boards.greenhouse.io/{token}/jobs/{id} (with redirect:manual) to capture
- * the _jbs session cookie Greenhouse requires on the POST.
+ * the _jbs session cookie if one is set.
  */
 async function getGreenhouseSession(
   boardToken: string,
-  jobId: string
+  jobId: string,
+  region: "eu" | "us" = "us"
 ): Promise<string> {
+  const host =
+    region === "eu" ? "boards.eu.greenhouse.io" : "boards.greenhouse.io";
   try {
     const res = await fetch(
-      `https://boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+      `https://${host}/${boardToken}/jobs/${jobId}`,
       {
         headers: { "User-Agent": BROWSER_UA },
         redirect: "manual",
@@ -284,9 +298,15 @@ export async function applyViaGreenhouse(
   }
 
   const { boardToken, jobId } = parsed;
+  const region = detectRegion(applyUrl);
+  const pageHost =
+    region === "eu"
+      ? "job-boards.eu.greenhouse.io"
+      : "job-boards.greenhouse.io";
+  const pageUrl = `https://${pageHost}/${boardToken}/jobs/${jobId}`;
 
   // Step 1 — get fingerprint + submitPath + questions from Remix loader data
-  const loaderData = await getGreenhouseLoaderData(boardToken, jobId);
+  const loaderData = await getGreenhouseLoaderData(boardToken, jobId, region);
   if (!loaderData) {
     console.warn(`[greenhouse] ${boardToken}/${jobId} loader data unavailable`);
     return { success: false, error: "Job closed" };
@@ -298,9 +318,9 @@ export async function applyViaGreenhouse(
   );
 
   // Step 2 — establish session (_jbs cookie)
-  const sessionCookie = await getGreenhouseSession(boardToken, jobId);
+  const sessionCookie = await getGreenhouseSession(boardToken, jobId, region);
 
-  // Step 3 — build answers for custom questions
+  // Step 3 — build answers for custom required questions
   const answersAttributes = await buildAnswers(
     questions,
     payload.resumeText ?? "",
@@ -308,7 +328,13 @@ export async function applyViaGreenhouse(
     payload.linkedinUrl
   );
 
-  // Step 4 — assemble application JSON
+  // Step 4 — solve reCAPTCHA Enterprise (required by Greenhouse on all submissions)
+  const captchaToken = await solveGreenhouseCaptcha(pageUrl);
+  if (!captchaToken) {
+    console.warn(`[greenhouse] ${boardToken}/${jobId} no captcha token — will attempt without`);
+  }
+
+  // Step 5 — assemble application JSON
   const jobApplication: Record<string, unknown> = {
     first_name: payload.firstName,
     last_name: payload.lastName,
@@ -339,21 +365,24 @@ export async function applyViaGreenhouse(
     jobApplication.cover_letter_text = payload.coverLetter;
   }
 
-  // Step 5 — POST
+  // Step 6 — POST
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "Accept": "application/json",
     "User-Agent": BROWSER_UA,
-    "Origin": "https://job-boards.greenhouse.io",
-    "Referer": `https://job-boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+    "Origin": `https://${pageHost}`,
+    "Referer": pageUrl,
   };
   if (sessionCookie) headers["Cookie"] = sessionCookie;
+
+  const postBody: Record<string, unknown> = { job_application: jobApplication, fingerprint };
+  if (captchaToken) postBody["g-recaptcha-enterprise-token"] = captchaToken;
 
   try {
     const res = await fetch(submitPath, {
       method: "POST",
       headers,
-      body: JSON.stringify({ job_application: jobApplication, fingerprint }),
+      body: JSON.stringify(postBody),
       redirect: "manual",
     });
 
