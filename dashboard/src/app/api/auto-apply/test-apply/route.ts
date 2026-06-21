@@ -17,7 +17,11 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("url") ||
     "https://job-boards.eu.greenhouse.io/productpeople/jobs/4801179101";
 
-  const testEmail = req.nextUrl.searchParams.get("email") || "hi@droomify.com";
+  // Default to a @swiftdroom.com address so the full loop can be tested:
+  // Greenhouse sends the code there → Titan Mail catch-all receives it →
+  // IMAP poller picks it up automatically.
+  // Pass ?email=hi@droomify.com to test the old manual-code flow.
+  const testEmail = req.nextUrl.searchParams.get("email") || "test@swiftdroom.com";
 
   const dummy = {
     fullName: "Test Swiftdroom",
@@ -42,6 +46,9 @@ export async function GET(req: NextRequest) {
   console.log(`[test-apply] starting test for ${jobUrl} email=${testEmail}${securityCode ? " WITH code" : ""}`);
   console.log(`[test-apply] CAPSOLVER_API_KEY set: ${!!process.env.CAPSOLVER_API_KEY}`);
   console.log(`[test-apply] CAPTCHA_API_KEY set: ${!!process.env.CAPTCHA_API_KEY}`);
+  console.log(`[test-apply] IMAP_HOST set: ${!!process.env.IMAP_HOST} (${process.env.IMAP_HOST ?? "not set"})`);
+  console.log(`[test-apply] IMAP_USER set: ${!!process.env.IMAP_USER} (${process.env.IMAP_USER ?? "not set"})`);
+  console.log(`[test-apply] IMAP_PASS set: ${!!process.env.IMAP_PASS}`);
   const result = await applyViaGreenhouse(jobUrl, dummy, securityCode);
   console.log(`[test-apply] result:`, JSON.stringify(result));
 
