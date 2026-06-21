@@ -87,36 +87,44 @@ export async function GET(req: NextRequest) {
   // If Greenhouse sent a security code AND we have a real userId, create/update an
   // AutoApplyJob record so the IMAP poller can find and auto-complete the application.
   if (result.securityCodeRequired && userId) {
-    const jobListing = await db.jobListing.findFirst({
-      where: {
-        OR: [
-          { applyUrl: { contains: jobUrl } },
-          { applyUrl: jobUrl },
-        ],
+    // Parse company + externalId from the URL so we can upsert the JobListing
+    // e.g. https://job-boards.eu.greenhouse.io/productpeople/jobs/4801179101
+    const urlMatch = jobUrl.match(/greenhouse\.io\/([^/]+)\/jobs\/([^/?#]+)/);
+    const ghCompany = urlMatch?.[1] ?? "unknown";
+    const ghExternalId = urlMatch?.[2] ?? jobUrl;
+
+    // Upsert the JobListing so AutoApplyJob can reference it
+    const jobListing = await db.jobListing.upsert({
+      where: { source_externalId: { source: "greenhouse", externalId: ghExternalId } },
+      create: {
+        source: "greenhouse",
+        externalId: ghExternalId,
+        company: ghCompany,
+        title: dummy.jobTitle ?? "Test Job",
+        applyUrl: jobUrl,
+        atsType: "greenhouse",
+        region: jobUrl.includes(".eu.") ? "eu" : "us",
       },
+      update: {},
       select: { id: true },
     });
 
-    if (jobListing) {
-      await db.autoApplyJob.upsert({
-        where: { userId_jobListingId: { userId, jobListingId: jobListing.id } },
-        create: {
-          userId,
-          jobListingId: jobListing.id,
-          atsType: "greenhouse",
-          status: "failed",
-          error: "security_code_required",
-        },
-        update: {
-          status: "failed",
-          error: "security_code_required",
-          appliedAt: null,
-        },
-      });
-      console.log(`[test-apply] marked AutoApplyJob as security_code_required for jobListingId=${jobListing.id}`);
-    } else {
-      console.warn(`[test-apply] no JobListing found for ${jobUrl} — IMAP auto-complete won't trigger`);
-    }
+    await db.autoApplyJob.upsert({
+      where: { userId_jobListingId: { userId, jobListingId: jobListing.id } },
+      create: {
+        userId,
+        jobListingId: jobListing.id,
+        atsType: "greenhouse",
+        status: "failed",
+        error: "security_code_required",
+      },
+      update: {
+        status: "failed",
+        error: "security_code_required",
+        appliedAt: null,
+      },
+    });
+    console.log(`[test-apply] ✓ AutoApplyJob marked security_code_required — IMAP poller will auto-complete within 2 min`);
   }
 
   return NextResponse.json({
