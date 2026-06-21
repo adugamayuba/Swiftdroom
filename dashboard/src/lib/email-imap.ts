@@ -395,6 +395,8 @@ export async function pollInboxEmails(): Promise<void> {
       const existing = await db.inboxEmail.findFirst({ where: { imapUid }, select: { id: true } });
       if (existing) continue;
 
+      const isVerification = isVerificationEmail(subject);
+
       await db.inboxEmail.create({
         data: {
           userId: targetUser.id,
@@ -406,12 +408,15 @@ export async function pollInboxEmails(): Promise<void> {
           bodyHtml: bodyHtml.slice(0, 100000),
           imapUid,
           receivedAt: parsed.date ?? new Date(),
+          isVerification,
         },
       });
 
-      console.info(`[email-imap] stored email for ${toAlias}: "${subject}" from ${fromEmail}`);
+      console.info(
+        `[email-imap] stored email for ${toAlias}: "${subject}" from ${fromEmail}${isVerification ? " [verification — hidden from inbox]" : ""}`
+      );
 
-      if (isVerificationEmail(subject)) {
+      if (isVerification) {
         const code = extractVerificationCode(subject, bodyText, bodyHtml);
         if (code) {
           // Extract company hint from subject: "Security code for your application to Discord"

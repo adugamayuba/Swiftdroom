@@ -199,8 +199,8 @@ export default function InboxPage() {
             </p>
             <p className="text-sm font-mono text-neutral-900 font-medium">{alias}</p>
             <p className="text-xs text-neutral-400 mt-1">
-              This address is used when submitting job applications on your behalf.
-              Verification codes and recruiter replies arrive here automatically.
+              Swiftdroom submits applications using this address. Recruiter replies,
+              interview requests, and follow-ups land here automatically.
             </p>
           </div>
           <div className="flex gap-2">
@@ -256,7 +256,7 @@ export default function InboxPage() {
             <p className="text-sm font-medium text-neutral-600">No messages yet</p>
             <p className="text-xs text-neutral-400 mt-1 max-w-xs">
               Emails sent to <strong>{alias}</strong> will appear here.
-              When you apply to jobs, any recruiter replies or verification codes will show up automatically.
+              Interview requests, application confirmations, and recruiter replies show up automatically.
             </p>
           </div>
         ) : (
@@ -272,8 +272,8 @@ export default function InboxPage() {
       <div className="flex gap-2 text-xs text-neutral-500 bg-neutral-50 rounded-xl px-4 py-3 border border-neutral-100">
         <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-neutral-400" />
         <span>
-          Verification codes from application systems are handled automatically — you don&apos;t need to do anything.
-          For interview requests and recruiter messages, you&apos;ll also get a notification at your real email address.
+          This inbox only shows messages that matter to you — application confirmations, interview invites,
+          and recruiter follow-ups. You&apos;ll also get a notification at your real email for anything important.
         </span>
       </div>
     </div>

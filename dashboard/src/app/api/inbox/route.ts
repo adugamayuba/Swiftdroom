@@ -12,10 +12,14 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "50"), 100);
   const offset = parseInt(req.nextUrl.searchParams.get("offset") ?? "0");
 
+  // Only surface human emails — verification/security-code emails are handled
+  // automatically and are never shown to the user.
+  const humanEmailFilter = { userId, isVerification: false };
+
   const [alias, rawEmails, unreadCount] = await Promise.all([
     getOrAssignSwiftdroomEmail(userId),
     db.inboxEmail.findMany({
-      where: { userId },
+      where: humanEmailFilter,
       orderBy: { receivedAt: "desc" },
       take: limit,
       skip: offset,
@@ -31,7 +35,7 @@ export async function GET(req: NextRequest) {
         isRead: true,
       },
     }),
-    db.inboxEmail.count({ where: { userId, isRead: false } }),
+    db.inboxEmail.count({ where: { ...humanEmailFilter, isRead: false } }),
   ]);
 
   // Strip HTML tags for display — emails are often HTML-only with empty bodyText
@@ -63,7 +67,7 @@ export async function PATCH(req: NextRequest) {
   if (!ids?.length) return NextResponse.json({ updated: 0 });
 
   const result = await db.inboxEmail.updateMany({
-    where: { userId, id: { in: ids } },
+    where: { userId, isVerification: false, id: { in: ids } },
     data: { isRead: true },
   });
 
