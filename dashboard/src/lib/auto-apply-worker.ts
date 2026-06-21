@@ -44,16 +44,40 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
   const settings = await db.autoApplySettings.findUnique({ where: { userId } });
   if (!settings?.enabled) return 0;
 
-  // Reset old "skipped" records that were skipped due to wrong endpoint (not truly closed).
-  // Previous code incorrectly marked jobs as "Job closed" when the CSRF/API approach failed.
-  // Now that we have the correct JSON approach, these should be retried.
+  // Only reset transient skips (rate-limit / captcha fallback) back to pending.
+  // "Job closed" is permanent — never reset it, or the worker retries it every 15 minutes.
   await db.autoApplyJob.updateMany({
     where: {
       userId,
       status: "skipped",
-      error: { in: ["Job closed", "Rate limited — will retry", "Captcha failed — will retry"] },
+      error: { in: ["Rate limited — will retry", "Captcha failed — will retry"] },
     },
     data: { status: "pending", error: undefined },
+  });
+
+  // Also reset "security_code_required" failed jobs older than 30 minutes back to pending
+  // so they get re-submitted with the (now-retrieved) code on the next cycle.
+  // The IMAP poller handles codes automatically, so these should resolve themselves.
+  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+  await db.autoApplyJob.updateMany({
+    where: {
+      userId,
+      status: "failed",
+      error: "security_code_required",
+      createdAt: { lt: thirtyMinAgo },
+    },
+    data: { status: "pending", error: undefined },
+  });
+
+  // Purge permanently-closed and stale failed jobs older than 7 days so the
+  // queue doesn't accumulate dead weight preventing new jobs from being enqueued.
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  await db.autoApplyJob.deleteMany({
+    where: {
+      userId,
+      updatedAt: { lt: sevenDaysAgo },
+      status: { in: ["skipped", "failed"] },
+    },
   });
 
   // Existing AutoApplyJob rows that are already pending or successfully applied or truly skipped.
@@ -244,6 +268,10 @@ async function processUser(
     orderBy: { createdAt: "asc" },
     take: toProcess,
   });
+
+  console.info(
+    `[auto-apply] processing ${pendingJobs.length} pending job(s) for ${userId} using ${swiftdroomEmail}`
+  );
 
   for (const job of pendingJobs) {
     const ats = job.jobListing.atsType.toLowerCase();

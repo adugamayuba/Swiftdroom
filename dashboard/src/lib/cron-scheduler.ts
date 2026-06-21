@@ -2,8 +2,31 @@ import cron from "node-cron";
 import { runAutoApplyWorker } from "@/lib/auto-apply-worker";
 import { ingestGlobalJobCache } from "@/lib/job-ingest";
 import { pollInboxEmails } from "@/lib/email-imap";
+import { db } from "@/lib/db";
 
 let started = false;
+
+/**
+ * One-time startup cleanup: delete AutoApplyJob rows that have been permanently
+ * closed or failed for more than 24 hours. These clog the queue and prevent
+ * new eligible jobs from being discovered.
+ */
+async function purgeStaleQueue(): Promise<void> {
+  try {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const deleted = await db.autoApplyJob.deleteMany({
+      where: {
+        updatedAt: { lt: oneDayAgo },
+        status: { in: ["skipped", "failed"] },
+      },
+    });
+    if (deleted.count > 0) {
+      console.log(`[queue-cleanup] purged ${deleted.count} stale closed/failed jobs`);
+    }
+  } catch (err) {
+    console.error("[queue-cleanup] error:", err);
+  }
+}
 
 export function scheduleAutoApplyCron() {
   if (started) return;
@@ -21,6 +44,9 @@ export function scheduleAutoApplyCron() {
       console.error("[job-ingest cron] error:", err);
     }
   };
+
+  // Purge stale queue on startup so closed/failed jobs don't block new ones
+  setTimeout(purgeStaleQueue, 5_000);
 
   // Run immediately on startup (after a short delay so the server is ready)
   setTimeout(runIngest, 30_000);
