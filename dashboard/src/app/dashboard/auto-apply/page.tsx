@@ -27,6 +27,24 @@ interface QueueJob {
   applyUrl: string;
 }
 
+function friendlyError(raw: string): string {
+  const e = raw.toLowerCase();
+  if (e === "job closed" || e.includes("no longer accepting") || e.includes("404") || e.includes("410"))
+    return "This position is no longer accepting applications.";
+  if (e.includes("rate limit"))
+    return "Will retry shortly.";
+  if (e.includes("captcha"))
+    return "Will retry shortly.";
+  if (e.includes("already applied"))
+    return "Already applied to this job.";
+  if (e.includes("network") || e.includes("socket") || e.includes("timeout") || e.includes("econnreset"))
+    return "Connection issue — will retry automatically.";
+  if (e.includes("resume") || e.includes("profile") || e.includes("required"))
+    return "Application incomplete — check your profile has a resume attached.";
+  // Catch-all for anything else (422s, Greenhouse internal errors, etc.)
+  return "Submission failed — will retry automatically.";
+}
+
 const STATUS_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   applied:  { label: "Applied",  color: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
   pending:  { label: "Pending",  color: "bg-amber-100 text-amber-700",    icon: Clock },
@@ -291,7 +309,7 @@ export default function AutoApplyPage() {
                           )}
                           {job.error && (
                             <p className="mt-1 text-xs text-red-500">
-                              {job.error}
+                              {friendlyError(job.error)}
                             </p>
                           )}
                         </div>
