@@ -17,11 +17,13 @@ export async function GET(req: NextRequest) {
     req.nextUrl.searchParams.get("url") ||
     "https://job-boards.eu.greenhouse.io/productpeople/jobs/4801179101";
 
+  const testEmail = req.nextUrl.searchParams.get("email") || "hi@droomify.com";
+
   const dummy = {
     fullName: "Test Swiftdroom",
     firstName: "Test",
     lastName: "Swiftdroom",
-    email: "test-autoapp@swiftdroom.com",
+    email: testEmail,
     phone: "1234567890",
     linkedinUrl: "https://linkedin.com/in/test-swiftdroom",
     resumeUrl:
@@ -35,10 +37,12 @@ export async function GET(req: NextRequest) {
       "I am applying for this role as part of a system test. Please disregard.",
   };
 
-  console.log(`[test-apply] starting test for ${jobUrl}`);
+  const securityCode = req.nextUrl.searchParams.get("code") || undefined;
+
+  console.log(`[test-apply] starting test for ${jobUrl} email=${testEmail}${securityCode ? " WITH code" : ""}`);
   console.log(`[test-apply] CAPSOLVER_API_KEY set: ${!!process.env.CAPSOLVER_API_KEY}`);
   console.log(`[test-apply] CAPTCHA_API_KEY set: ${!!process.env.CAPTCHA_API_KEY}`);
-  const result = await applyViaGreenhouse(jobUrl, dummy);
+  const result = await applyViaGreenhouse(jobUrl, dummy, securityCode);
   console.log(`[test-apply] result:`, JSON.stringify(result));
 
   return NextResponse.json({
