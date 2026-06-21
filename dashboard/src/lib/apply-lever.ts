@@ -89,6 +89,11 @@ export async function applyViaLever(
       return { success: true };
     }
 
+    // 404 = posting closed or no longer accepting applications
+    if (res.status === 404) {
+      return { success: false, error: "Job closed" };
+    }
+
     const text = await res.text().catch(() => "");
     return {
       success: false,

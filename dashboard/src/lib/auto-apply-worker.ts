@@ -54,40 +54,55 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     .findMany({ where: { userId }, select: { url: true } })
     .then((rows) => new Set(rows.map((r) => r.url.trim().toLowerCase())));
 
-  // Query ONLY Greenhouse/Lever feed items — other sources can't be auto-applied.
-  // Filtering here instead of post-hoc so the take limit doesn't crowd out ATS jobs.
-  const feedItems = await db.jobFeedItem.findMany({
-    where: {
-      userId,
-      status: { in: ["recommended", "active", "saved", "clicked"] },
-      jobListing: { atsType: { in: ["greenhouse", "lever"] } },
-    },
-    include: { jobListing: true },
-    orderBy: { score: "desc" },
+  // Get user's target role from their persona or preferences for relevance filtering
+  const [persona, prefs] = await Promise.all([
+    db.persona.findFirst({ where: { userId, isDefault: true } }),
+    db.jobSearchPreference.findUnique({ where: { userId } }),
+  ]);
+  const targetRole = persona?.focus || prefs?.targetRole || "";
+  const keywords = targetRole
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 2)
+    .slice(0, 3);
+
+  // Query JobListing directly — the feed only holds ~23 GH items per user
+  // but the JobListing table has 1500+ Greenhouse/Lever jobs from ATS boards.
+  // Use a title keyword filter for relevance, falling back to all GH/Lever if no keywords.
+  const whereClause =
+    keywords.length > 0
+      ? {
+          atsType: { in: ["greenhouse", "lever"] },
+          OR: keywords.map((kw) => ({ title: { contains: kw, mode: "insensitive" as const } })),
+        }
+      : { atsType: { in: ["greenhouse", "lever"] } };
+
+  const listings = await db.jobListing.findMany({
+    where: whereClause,
+    orderBy: { postedAt: "desc" },
     take: 500,
   });
 
-  const toQueue = feedItems.filter(
-    (item) =>
-      !existingJobIds.has(item.jobListingId) &&
-      !submittedUrls.has(item.jobListing.applyUrl.trim().toLowerCase()) &&
-      SUPPORTED_ATS.includes(item.jobListing.atsType.toLowerCase())
+  const toQueue = listings.filter(
+    (l) =>
+      !existingJobIds.has(l.id) &&
+      !submittedUrls.has(l.applyUrl.trim().toLowerCase())
   );
 
   console.info(
-    `[auto-apply] enqueue for ${userId}: feedItems=${feedItems.length} eligible=${toQueue.length}`
+    `[auto-apply] enqueue for ${userId}: listings=${listings.length} eligible=${toQueue.length} role="${targetRole}"`
   );
 
   if (toQueue.length === 0) return 0;
 
   // Reset any previously-failed rows back to pending, create new rows for truly new jobs.
-  for (const item of toQueue) {
+  for (const listing of toQueue) {
     await db.autoApplyJob.upsert({
-      where: { userId_jobListingId: { userId, jobListingId: item.jobListingId } },
+      where: { userId_jobListingId: { userId, jobListingId: listing.id } },
       create: {
         userId,
-        jobListingId: item.jobListingId,
-        atsType: item.jobListing.atsType.toLowerCase(),
+        jobListingId: listing.id,
+        atsType: listing.atsType.toLowerCase(),
         status: "pending",
       },
       update: { status: "pending", error: undefined, appliedAt: null },
