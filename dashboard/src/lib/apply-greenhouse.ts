@@ -145,17 +145,47 @@ async function getGreenhouseLoaderData(
     const routeData = routeKey ? ctx.state?.loaderData?.[routeKey] : undefined;
     if (!routeData?.submitPath || !routeData.jobPost?.fingerprint) return null;
 
-    // Demographic questions may live at routeData.demographicQuestions or
-    // routeData.jobPost.demographic_questions depending on the Remix version
-    const demographicQuestions: DemographicQuestion[] =
-      routeData.demographicQuestions ??
-      routeData.jobPost?.demographic_questions ??
-      [];
+    // Demographic questions may live at several paths depending on the Remix version
+    // and board configuration. Collect all candidates and take the first non-empty array.
+    const dqCandidates = [
+      routeData.demographicQuestions,
+      routeData.jobPost?.demographic_questions,
+      (routeData as Record<string, unknown>).demographic_questions,
+      (routeData as Record<string, unknown>).demographicQuestionGroups,
+    ];
+    let demographicQuestions: DemographicQuestion[] = [];
+    for (const c of dqCandidates) {
+      if (Array.isArray(c) && c.length > 0) { demographicQuestions = c; break; }
+    }
+
+    // If still empty, try the public Greenhouse boards API as a fallback.
+    // This is the most reliable source — it always returns demographic questions
+    // even when the Remix SSR page omits them (common for US-region boards like Discord).
+    if (demographicQuestions.length === 0) {
+      try {
+        const apiRes = await fetch(
+          `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}?questions=true`,
+          { headers: { "User-Agent": BROWSER_UA } }
+        );
+        if (apiRes.ok) {
+          const apiData = await apiRes.json() as {
+            demographic_questions?: { questions?: DemographicQuestion[] };
+          };
+          const fromApi = apiData.demographic_questions?.questions;
+          if (Array.isArray(fromApi) && fromApi.length > 0) {
+            demographicQuestions = fromApi;
+            console.info(`[greenhouse] ${boardToken}/${jobId} loaded ${fromApi.length} demographic question(s) from boards API`);
+          }
+        }
+      } catch {
+        // boards API unreachable — proceed without demographic answers
+      }
+    }
 
     return {
       fingerprint: routeData.jobPost.fingerprint,
       submitPath: routeData.submitPath,
-      questions: routeData.jobPost.questions ?? [],
+      questions: Array.isArray(routeData.jobPost.questions) ? routeData.jobPost.questions : [],
       demographicQuestions,
     };
   } catch {
@@ -365,12 +395,15 @@ export async function applyViaGreenhouse(
   // Build demographic answers: always select the "decline / prefer not to say" option.
   // Greenhouse rejects submissions with 422 invalid-attributes when required demographic
   // questions are missing. Selecting "decline" is legal and avoids discrimination data.
-  const demographicAnswers = demographicQuestions.map((q) => {
-    const declineOption = q.answer_options.find(
+  const dqList = Array.isArray(demographicQuestions) ? demographicQuestions : [];
+  console.info(`[greenhouse] ${boardToken}/${jobId} demographic questions: ${dqList.length}`);
+  const demographicAnswers = dqList.map((q) => {
+    const options = Array.isArray(q.answer_options) ? q.answer_options : [];
+    const declineOption = options.find(
       (o) =>
         /decline|prefer not|i don.t|not wish|not disclose/i.test(o.label) ||
         o.label.toLowerCase().includes("no answer")
-    ) ?? q.answer_options[q.answer_options.length - 1]; // last option as fallback
+    ) ?? options[options.length - 1];
     return declineOption
       ? { demographic_question_id: q.id, demographic_answer_option_id: declineOption.id }
       : null;
