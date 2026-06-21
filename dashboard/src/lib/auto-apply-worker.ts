@@ -241,7 +241,7 @@ async function processUser(
 
   for (const job of pendingJobs) {
     const ats = job.jobListing.atsType.toLowerCase();
-    let applyResult: { success: boolean; error?: string };
+    let applyResult: import("@/lib/apply-lever").ApplyResult;
 
     // Extra guard: don't apply if Application already exists with this URL
     const alreadyApplied = await db.application.findFirst({
@@ -318,15 +318,29 @@ async function processUser(
     } else {
       const errMsg = applyResult.error || "Unknown error";
       const isClosedJob = errMsg === "Job closed";
-      console.warn(
-        `[auto-apply] ${isClosedJob ? "CLOSED" : "FAILED"} ${ats} — ${job.jobListing.company} "${job.jobListing.title}": ${errMsg}`
-      );
-      await db.autoApplyJob.update({
-        where: { id: job.id },
-        data: { status: isClosedJob ? "skipped" : "failed", error: errMsg },
-      });
-      if (isClosedJob) result.skipped++;
-      else result.failed++;
+      const needsSecurityCode = applyResult.securityCodeRequired === true;
+
+      if (needsSecurityCode) {
+        // Greenhouse sent a code to the user's email — mark as awaiting verification
+        console.info(
+          `[auto-apply] VERIFY ${ats} — ${job.jobListing.company} "${job.jobListing.title}": code sent to user email`
+        );
+        await db.autoApplyJob.update({
+          where: { id: job.id },
+          data: { status: "failed", error: "security_code_required" },
+        });
+        result.failed++;
+      } else {
+        console.warn(
+          `[auto-apply] ${isClosedJob ? "CLOSED" : "FAILED"} ${ats} — ${job.jobListing.company} "${job.jobListing.title}": ${errMsg}`
+        );
+        await db.autoApplyJob.update({
+          where: { id: job.id },
+          data: { status: isClosedJob ? "skipped" : "failed", error: errMsg },
+        });
+        if (isClosedJob) result.skipped++;
+        else result.failed++;
+      }
     }
 
     // Respect ATS rate limits: 1.5s between jobs normally, 10s after a rate-limit

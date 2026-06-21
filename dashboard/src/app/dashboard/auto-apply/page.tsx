@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ExternalLink, RefreshCw, CheckCircle2, Clock, XCircle, SkipForward } from "lucide-react";
+import { ExternalLink, RefreshCw, CheckCircle2, Clock, XCircle, SkipForward, Mail } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import {
   DashboardCard,
@@ -32,6 +32,7 @@ const STATUS_META: Record<string, { label: string; color: string; icon: React.El
   pending:  { label: "Pending",  color: "bg-amber-100 text-amber-700",    icon: Clock },
   failed:   { label: "Failed",   color: "bg-red-100 text-red-600",         icon: XCircle },
   skipped:  { label: "Skipped",  color: "bg-neutral-100 text-neutral-500", icon: SkipForward },
+  verify:   { label: "Verify email", color: "bg-blue-100 text-blue-700",   icon: Mail },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -55,6 +56,10 @@ export default function AutoApplyPage() {
 
   const [enabled, setEnabled] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
+
+  // Security code state — keyed by job ID
+  const [securityCodes, setSecurityCodes] = useState<Record<string, string>>({});
+  const [verifying, setVerifying] = useState<Record<string, boolean>>({});
 
   const loadData = useCallback(async () => {
     const [settingsRes, queueRes] = await Promise.all([
@@ -88,11 +93,29 @@ export default function AutoApplyPage() {
     setSaving(false);
   }
 
+  async function verifyCode(jobId: string) {
+    const code = securityCodes[jobId]?.trim();
+    if (!code) return;
+    setVerifying((v) => ({ ...v, [jobId]: true }));
+    const res = await apiFetch("/api/auto-apply/verify-code", {
+      method: "POST",
+      body: JSON.stringify({ jobId, securityCode: code }),
+    });
+    setVerifying((v) => ({ ...v, [jobId]: false }));
+    if (res.ok) {
+      await loadData();
+    } else {
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      alert(data.error || "Verification failed — the code may be incorrect or expired.");
+    }
+  }
+
   if (loading) return <DashboardSpinner />;
 
-  const appliedJobs = jobs.filter((j) => j.status === "applied");
-  const pendingJobs = jobs.filter((j) => j.status === "pending");
-  const failedJobs  = jobs.filter((j) => j.status === "failed");
+  const appliedJobs  = jobs.filter((j) => j.status === "applied");
+  const pendingJobs  = jobs.filter((j) => j.status === "pending");
+  const verifyJobs   = jobs.filter((j) => j.status === "failed" && j.error === "security_code_required");
+  const failedJobs   = jobs.filter((j) => j.status === "failed" && j.error !== "security_code_required");
 
   return (
     <div className="max-w-3xl pb-4">
@@ -189,6 +212,63 @@ export default function AutoApplyPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Verify section — always shown first if any jobs need it */}
+            {verifyJobs.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
+                  Verify email ({verifyJobs.length})
+                </p>
+                <div className="space-y-2">
+                  {verifyJobs.map((job) => (
+                    <DashboardCard key={job.id} className="border-blue-200 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge status="verify" />
+                            <span className="rounded-full bg-[var(--brand-tag-bg)] px-2 py-0.5 text-xs capitalize text-[var(--brand-tag-text)]">
+                              {job.atsType}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 text-sm font-semibold text-[var(--brand-header)]">{job.title}</p>
+                          <p className="text-xs text-[var(--brand-header)]/55">{job.company}</p>
+                          <p className="mt-1.5 text-xs text-blue-600">
+                            Check your email for a verification code from Greenhouse and enter it below to complete this application.
+                          </p>
+                          <div className="mt-2 flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Enter code from email"
+                              className="app-input w-48 text-sm"
+                              value={securityCodes[job.id] ?? ""}
+                              onChange={(e) => setSecurityCodes((s) => ({ ...s, [job.id]: e.target.value }))}
+                              onKeyDown={(e) => { if (e.key === "Enter") void verifyCode(job.id); }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void verifyCode(job.id)}
+                              disabled={verifying[job.id] || !securityCodes[job.id]?.trim()}
+                              className="app-btn-primary text-xs"
+                            >
+                              {verifying[job.id] ? "Verifying…" : "Submit"}
+                            </button>
+                          </div>
+                        </div>
+                        <a
+                          href={job.applyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 text-[var(--brand-header)]/35 hover:text-[var(--brand-header)]"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </div>
+                    </DashboardCard>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Standard groups */}
             {([
               { list: appliedJobs,  label: `Applied (${appliedJobs.length})`,    labelColor: "text-emerald-600" },
               { list: pendingJobs,  label: `Queued (${pendingJobs.length})`,     labelColor: "text-amber-600" },
@@ -225,11 +305,7 @@ export default function AutoApplyPage() {
                           )}
                           {job.error && (
                             <p className="mt-1 text-xs text-red-500">
-                              {job.error.startsWith("Job closed")
-                                ? "This position is no longer accepting applications."
-                                : job.error.startsWith("Greenhouse API") || job.error.startsWith("Lever API")
-                                  ? "Could not submit application — the job may have been filled."
-                                  : "Submission failed. Will retry automatically."}
+                              {"Submission failed. Will retry automatically."}
                             </p>
                           )}
                         </div>

@@ -21,6 +21,8 @@ export interface ApplyPayload {
 export interface ApplyResult {
   success: boolean;
   error?: string;
+  /** True when Greenhouse sent a verification code to the applicant's email */
+  securityCodeRequired?: boolean;
 }
 
 /**

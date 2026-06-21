@@ -282,13 +282,31 @@ async function buildAnswers(
   return attrs;
 }
 
+/**
+ * Complete a Greenhouse application using the security code Greenhouse emailed
+ * to the applicant after the initial captcha-failed submission.
+ * This bypasses reCAPTCHA entirely.
+ */
+export async function completeWithSecurityCode(
+  applyUrl: string,
+  payload: ApplyPayload & {
+    resumeText?: string;
+    jobTitle?: string;
+    externalId?: string;
+  },
+  securityCode: string
+): Promise<ApplyResult> {
+  return applyViaGreenhouse(applyUrl, payload, securityCode);
+}
+
 export async function applyViaGreenhouse(
   applyUrl: string,
   payload: ApplyPayload & {
     resumeText?: string;
     jobTitle?: string;
     externalId?: string;
-  }
+  },
+  securityCode?: string
 ): Promise<ApplyResult> {
   const parsed =
     parseGreenhouseUrl(applyUrl) ??
@@ -328,10 +346,15 @@ export async function applyViaGreenhouse(
     payload.linkedinUrl
   );
 
-  // Step 4 — solve reCAPTCHA Enterprise (required by Greenhouse on all submissions)
-  const captchaToken = await solveGreenhouseCaptcha(pageUrl);
-  if (!captchaToken) {
-    console.warn(`[greenhouse] ${boardToken}/${jobId} no captcha token — will attempt without`);
+  // Step 4 — CAPTCHA: skip if we have a security code (email verification bypass)
+  let captchaToken: string | null = null;
+  if (securityCode) {
+    console.info(`[greenhouse] ${boardToken}/${jobId} using security code — skipping captcha`);
+  } else {
+    captchaToken = await solveGreenhouseCaptcha(pageUrl);
+    if (!captchaToken) {
+      console.warn(`[greenhouse] ${boardToken}/${jobId} no captcha token — will attempt without`);
+    }
   }
 
   // Step 5 — assemble application JSON
@@ -376,7 +399,13 @@ export async function applyViaGreenhouse(
   if (sessionCookie) headers["Cookie"] = sessionCookie;
 
   const postBody: Record<string, unknown> = { job_application: jobApplication, fingerprint };
-  if (captchaToken) postBody["g-recaptcha-enterprise-token"] = captchaToken;
+  if (securityCode) {
+    // Email verification bypass — skip reCAPTCHA entirely
+    postBody["security_code"] = securityCode;
+    postBody["captcha_retried"] = true;
+  } else if (captchaToken) {
+    postBody["g-recaptcha-enterprise-token"] = captchaToken;
+  }
 
   try {
     const res = await fetch(submitPath, {
@@ -407,8 +436,24 @@ export async function applyViaGreenhouse(
 
     // Try to parse JSON error from Greenhouse
     try {
-      const json = JSON.parse(responseText) as { code?: string; message?: string };
+      const json = JSON.parse(responseText) as {
+        code?: string;
+        message?: string;
+        security_code_recipient?: string;
+      };
       if (json.code === "captcha-failed" || json.code === "captcha-retry") {
+        if (json.security_code_recipient) {
+          // Greenhouse sent a verification code to the applicant's email.
+          // The user must enter this code to complete the application.
+          console.info(
+            `[greenhouse] ${boardToken}/${jobId} security code sent to ${json.security_code_recipient}`
+          );
+          return {
+            success: false,
+            error: "security_code_required",
+            securityCodeRequired: true,
+          };
+        }
         return { success: false, error: "Captcha failed — will retry" };
       }
       if (json.code === "invalid-attributes") {
