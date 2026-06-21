@@ -28,22 +28,15 @@ export const ATS_COMPANIES: AtsBoard[] = [
   { name: "Reddit",      greenhouse: "reddit" },
   { name: "Pinterest",   greenhouse: "pinterest" },
   { name: "Lyft",        greenhouse: "lyft" },
-  // Lever
+  // Lever — verified slugs (boards at jobs.lever.co/{slug})
   { name: "Spotify",     lever: "spotify" },
-  { name: "Shopify",     lever: "shopify" },
-  { name: "Canva",       lever: "canva" },
-  { name: "Plaid",       lever: "plaid" },
   { name: "Brex",        lever: "brex" },
-  { name: "Scale AI",    lever: "scaleai" },
-  { name: "Rippling",    lever: "rippling" },
   { name: "Notion",      lever: "notion" },
-  { name: "Intercom",    lever: "intercom" },
-  { name: "Gusto",       lever: "gusto" },
   { name: "Airtable",    lever: "airtable" },
   { name: "Webflow",     lever: "webflow" },
   { name: "Retool",      lever: "retool" },
-  { name: "Deel",        lever: "deel" },
-  { name: "Linear",      lever: "linear" },
+  { name: "Scale AI",    lever: "scaleai" },
+  { name: "Gusto",       lever: "gusto" },
 ];
 
 /** Rotate a subset of ATS boards (daily) to spread load across ingest runs. */

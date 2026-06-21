@@ -119,7 +119,15 @@ export async function applyViaGreenhouse(
   try {
     const detailsRes = await fetch(
       `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}?questions=true`,
-      { headers: { "User-Agent": "Swiftdroom/1.0" }, cache: "no-store" }
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+          "Origin": "https://boards.greenhouse.io",
+          "Referer": `https://boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+          "Accept": "application/json",
+        },
+        cache: "no-store",
+      }
     );
     detailsStatus = detailsRes.status;
     if (detailsRes.ok) {
@@ -216,7 +224,12 @@ export async function applyViaGreenhouse(
   try {
     const res = await fetch(submitUrl, {
       method: "POST",
-      headers: { "User-Agent": "Swiftdroom/1.0 (job seeker auto-apply)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Origin": "https://boards.greenhouse.io",
+        "Referer": `https://boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+        "Accept": "application/json, text/html, */*",
+      },
       body: form,
     });
 
