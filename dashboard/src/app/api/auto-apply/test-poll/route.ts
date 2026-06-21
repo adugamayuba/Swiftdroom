@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
       from: string;
       to: string;
       subject: string;
+      bodyPreview: string;
       hasCode: string | null;
       matchedUser: string | null;
     }>;
@@ -118,11 +119,15 @@ export async function GET(req: NextRequest) {
             matchedUser = u ? `${u.email} (${u.id})` : "NO MATCH in DB";
           }
 
+          const bodyPreview = (typeof parsed.text === "string" ? parsed.text : "")
+            .replace(/\s+/g, " ").trim().slice(0, 600);
+
           report.messages.push({
             uid: msg.uid,
             from: fromStr,
             to: toAlias,
             subject,
+            bodyPreview,
             hasCode: extractedCode,
             matchedUser,
           });

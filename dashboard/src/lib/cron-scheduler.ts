@@ -13,15 +13,18 @@ let started = false;
  */
 async function purgeStaleQueue(): Promise<void> {
   try {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    // Only purge old FAILED jobs (transient errors worth clearing).
+    // NEVER delete SKIPPED jobs — they are the permanent "closed / don't retry" blacklist.
+    // Deleting them causes closed jobs to be re-added to the queue on the next cycle.
     const deleted = await db.autoApplyJob.deleteMany({
       where: {
-        updatedAt: { lt: oneDayAgo },
-        status: { in: ["skipped", "failed"] },
+        updatedAt: { lt: threeDaysAgo },
+        status: "failed",
       },
     });
     if (deleted.count > 0) {
-      console.log(`[queue-cleanup] purged ${deleted.count} stale closed/failed jobs`);
+      console.log(`[queue-cleanup] purged ${deleted.count} stale failed jobs`);
     }
   } catch (err) {
     console.error("[queue-cleanup] error:", err);

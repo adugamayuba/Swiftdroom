@@ -69,14 +69,15 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     data: { status: "pending", error: undefined },
   });
 
-  // Purge permanently-closed and stale failed jobs older than 7 days so the
-  // queue doesn't accumulate dead weight preventing new jobs from being enqueued.
+  // Purge stale FAILED jobs only — keeps the queue clean from transient errors.
+  // SKIPPED jobs ("Job closed") must be kept forever: they act as the blacklist
+  // that prevents closed Greenhouse/Lever jobs from being re-queued on every cycle.
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   await db.autoApplyJob.deleteMany({
     where: {
       userId,
       updatedAt: { lt: sevenDaysAgo },
-      status: { in: ["skipped", "failed"] },
+      status: "failed",
     },
   });
 
