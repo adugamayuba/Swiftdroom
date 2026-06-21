@@ -113,19 +113,26 @@ export async function applyViaGreenhouse(
 
   const { boardToken, jobId } = parsed;
 
-  // Fetch job details with questions
+  // Fetch job details with questions (best-effort; proceed without if unavailable)
   let jobDetails: GreenhouseJobDetails | null = null;
+  let detailsStatus = 0;
   try {
     const detailsRes = await fetch(
       `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}?questions=true`,
       { headers: { "User-Agent": "Swiftdroom/1.0" }, cache: "no-store" }
     );
+    detailsStatus = detailsRes.status;
     if (detailsRes.ok) {
       jobDetails = (await detailsRes.json()) as GreenhouseJobDetails;
     }
+    // If the job no longer exists on the board, bail early
+    if (detailsRes.status === 404) {
+      return { success: false, error: "Job closed" };
+    }
   } catch {
-    // Proceed with basic fields only
+    // Network error — proceed without questions
   }
+  console.info(`[greenhouse] ${boardToken}/${jobId} details_status=${detailsStatus} has_questions=${!!jobDetails?.questions?.length}`);
 
   const form = new FormData();
 
@@ -203,22 +210,6 @@ export async function applyViaGreenhouse(
     }
   }
 
-  // If we could not fetch job details, do a quick existence check.
-  // A 404 here confirms the job was removed from the board.
-  if (!jobDetails) {
-    try {
-      const probe = await fetch(
-        `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}`,
-        { headers: { "User-Agent": "Swiftdroom/1.0" }, cache: "no-store" }
-      );
-      if (probe.status === 404) {
-        return { success: false, error: "Job closed" };
-      }
-    } catch {
-      // Network error — proceed with submission anyway
-    }
-  }
-
   // Submit via the Greenhouse boards REST API (same domain used for reading listings).
   const submitUrl = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}/applications`;
 
@@ -230,15 +221,18 @@ export async function applyViaGreenhouse(
     });
 
     if (res.ok || res.status === 201) {
+      console.info(`[greenhouse] ${boardToken}/${jobId} submitted OK (${res.status})`);
       return { success: true };
     }
 
     // 404 = job no longer accepting applications
     if (res.status === 404) {
+      console.warn(`[greenhouse] ${boardToken}/${jobId} submit 404 — job closed`);
       return { success: false, error: "Job closed" };
     }
 
     const text = await res.text().catch(() => "");
+    console.warn(`[greenhouse] ${boardToken}/${jobId} submit ${res.status}: ${text.slice(0, 200)}`);
     return {
       success: false,
       error: `Greenhouse API ${res.status}: ${text.slice(0, 300)}`,
