@@ -43,23 +43,29 @@ function htmlToText(html: string): string {
 
 /**
  * Extract a Greenhouse-style security code from an email body.
- * Greenhouse emails are HTML-only, so we strip tags then search.
- * Codes are typically 4–8 digit numeric strings.
+ *
+ * Confirmed Greenhouse format:
+ *   "Copy and paste this code into the security code field on your application: 2KnHTQsO After you enter..."
+ *
+ * The code is alphanumeric (mixed case), 4–12 chars, always after a colon.
+ * Patterns are ordered from most-specific to least-specific to avoid
+ * matching common words like "field" or "code".
  */
 function extractVerificationCode(subject: string, bodyText: string, bodyHtml: string): string | null {
-  // Prefer plain text; fall back to HTML-stripped text
   const plain = bodyText.trim() || htmlToText(bodyHtml);
   const text = `${subject}\n${plain}`.replace(/\s+/g, " ");
 
   const patterns = [
-    /security code[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    /verification code[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    /your code[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    /code is[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    /enter[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    /use[^a-z0-9]*code[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    /code[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    /(?:^|\s)([0-9]{4,8})(?:\s|$)/,
+    // Greenhouse specific: "...your application: CODE After..."
+    /application:\s+([A-Za-z0-9]{4,12})(?:\s|$)/i,
+    // "code: CODE" — colon immediately after "code"
+    /\bcode\s*:\s*([A-Za-z0-9]{4,12})\b/i,
+    /security code\s*:\s*([A-Za-z0-9]{4,12})\b/i,
+    /verification code\s*:\s*([A-Za-z0-9]{4,12})\b/i,
+    /your code\s*(?:is\s*)?:\s*([A-Za-z0-9]{4,12})\b/i,
+    // Any colon followed by a standalone token (generic fallback)
+    /:\s+([A-Za-z0-9]{6,12})(?:\s|$)/,
+    // Pure numeric codes — other ATS systems
     /\b([0-9]{4,8})\b/,
   ];
 
@@ -89,17 +95,40 @@ async function autoCompleteApplication(
   userId: string,
   code: string
 ): Promise<void> {
-  // Find the most recent job awaiting a security code for this user
-  const job = await db.autoApplyJob.findFirst({
+  // Get ALL jobs awaiting a security code, newest first.
+  // We try each one until the code is accepted — security codes are job-specific
+  // so a code for job A will be rejected by job B (invalid-security-code) and
+  // we need to fall through to the correct job.
+  const jobs = await db.autoApplyJob.findMany({
     where: { userId, status: "failed", error: "security_code_required" },
     include: { jobListing: true },
     orderBy: { createdAt: "desc" },
+    take: 5,
   });
 
-  if (!job) {
-    console.info(`[email-imap] no pending-code job for user ${userId}`);
+  if (jobs.length === 0) {
+    console.info(`[email-imap] no pending-code jobs for user ${userId}`);
     return;
   }
+
+  for (const job of jobs) {
+    await attemptComplete(userId, job, code);
+    // Re-check if this job was successfully applied (stop looping if it was)
+    const updated = await db.autoApplyJob.findUnique({
+      where: { id: job.id },
+      select: { status: true },
+    });
+    if (updated?.status === "applied") return;
+  }
+}
+
+type AutoApplyJobWithListing = Awaited<ReturnType<typeof db.autoApplyJob.findMany<{include: {jobListing: true}}>>>[number];
+
+async function attemptComplete(
+  userId: string,
+  job: AutoApplyJobWithListing,
+  code: string
+): Promise<void> {
 
   const [profile, settings] = await Promise.all([
     db.profile.findUnique({ where: { userId } }),
