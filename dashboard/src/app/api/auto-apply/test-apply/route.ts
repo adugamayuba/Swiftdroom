@@ -84,6 +84,41 @@ export async function GET(req: NextRequest) {
   const result = await applyViaGreenhouse(jobUrl, dummy, securityCode);
   console.log(`[test-apply] result:`, JSON.stringify(result));
 
+  // If Greenhouse sent a security code AND we have a real userId, create/update an
+  // AutoApplyJob record so the IMAP poller can find and auto-complete the application.
+  if (result.securityCodeRequired && userId) {
+    const jobListing = await db.jobListing.findFirst({
+      where: {
+        OR: [
+          { applyUrl: { contains: jobUrl } },
+          { applyUrl: jobUrl },
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (jobListing) {
+      await db.autoApplyJob.upsert({
+        where: { userId_jobListingId: { userId, jobListingId: jobListing.id } },
+        create: {
+          userId,
+          jobListingId: jobListing.id,
+          atsType: "greenhouse",
+          status: "failed",
+          error: "security_code_required",
+        },
+        update: {
+          status: "failed",
+          error: "security_code_required",
+          appliedAt: null,
+        },
+      });
+      console.log(`[test-apply] marked AutoApplyJob as security_code_required for jobListingId=${jobListing.id}`);
+    } else {
+      console.warn(`[test-apply] no JobListing found for ${jobUrl} — IMAP auto-complete won't trigger`);
+    }
+  }
+
   return NextResponse.json({
     jobUrl,
     email: testEmail,
