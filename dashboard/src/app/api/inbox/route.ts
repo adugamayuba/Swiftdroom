@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "50"), 100);
   const offset = parseInt(req.nextUrl.searchParams.get("offset") ?? "0");
 
-  const [alias, emails, unreadCount] = await Promise.all([
+  const [alias, rawEmails, unreadCount] = await Promise.all([
     getOrAssignSwiftdroomEmail(userId),
     db.inboxEmail.findMany({
       where: { userId },
@@ -26,12 +26,28 @@ export async function GET(req: NextRequest) {
         fromName: true,
         subject: true,
         bodyText: true,
+        bodyHtml: true,
         receivedAt: true,
         isRead: true,
       },
     }),
     db.inboxEmail.count({ where: { userId, isRead: false } }),
   ]);
+
+  // Strip HTML tags for display — emails are often HTML-only with empty bodyText
+  const emails = rawEmails.map(({ bodyText, bodyHtml, ...rest }) => {
+    const display = bodyText.trim() ||
+      bodyHtml
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/\s+/g, " ")
+        .trim();
+    return { ...rest, body: display };
+  });
 
   return NextResponse.json({ alias, emails, unreadCount });
 }

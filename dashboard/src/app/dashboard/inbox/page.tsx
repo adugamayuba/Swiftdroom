@@ -24,7 +24,7 @@ interface InboxEmailItem {
   fromEmail: string;
   fromName: string;
   subject: string;
-  bodyText: string;
+  body: string;
   receivedAt: string;
   isRead: boolean;
 }
@@ -47,7 +47,7 @@ function EmailRow({
   email: InboxEmailItem;
   onSelect: (e: InboxEmailItem) => void;
 }) {
-  const preview = email.bodyText.replace(/\s+/g, " ").trim().slice(0, 100);
+  const preview = email.body.replace(/\s+/g, " ").trim().slice(0, 100);
   return (
     <button
       onClick={() => onSelect(email)}
@@ -86,36 +86,37 @@ function EmailDetail({
   email: InboxEmailItem;
   onClose: () => void;
 }) {
-  const lines = email.bodyText.trim().split("\n").filter(Boolean);
+  const paragraphs = email.body.trim().split(/\n{2,}/).filter(Boolean);
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
         <button
           onClick={onClose}
-          className="text-sm text-neutral-500 hover:text-neutral-800"
+          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
         >
           ← Back
         </button>
         <span className="text-xs text-neutral-400">{timeAgo(email.receivedAt)}</span>
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        <h2 className="text-base font-semibold text-neutral-900 mb-3">
+      <div className="flex-1 overflow-y-auto px-5 py-5">
+        <h2 className="text-base font-semibold text-neutral-900 mb-4 leading-snug">
           {email.subject || "(no subject)"}
         </h2>
-        <div className="space-y-1 text-xs text-neutral-500 mb-5">
-          <div>
-            <span className="font-medium text-neutral-600">From: </span>
+        <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-4 py-3 space-y-1 text-xs text-neutral-500 mb-5">
+          <div><span className="font-medium text-neutral-600 w-8 inline-block">From</span>
             {email.fromName ? `${email.fromName} <${email.fromEmail}>` : email.fromEmail}
           </div>
-          <div>
-            <span className="font-medium text-neutral-600">To: </span>
+          <div><span className="font-medium text-neutral-600 w-8 inline-block">To</span>
             {email.toAlias}
           </div>
         </div>
-        <div className="text-sm text-neutral-800 whitespace-pre-wrap leading-relaxed space-y-1">
-          {lines.map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
+        <div className="text-sm text-neutral-800 leading-relaxed space-y-3">
+          {paragraphs.length > 0
+            ? paragraphs.map((para, i) => (
+                <p key={i} className="whitespace-pre-wrap">{para.trim()}</p>
+              ))
+            : <p className="text-neutral-400 italic">No content</p>
+          }
         </div>
       </div>
     </div>
