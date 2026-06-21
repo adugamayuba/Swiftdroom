@@ -188,23 +188,33 @@ async function notifyUser(
 let polling = false;
 
 export async function pollInboxEmails(): Promise<void> {
-  if (polling) return; // Prevent overlapping runs
+  if (polling) return;
   const host = process.env.IMAP_HOST;
   const user = process.env.IMAP_USER;
   const pass = process.env.IMAP_PASS;
 
-  if (!host || !user || !pass) {
-    // Silently skip if IMAP not configured
-    return;
-  }
+  if (!host || !user || !pass) return;
 
   polling = true;
+
+  // Collect raw email buffers while IMAP is connected, then
+  // disconnect immediately before doing any slow DB work.
+  // This prevents Titan Mail's idle timeout from killing the socket mid-loop.
+  const rawBuffers: Buffer[] = [];
+
   const client = new ImapFlow({
     host,
     port: 993,
     secure: true,
     auth: { user, pass },
     logger: false,
+    socketTimeout: 30000,
+    connectionTimeout: 15000,
+  } as ConstructorParameters<typeof ImapFlow>[0]);
+
+  // Absorb socket-level errors so they never become uncaughtExceptions
+  client.on("error", (err: Error) => {
+    console.error("[email-imap] socket error:", err.message);
   });
 
   try {
@@ -212,128 +222,106 @@ export async function pollInboxEmails(): Promise<void> {
     const lock = await client.getMailboxLock("INBOX");
 
     try {
-      // Fetch all UNSEEN messages
       const searchResult = await client.search({ seen: false });
-      const messages = Array.isArray(searchResult) ? searchResult : [];
-      if (messages.length === 0) {
+      const uids = (Array.isArray(searchResult) ? searchResult : []) as number[];
+
+      if (uids.length === 0) {
+        lock.release();
+        await client.logout();
+        polling = false;
         return;
       }
 
-      console.info(`[email-imap] ${messages.length} new message(s)`);
+      console.info(`[email-imap] ${uids.length} new message(s) — fetching into memory`);
 
-      for await (const msg of client.fetch(messages as number[], {
-        source: true,
-        uid: true,
-      })) {
-        try {
-          const source = msg.source;
-          if (!source) continue;
-          const parsed: ParsedMail = await simpleParser(source);
-
-          // Determine which swiftdroom alias this was sent to
-          const toAddresses = parsed.to
-            ? Array.isArray(parsed.to)
-              ? parsed.to.flatMap((a) => a.value)
-              : parsed.to.value
-            : [];
-
-          const toAlias = toAddresses
-            .map((a) => a.address?.toLowerCase() ?? "")
-            .find((a) => a.endsWith(SWIFTDROOM_DOMAIN));
-
-          if (!toAlias) {
-            // Mark read and skip — not for us
-            await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
-            continue;
-          }
-
-          // Look up the user
-          const targetUser = await db.user.findUnique({
-            where: { swiftdroomEmail: toAlias },
-            select: { id: true, email: true, name: true },
-          });
-
-          if (!targetUser) {
-            console.warn(`[email-imap] no user for alias ${toAlias}`);
-            await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
-            continue;
-          }
-
-          const fromAddress = parsed.from?.value?.[0];
-          const fromEmail = fromAddress?.address ?? "";
-          const fromName = fromAddress?.name ?? "";
-          const subject = typeof parsed.subject === "string" ? parsed.subject : "";
-          const bodyText = typeof parsed.text === "string" ? parsed.text : "";
-          const bodyHtml = typeof parsed.html === "string" ? parsed.html : "";
-          const imapUid = `${host}:${msg.uid}`;
-
-          // Skip if already stored (idempotent)
-          const existing = await db.inboxEmail.findFirst({
-            where: { imapUid },
-            select: { id: true },
-          });
-          if (existing) {
-            await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
-            continue;
-          }
-
-          // Store in InboxEmail
-          await db.inboxEmail.create({
-            data: {
-              userId: targetUser.id,
-              toAlias,
-              fromEmail,
-              fromName,
-              subject,
-              bodyText: bodyText.slice(0, 50000),
-              bodyHtml: bodyHtml.slice(0, 100000),
-              imapUid,
-              receivedAt: parsed.date ?? new Date(),
-            },
-          });
-
-          console.info(
-            `[email-imap] stored email for ${toAlias}: "${subject}" from ${fromEmail}`
-          );
-
-          // Auto-complete application if this is a verification code email
-          if (isVerificationEmail(subject)) {
-            const code = extractVerificationCode(subject, bodyText);
-            if (code) {
-              console.info(`[email-imap] found code "${code}" for ${toAlias}`);
-              await autoCompleteApplication(targetUser.id, code);
-            }
-          }
-
-          // Notify user (skip verification code emails — they'll see "Applied" in dashboard)
-          if (!isVerificationEmail(subject)) {
-            await notifyUser(
-              targetUser.email,
-              targetUser.name,
-              fromEmail,
-              fromName,
-              subject,
-              toAlias
-            );
-          }
-
-          // Mark as read in IMAP so we don't re-process
-          await client.messageFlagsAdd(msg.uid, ["\\Seen"], { uid: true });
-        } catch (msgErr) {
-          console.error("[email-imap] error processing message:", msgErr);
-        }
+      // Slurp all message sources into memory as fast as possible
+      for await (const msg of client.fetch(uids, { source: true, uid: true })) {
+        if (msg.source) rawBuffers.push(Buffer.from(msg.source));
       }
+
+      // Bulk mark ALL as seen before disconnecting so they never reappear
+      await client.messageFlagsAdd(uids, ["\\Seen"], { uid: true });
     } finally {
       lock.release();
     }
   } catch (err) {
-    console.error("[email-imap] poll error:", err);
-  } finally {
+    console.error("[email-imap] fetch error:", err);
     polling = false;
+    try { await client.logout(); } catch { /* ignore */ }
+    return;
+  }
+
+  // Disconnect IMAP now — all subsequent work is DB-only
+  try { await client.logout(); } catch { /* ignore */ }
+
+  // ── Phase 2: parse + DB work with no open IMAP connection ──────────────
+  for (const buf of rawBuffers) {
     try {
-      await client.logout();
-    } catch {
-      // ignore logout errors
+      const parsed: ParsedMail = await simpleParser(buf);
+
+      // Find the @swiftdroom.com recipient
+      const toAddresses = parsed.to
+        ? Array.isArray(parsed.to) ? parsed.to.flatMap((a) => a.value) : parsed.to.value
+        : [];
+      const toAlias = toAddresses
+        .map((a) => a.address?.toLowerCase() ?? "")
+        .find((a) => a.endsWith(SWIFTDROOM_DOMAIN));
+
+      if (!toAlias) continue; // not addressed to a swiftdroom alias
+
+      const targetUser = await db.user.findUnique({
+        where: { swiftdroomEmail: toAlias },
+        select: { id: true, email: true, name: true },
+      });
+
+      if (!targetUser) {
+        console.warn(`[email-imap] no user for alias ${toAlias}`);
+        continue;
+      }
+
+      const fromAddress = parsed.from?.value?.[0];
+      const fromEmail = fromAddress?.address ?? "";
+      const fromName = fromAddress?.name ?? "";
+      const subject = typeof parsed.subject === "string" ? parsed.subject : "";
+      const bodyText = typeof parsed.text === "string" ? parsed.text : "";
+      const bodyHtml = typeof parsed.html === "string" ? parsed.html : "";
+      // Dedup key: host + sender + subject + date
+      const imapUid = `${host}:${fromEmail}:${subject}:${parsed.date?.toISOString() ?? ""}`;
+
+      const existing = await db.inboxEmail.findFirst({ where: { imapUid }, select: { id: true } });
+      if (existing) continue;
+
+      await db.inboxEmail.create({
+        data: {
+          userId: targetUser.id,
+          toAlias,
+          fromEmail,
+          fromName,
+          subject,
+          bodyText: bodyText.slice(0, 50000),
+          bodyHtml: bodyHtml.slice(0, 100000),
+          imapUid,
+          receivedAt: parsed.date ?? new Date(),
+        },
+      });
+
+      console.info(`[email-imap] stored email for ${toAlias}: "${subject}" from ${fromEmail}`);
+
+      if (isVerificationEmail(subject)) {
+        const code = extractVerificationCode(subject, bodyText);
+        if (code) {
+          console.info(`[email-imap] found code "${code}" for ${toAlias}`);
+          await autoCompleteApplication(targetUser.id, code);
+        } else {
+          console.warn(`[email-imap] no code found in verification email for ${toAlias} — subject: "${subject}"`);
+        }
+      } else {
+        await notifyUser(targetUser.email, targetUser.name, fromEmail, fromName, subject, toAlias);
+      }
+    } catch (itemErr) {
+      console.error("[email-imap] item processing error:", itemErr);
     }
   }
+
+  polling = false;
 }
