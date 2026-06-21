@@ -66,19 +66,32 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     .filter((w) => w.length > 2)
     .slice(0, 3);
 
-  // Query JobListing directly — the feed only holds ~23 GH items per user
-  // but the JobListing table has 1500+ Greenhouse/Lever jobs from ATS boards.
-  // Use a title keyword filter for relevance, falling back to all GH/Lever if no keywords.
-  const whereClause =
-    keywords.length > 0
-      ? {
-          atsType: { in: ["greenhouse", "lever"] },
-          OR: keywords.map((kw) => ({ title: { contains: kw, mode: "insensitive" as const } })),
-        }
-      : { atsType: { in: ["greenhouse", "lever"] } };
+  // Query JobListing directly. Two key filters:
+  // 1. Only recent records (last 72h) — old/stale jobs have likely closed
+  // 2. Only jobs with hosted Greenhouse board URLs (boards.greenhouse.io /
+  //    job-boards.greenhouse.io) — companies with custom career pages (mongodb.com/careers,
+  //    datadoghq.com etc.) have disabled the application API; all submissions 404.
+  //    Lever jobs always have API-accessible apply endpoints.
+  const recentSince = new Date(Date.now() - 72 * 60 * 60 * 1000);
+
+  const keywordOr = keywords.length > 0
+    ? keywords.map((kw) => ({ title: { contains: kw, mode: "insensitive" as const } }))
+    : null;
 
   const listings = await db.jobListing.findMany({
-    where: whereClause,
+    where: {
+      updatedAt: { gte: recentSince },
+      ...(keywordOr ? { OR: keywordOr } : {}),
+      AND: [
+        {
+          OR: [
+            { applyUrl: { contains: "boards.greenhouse.io/" } },
+            { applyUrl: { contains: "job-boards.greenhouse.io/" } },
+            { atsType: "lever" },
+          ],
+        },
+      ],
+    },
     orderBy: { postedAt: "desc" },
     take: 500,
   });

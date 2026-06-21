@@ -138,6 +138,14 @@ async function fetchGreenhouseBoard(
       const applyUrl = job.absolute_url?.startsWith("http") ? job.absolute_url : "";
       if (!applyUrl) continue;
 
+      // Only include jobs hosted on boards.greenhouse.io — companies with custom
+      // career pages (e.g. mongodb.com/careers) have disabled the application API
+      // and all submissions return 404. The hosted board URL indicates the API is enabled.
+      const isApiEnabled =
+        applyUrl.includes("boards.greenhouse.io/") ||
+        applyUrl.includes("job-boards.greenhouse.io/");
+      if (!isApiEnabled) continue;
+
       const location = job.location?.name || "";
       const description = stripHtml(job.content || "").slice(0, 12000);
 

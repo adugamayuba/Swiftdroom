@@ -30,13 +30,9 @@ export const ATS_COMPANIES: AtsBoard[] = [
   { name: "Lyft",        greenhouse: "lyft" },
   // Lever — verified slugs (boards at jobs.lever.co/{slug})
   { name: "Spotify",     lever: "spotify" },
-  { name: "Brex",        lever: "brex" },
-  { name: "Notion",      lever: "notion" },
-  { name: "Airtable",    lever: "airtable" },
-  { name: "Webflow",     lever: "webflow" },
-  { name: "Retool",      lever: "retool" },
-  { name: "Scale AI",    lever: "scaleai" },
-  { name: "Gusto",       lever: "gusto" },
+  // Other Lever companies (brex, notion, gusto, airtable, retool, webflow, scaleai)
+  // return HTTP 404 from the board listing, meaning they have switched ATS.
+  // Only add a company here once confirmed working at jobs.lever.co/{slug}.
 ];
 
 /** Rotate a subset of ATS boards (daily) to spread load across ingest runs. */
