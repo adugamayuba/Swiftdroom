@@ -11,14 +11,34 @@ interface ReferralSummary {
   canceled: { count: number; amount: number };
 }
 
+type TriggerAction = "worker" | "ingest" | "poll" | "all";
+
 export default function AdminSOverviewPage() {
   const [summary, setSummary] = useState<ReferralSummary | null>(null);
+  const [triggering, setTriggering] = useState<TriggerAction | null>(null);
+  const [triggerResult, setTriggerResult] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch("/api/admin/s/referrals")
       .then((r) => r.json())
       .then((data) => setSummary(data.summary));
   }, []);
+
+  async function trigger(action: TriggerAction) {
+    setTriggering(action);
+    setTriggerResult(null);
+    try {
+      const res = await apiFetch("/api/admin/s/trigger-worker", {
+        method: "POST",
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      setTriggerResult(JSON.stringify(data.results, null, 2));
+    } catch (err) {
+      setTriggerResult(String(err));
+    }
+    setTriggering(null);
+  }
 
   return (
     <div>
@@ -50,6 +70,38 @@ export default function AdminSOverviewPage() {
               </p>
             </div>
           ))}
+      </div>
+
+      {/* Auto-apply controls */}
+      <div className="mt-8 rounded-lg border border-neutral-200 bg-white p-6">
+        <h2 className="font-medium text-neutral-900">Auto-apply controls</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Manually trigger the worker, job ingest, or email poller for all users without waiting for the cron.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {(
+            [
+              { action: "worker" as const, label: "Run worker (all users)" },
+              { action: "ingest" as const, label: "Ingest jobs" },
+              { action: "poll"   as const, label: "Poll inbox emails" },
+              { action: "all"    as const, label: "Run all" },
+            ] as const
+          ).map(({ action, label }) => (
+            <button
+              key={action}
+              onClick={() => trigger(action)}
+              disabled={triggering !== null}
+              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
+            >
+              {triggering === action ? "Running…" : label}
+            </button>
+          ))}
+        </div>
+        {triggerResult && (
+          <pre className="mt-4 rounded-lg bg-neutral-50 border border-neutral-200 p-4 text-xs text-neutral-700 overflow-x-auto max-h-64">
+            {triggerResult}
+          </pre>
+        )}
       </div>
 
       <div className="mt-8 rounded-lg border border-neutral-200 bg-white p-6">

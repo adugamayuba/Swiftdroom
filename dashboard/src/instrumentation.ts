@@ -5,11 +5,9 @@
  * Docs: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 export async function register() {
-  // Only run in Node.js runtime (not Edge), and only in production
-  if (
-    process.env.NEXT_RUNTIME === "nodejs" &&
-    process.env.NODE_ENV === "production"
-  ) {
+  // Run in Node.js runtime only (not Edge). Active in both production and development
+  // so the auto-apply worker, email poller, and job ingest run end-to-end during testing.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
     const { scheduleAutoApplyCron } = await import("@/lib/cron-scheduler");
     scheduleAutoApplyCron();
   }

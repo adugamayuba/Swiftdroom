@@ -32,7 +32,7 @@ const STATUS_META: Record<string, { label: string; color: string; icon: React.El
   pending:  { label: "Pending",  color: "bg-amber-100 text-amber-700",    icon: Clock },
   failed:   { label: "Failed",   color: "bg-red-100 text-red-600",         icon: XCircle },
   skipped:  { label: "Skipped",  color: "bg-neutral-100 text-neutral-500", icon: SkipForward },
-  verify:   { label: "Verify email", color: "bg-blue-100 text-blue-700",   icon: Mail },
+  verify:   { label: "Processing",   color: "bg-blue-100 text-blue-700",   icon: Mail },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -58,17 +58,15 @@ export default function AutoApplyPage() {
 
   const [enabled, setEnabled] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
-  const [swiftdroomEmail, setSwiftdroomEmail] = useState<string | null>(null);
 
   // Security code state — keyed by job ID
   const [securityCodes, setSecurityCodes] = useState<Record<string, string>>({});
   const [verifying, setVerifying] = useState<Record<string, boolean>>({});
 
   const loadData = useCallback(async () => {
-    const [settingsRes, queueRes, inboxRes] = await Promise.all([
+    const [settingsRes, queueRes] = await Promise.all([
       apiFetch("/api/auto-apply/settings"),
       apiFetch("/api/auto-apply/queue"),
-      apiFetch("/api/inbox?limit=1"),
     ]);
     if (settingsRes.ok) {
       const data = await settingsRes.json();
@@ -83,10 +81,6 @@ export default function AutoApplyPage() {
     if (queueRes.ok) {
       const data = await queueRes.json();
       setJobs(data.jobs || []);
-    }
-    if (inboxRes.ok) {
-      const data = await inboxRes.json();
-      setSwiftdroomEmail(data.alias ?? null);
     }
     setLoading(false);
   }, []);
@@ -134,18 +128,6 @@ export default function AutoApplyPage() {
         title="Auto Apply"
         subtitle="Swiftdroom finds matching jobs and submits applications for you automatically"
       />
-
-      {/* Swiftdroom email alias banner */}
-      {swiftdroomEmail && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl bg-[var(--brand-mint)]/40 border border-[var(--brand-mint)] px-4 py-3">
-          <Mail className="h-4 w-4 text-[var(--brand-header)]/60 flex-shrink-0" />
-          <div className="min-w-0">
-            <span className="text-xs text-[var(--brand-header)]/60">Applications submitted as </span>
-            <span className="text-xs font-semibold text-[var(--brand-header)] font-mono">{swiftdroomEmail}</span>
-            <span className="text-xs text-[var(--brand-header)]/60"> — verification codes handled automatically</span>
-          </div>
-        </div>
-      )}
 
       {/* Stats row */}
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
