@@ -59,9 +59,6 @@ export default function AutoApplyPage() {
   const [enabled, setEnabled] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
 
-  // Security code state — keyed by job ID
-  const [securityCodes, setSecurityCodes] = useState<Record<string, string>>({});
-  const [verifying, setVerifying] = useState<Record<string, boolean>>({});
 
   const loadData = useCallback(async () => {
     const [settingsRes, queueRes] = await Promise.all([
@@ -95,23 +92,6 @@ export default function AutoApplyPage() {
     });
     await loadData();
     setSaving(false);
-  }
-
-  async function verifyCode(jobId: string) {
-    const code = securityCodes[jobId]?.trim();
-    if (!code) return;
-    setVerifying((v) => ({ ...v, [jobId]: true }));
-    const res = await apiFetch("/api/auto-apply/verify-code", {
-      method: "POST",
-      body: JSON.stringify({ jobId, securityCode: code }),
-    });
-    setVerifying((v) => ({ ...v, [jobId]: false }));
-    if (res.ok) {
-      await loadData();
-    } else {
-      const data = await res.json().catch(() => ({})) as { error?: string };
-      alert(data.error || "Verification failed — the code may be incorrect or expired.");
-    }
   }
 
   if (loading) return <DashboardSpinner />;
@@ -236,15 +216,15 @@ export default function AutoApplyPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Verify section — always shown first if any jobs need it */}
+            {/* Processing section — jobs awaiting automatic completion */}
             {verifyJobs.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
-                  Verify email ({verifyJobs.length})
+                  Processing ({verifyJobs.length})
                 </p>
                 <div className="space-y-2">
                   {verifyJobs.map((job) => (
-                    <DashboardCard key={job.id} className="border-blue-200 p-4">
+                    <DashboardCard key={job.id} className="border-blue-100 p-4">
                       <div className="flex items-start gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -255,27 +235,9 @@ export default function AutoApplyPage() {
                           </div>
                           <p className="mt-1.5 text-sm font-semibold text-[var(--brand-header)]">{job.title}</p>
                           <p className="text-xs text-[var(--brand-header)]/55">{job.company}</p>
-                          <p className="mt-1.5 text-xs text-blue-600">
-                            Check your email for a verification code from Greenhouse and enter it below to complete this application.
+                          <p className="mt-1.5 text-xs text-blue-500">
+                            Completing this application automatically — no action needed.
                           </p>
-                          <div className="mt-2 flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="Enter code from email"
-                              className="app-input w-48 text-sm"
-                              value={securityCodes[job.id] ?? ""}
-                              onChange={(e) => setSecurityCodes((s) => ({ ...s, [job.id]: e.target.value }))}
-                              onKeyDown={(e) => { if (e.key === "Enter") void verifyCode(job.id); }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => void verifyCode(job.id)}
-                              disabled={verifying[job.id] || !securityCodes[job.id]?.trim()}
-                              className="app-btn-primary text-xs"
-                            >
-                              {verifying[job.id] ? "Verifying…" : "Submit"}
-                            </button>
-                          </div>
                         </div>
                         <a
                           href={job.applyUrl}
@@ -329,7 +291,7 @@ export default function AutoApplyPage() {
                           )}
                           {job.error && (
                             <p className="mt-1 text-xs text-red-500">
-                              {"Submission failed. Will retry automatically."}
+                              {job.error}
                             </p>
                           )}
                         </div>

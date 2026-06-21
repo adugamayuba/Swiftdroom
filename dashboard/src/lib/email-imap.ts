@@ -112,18 +112,60 @@ async function autoCompleteApplication(
   code: string,
   companyHint?: string
 ): Promise<void> {
-  // Build where clause — filter by company if we extracted a hint from the email subject
-  // e.g. "Security code for your application to Discord" → only try Discord jobs
-  const companyFilter = companyHint
-    ? { jobListing: { company: { contains: companyHint, mode: "insensitive" as const } } }
-    : {};
+  // Build where clause — filter by company if we extracted a hint from the email subject.
+  // e.g. "Security code for your application to Product People"
+  //
+  // Greenhouse email uses the display name ("Product People") but the DB stores the
+  // URL board token ("productpeople"). We match on multiple normalised forms so both work:
+  //   - original:  "Product People"  → company contains "Product People"
+  //   - slug:      "productpeople"   → company contains "productpeople"
+  //   - first word: "Product"        → company contains "product" (loose fallback)
+  let companyFilter: object = {};
+  if (companyHint) {
+    const slug = companyHint.toLowerCase().replace(/\s+/g, "");
+    const firstWord = companyHint.split(/\s+/)[0];
+    companyFilter = {
+      jobListing: {
+        company: {
+          in: [companyHint, slug, firstWord, companyHint.toLowerCase()],
+          mode: "insensitive" as const,
+        },
+      },
+    };
+    // Prisma `in` is exact-match. Fall back to OR contains for partial matching.
+    companyFilter = {
+      jobListing: {
+        OR: [
+          { company: { contains: companyHint,            mode: "insensitive" as const } },
+          { company: { contains: slug,                   mode: "insensitive" as const } },
+          { company: { contains: firstWord,              mode: "insensitive" as const } },
+        ],
+      },
+    };
+  }
 
-  const jobs = await db.autoApplyJob.findMany({
-    where: { userId, status: "failed", error: "security_code_required", ...companyFilter },
+  const baseWhere = { userId, status: "failed", error: "security_code_required" };
+  // When a companyFilter is present, try narrowed search first, fall back to all pending-code jobs.
+  let jobs = await db.autoApplyJob.findMany({
+    where: Object.keys(companyFilter).length
+      ? { ...baseWhere, ...(companyFilter as object) }
+      : baseWhere,
     include: { jobListing: true },
     orderBy: { createdAt: "desc" },
     take: 5,
   });
+
+  // If the company filter returned nothing, widen to all pending-code jobs for this user
+  // (avoids losing a valid code just because of a name-format mismatch)
+  if (jobs.length === 0 && Object.keys(companyFilter).length > 0) {
+    console.info(`[email-imap] company filter found 0 jobs for "${companyHint}", widening search`);
+    jobs = await db.autoApplyJob.findMany({
+      where: baseWhere,
+      include: { jobListing: true },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+  }
 
   if (jobs.length === 0) {
     console.info(`[email-imap] no pending-code jobs for user ${userId}`);
@@ -237,9 +279,11 @@ async function attemptComplete(
       `[email-imap] ✓ applied to ${job.jobListing.company} "${job.jobListing.title}"`
     );
   } else {
+    const errMsg = result.error ?? "Code verification failed";
     const isWrongJob =
-      result.error?.toLowerCase().includes("invalid-security-code") ||
-      result.error?.toLowerCase().includes("incorrect security code");
+      errMsg.toLowerCase().includes("invalid-security-code") ||
+      errMsg.toLowerCase().includes("incorrect security code");
+    const isJobClosed = errMsg === "Job closed";
 
     if (isWrongJob) {
       // Code belongs to a different job — leave this job as security_code_required
@@ -247,12 +291,19 @@ async function attemptComplete(
       console.info(
         `[email-imap] code rejected by ${job.jobListing.company}/${job.jobListing.externalId} — keeping as pending-code`
       );
-    } else {
-      console.warn(`[email-imap] code completion failed: ${result.error}`);
+    } else if (isJobClosed) {
+      // Position was filled — permanently skip it.
+      console.warn(`[email-imap] ${job.jobListing.company} job closed during completion`);
       await db.autoApplyJob.update({
         where: { id: job.id },
-        data: { error: result.error ?? "Code verification failed" },
+        data: { status: "skipped", error: "Job closed" },
       });
+    } else {
+      // Transient failure (captcha, 422, network) — keep status as security_code_required
+      // so the next poller cycle can retry with the same or a fresh code. Log the real
+      // error so it's visible in server logs without confusing the user's queue view.
+      console.warn(`[email-imap] code completion failed for ${job.jobListing.company}: ${errMsg} — will retry`);
+      // status unchanged — job stays in the "Processing" bucket in the UI
     }
   }
 }
