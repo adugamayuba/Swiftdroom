@@ -146,13 +146,15 @@ async function autoCompleteApplication(
 
   const baseWhere = { userId, status: "failed", error: "security_code_required" };
   // When a companyFilter is present, try narrowed search first, fall back to all pending-code jobs.
+  // Order by updatedAt DESC — the job most recently marked security_code_required is the one
+  // whose code email just arrived. Trying newer jobs first reduces wrong-code rejections.
   let jobs = await db.autoApplyJob.findMany({
     where: Object.keys(companyFilter).length
       ? { ...baseWhere, ...(companyFilter as object) }
       : baseWhere,
     include: { jobListing: true },
-    orderBy: { createdAt: "desc" },
-    take: 5,
+    orderBy: { updatedAt: "desc" },
+    take: 3,
   });
 
   // If the company filter returned nothing, widen to all pending-code jobs for this user
@@ -162,8 +164,8 @@ async function autoCompleteApplication(
     jobs = await db.autoApplyJob.findMany({
       where: baseWhere,
       include: { jobListing: true },
-      orderBy: { createdAt: "desc" },
-      take: 5,
+      orderBy: { updatedAt: "desc" },
+      take: 3,
     });
   }
 

@@ -432,13 +432,15 @@ export async function applyViaGreenhouse(
   }
 
   // Step 5 — assemble application JSON
+  // NOTE: demographic_answers go at the TOP LEVEL of the POST body (not inside
+  // job_application). US-region boards (e.g. boards.greenhouse.io) return 422
+  // "demographic_questions invalid-attributes" when they are nested inside.
   const jobApplication: Record<string, unknown> = {
     first_name: payload.firstName,
     last_name: payload.lastName,
     email: payload.email,
     phone: payload.phone ?? "",
     answers_attributes: answersAttributes,
-    demographic_answers: demographicAnswers,
     data_compliance: {},
     attachments: {},
     from_job_board_renderer: true,
@@ -473,6 +475,16 @@ export async function applyViaGreenhouse(
   if (sessionCookie) headers["Cookie"] = sessionCookie;
 
   const postBody: Record<string, unknown> = { job_application: jobApplication, fingerprint };
+
+  // Demographic answers at top level — Greenhouse US boards (boards.greenhouse.io)
+  // reject 422 if they're nested inside job_application.
+  if (demographicAnswers.length > 0) {
+    postBody["demographic_answers"] = demographicAnswers;
+    console.info(
+      `[greenhouse] ${boardToken}/${jobId} sending ${demographicAnswers.length} demographic answer(s), first: ${JSON.stringify(demographicAnswers[0])}`
+    );
+  }
+
   if (securityCode) {
     // Email verification bypass — skip reCAPTCHA entirely
     postBody["security_code"] = securityCode;
