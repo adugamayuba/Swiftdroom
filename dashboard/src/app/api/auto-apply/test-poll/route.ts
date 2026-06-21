@@ -119,8 +119,15 @@ export async function GET(req: NextRequest) {
             matchedUser = u ? `${u.email} (${u.id})` : "NO MATCH in DB";
           }
 
-          const bodyPreview = (typeof parsed.text === "string" ? parsed.text : "")
-            .replace(/\s+/g, " ").trim().slice(0, 600);
+          const rawText = typeof parsed.text === "string" ? parsed.text.trim() : "";
+          const rawHtml = typeof parsed.html === "string" ? parsed.html : "";
+          // Greenhouse emails are HTML-only; strip tags for the preview
+          const strippedHtml = rawHtml
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/&nbsp;/gi, " ")
+            .replace(/\s+/g, " ").trim();
+          const bodyPreview = (rawText || strippedHtml).slice(0, 600);
 
           report.messages.push({
             uid: msg.uid,

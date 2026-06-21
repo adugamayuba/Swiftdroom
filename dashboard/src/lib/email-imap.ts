@@ -26,20 +26,32 @@ const SWIFTDROOM_DOMAIN = "@swiftdroom.com";
 
 // ---------- Verification code extraction ----------
 
+/** Strip HTML tags and decode common entities to get searchable plain text */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /**
  * Extract a Greenhouse-style security code from an email body.
- * Greenhouse codes appear to be 4–6 digit or short alphanumeric strings.
- * We try increasingly broad patterns; the last resort grabs any standalone
- * 4+ digit number, which is what Greenhouse typically sends.
+ * Greenhouse emails are HTML-only, so we strip tags then search.
+ * Codes are typically 4–8 digit numeric strings.
  */
-function extractVerificationCode(subject: string, body: string): string | null {
-  // Normalise whitespace (newlines, nbsp, tabs → space)
-  const text = `${subject}\n${body}`
-    .replace(/\s+/g, " ")
-    .replace(/\u00a0/g, " ");
+function extractVerificationCode(subject: string, bodyText: string, bodyHtml: string): string | null {
+  // Prefer plain text; fall back to HTML-stripped text
+  const plain = bodyText.trim() || htmlToText(bodyHtml);
+  const text = `${subject}\n${plain}`.replace(/\s+/g, " ");
 
   const patterns = [
-    // Explicit label patterns
     /security code[^a-z0-9]*([A-Z0-9]{4,10})/i,
     /verification code[^a-z0-9]*([A-Z0-9]{4,10})/i,
     /your code[^a-z0-9]*([A-Z0-9]{4,10})/i,
@@ -47,9 +59,7 @@ function extractVerificationCode(subject: string, body: string): string | null {
     /enter[^a-z0-9]*([A-Z0-9]{4,10})/i,
     /use[^a-z0-9]*code[^a-z0-9]*([A-Z0-9]{4,10})/i,
     /code[^a-z0-9]*([A-Z0-9]{4,10})/i,
-    // Standalone number on its own line / surrounded by spaces
     /(?:^|\s)([0-9]{4,8})(?:\s|$)/,
-    // Any 4–8 digit sequence as absolute last resort
     /\b([0-9]{4,8})\b/,
   ];
 
@@ -323,14 +333,14 @@ export async function pollInboxEmails(): Promise<void> {
       console.info(`[email-imap] stored email for ${toAlias}: "${subject}" from ${fromEmail}`);
 
       if (isVerificationEmail(subject)) {
-        const code = extractVerificationCode(subject, bodyText);
+        const code = extractVerificationCode(subject, bodyText, bodyHtml);
         if (code) {
           console.info(`[email-imap] found code "${code}" for ${toAlias}`);
           await autoCompleteApplication(targetUser.id, code);
         } else {
-          // Log first 400 chars of body so we can update the regex to match
-          const preview = bodyText.replace(/\s+/g, " ").trim().slice(0, 400);
-          console.warn(`[email-imap] no code found for ${toAlias} — subject: "${subject}" — body preview: "${preview}"`);
+          // Log stripped HTML preview so we can see the code format
+          const strippedPreview = (bodyText.trim() || htmlToText(bodyHtml)).slice(0, 400);
+          console.warn(`[email-imap] no code found for ${toAlias} — subject: "${subject}" — text: "${strippedPreview}"`);
         }
       } else {
         await notifyUser(targetUser.email, targetUser.name, fromEmail, fromName, subject, toAlias);
