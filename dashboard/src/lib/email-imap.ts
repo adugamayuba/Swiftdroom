@@ -28,18 +28,31 @@ const SWIFTDROOM_DOMAIN = "@swiftdroom.com";
 
 /**
  * Extract a Greenhouse-style security code from an email body.
- * Greenhouse codes are typically 4–8 character alphanumeric strings.
+ * Greenhouse codes appear to be 4–6 digit or short alphanumeric strings.
+ * We try increasingly broad patterns; the last resort grabs any standalone
+ * 4+ digit number, which is what Greenhouse typically sends.
  */
 function extractVerificationCode(subject: string, body: string): string | null {
-  const text = `${subject}\n${body}`;
+  // Normalise whitespace (newlines, nbsp, tabs → space)
+  const text = `${subject}\n${body}`
+    .replace(/\s+/g, " ")
+    .replace(/\u00a0/g, " ");
+
   const patterns = [
-    /security code[:\s]+([A-Z0-9]{4,10})/i,
-    /verification code[:\s]+([A-Z0-9]{4,10})/i,
-    /your code[:\s]+([A-Z0-9]{4,10})/i,
-    /code is[:\s]+([A-Z0-9]{4,10})/i,
-    /enter code[:\s]+([A-Z0-9]{4,10})/i,
-    /\b([0-9]{5,8})\b/, // 5–8 digit fallback
+    // Explicit label patterns
+    /security code[^a-z0-9]*([A-Z0-9]{4,10})/i,
+    /verification code[^a-z0-9]*([A-Z0-9]{4,10})/i,
+    /your code[^a-z0-9]*([A-Z0-9]{4,10})/i,
+    /code is[^a-z0-9]*([A-Z0-9]{4,10})/i,
+    /enter[^a-z0-9]*([A-Z0-9]{4,10})/i,
+    /use[^a-z0-9]*code[^a-z0-9]*([A-Z0-9]{4,10})/i,
+    /code[^a-z0-9]*([A-Z0-9]{4,10})/i,
+    // Standalone number on its own line / surrounded by spaces
+    /(?:^|\s)([0-9]{4,8})(?:\s|$)/,
+    // Any 4–8 digit sequence as absolute last resort
+    /\b([0-9]{4,8})\b/,
   ];
+
   for (const p of patterns) {
     const m = text.match(p);
     if (m?.[1]) return m[1].trim();
@@ -50,11 +63,13 @@ function extractVerificationCode(subject: string, body: string): string | null {
 function isVerificationEmail(subject: string): boolean {
   const s = subject.toLowerCase();
   return (
-    s.includes("security code") ||
+    s.includes("security code") ||          // "Security code for your application..."
     s.includes("verification code") ||
     s.includes("verify your application") ||
     s.includes("application code") ||
-    s.includes("confirm your application")
+    s.includes("confirm your application") ||
+    s.includes("your code") ||
+    s.includes("access code")
   );
 }
 
@@ -313,7 +328,9 @@ export async function pollInboxEmails(): Promise<void> {
           console.info(`[email-imap] found code "${code}" for ${toAlias}`);
           await autoCompleteApplication(targetUser.id, code);
         } else {
-          console.warn(`[email-imap] no code found in verification email for ${toAlias} — subject: "${subject}"`);
+          // Log first 400 chars of body so we can update the regex to match
+          const preview = bodyText.replace(/\s+/g, " ").trim().slice(0, 400);
+          console.warn(`[email-imap] no code found for ${toAlias} — subject: "${subject}" — body preview: "${preview}"`);
         }
       } else {
         await notifyUser(targetUser.email, targetUser.name, fromEmail, fromName, subject, toAlias);
