@@ -127,23 +127,33 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     ? keywords.map((kw) => ({ title: { contains: kw, mode: "insensitive" as const } }))
     : null;
 
-  const listings = await db.jobListing.findMany({
-    where: {
-      updatedAt: { gte: recentSince },
-      ...(keywordOr ? { OR: keywordOr } : {}),
-      AND: [
-        {
-          OR: [
-            { applyUrl: { contains: "boards.greenhouse.io/" } },
-            { applyUrl: { contains: "job-boards.greenhouse.io/" } },
-            { atsType: "lever" },
-          ],
-        },
-      ],
-    },
-    orderBy: { postedAt: "desc" },
-    take: 500,
-  });
+  // Fetch greenhouse and lever listings separately so we can put greenhouse first.
+  // Greenhouse submissions are fully automated end-to-end (including code verification),
+  // so we prioritise them to maximise the success rate for each run.
+  const greenhouseWhere = {
+    updatedAt: { gte: recentSince },
+    ...(keywordOr ? { OR: keywordOr } : {}),
+    AND: [
+      {
+        OR: [
+          { applyUrl: { contains: "boards.greenhouse.io/" } },
+          { applyUrl: { contains: "job-boards.greenhouse.io/" } },
+        ],
+      },
+    ],
+  };
+  const leverWhere = {
+    updatedAt: { gte: recentSince },
+    ...(keywordOr ? { OR: keywordOr } : {}),
+    atsType: "lever" as const,
+  };
+
+  const [ghListings, leverListings] = await Promise.all([
+    db.jobListing.findMany({ where: greenhouseWhere, orderBy: { postedAt: "desc" }, take: 400 }),
+    db.jobListing.findMany({ where: leverWhere,      orderBy: { postedAt: "desc" }, take: 100 }),
+  ]);
+  // Greenhouse first, lever fills remaining capacity
+  const listings = [...ghListings, ...leverListings];
 
   const toQueue = listings.filter(
     (l) =>
@@ -274,12 +284,24 @@ async function processUser(
     coverLetter: settings.coverLetter || undefined,
   };
 
-  const pendingJobs = await db.autoApplyJob.findMany({
-    where: { userId, status: "pending" },
-    include: { jobListing: true },
-    orderBy: { createdAt: "asc" },
-    take: toProcess,
-  });
+  // Fetch pending jobs — greenhouse first (proven submissions), then lever, then others.
+  // Over-fetch slightly so we can re-sort in-process without under-filling the batch.
+  const [ghJobs, otherJobs] = await Promise.all([
+    db.autoApplyJob.findMany({
+      where: { userId, status: "pending", atsType: "greenhouse" },
+      include: { jobListing: true },
+      orderBy: { createdAt: "asc" },
+      take: toProcess,
+    }),
+    db.autoApplyJob.findMany({
+      where: { userId, status: "pending", atsType: { not: "greenhouse" } },
+      include: { jobListing: true },
+      orderBy: { createdAt: "asc" },
+      take: toProcess,
+    }),
+  ]);
+  // Fill the batch: as many greenhouse as available, then fill remainder with others
+  const pendingJobs = [...ghJobs, ...otherJobs].slice(0, toProcess);
 
   console.info(
     `[auto-apply] processing ${pendingJobs.length} pending job(s) for ${userId} using ${swiftdroomEmail}`
