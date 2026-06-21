@@ -203,9 +203,24 @@ export async function applyViaGreenhouse(
     }
   }
 
-  // Submit to Greenhouse boards apply endpoint.
-  // boards.greenhouse.io hosts the apply forms; boards-api is read-only for listings.
-  const submitUrl = `https://boards.greenhouse.io/api/v1/boards/${boardToken}/jobs/${jobId}/applications`;
+  // If we could not fetch job details, do a quick existence check.
+  // A 404 here confirms the job was removed from the board.
+  if (!jobDetails) {
+    try {
+      const probe = await fetch(
+        `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}`,
+        { headers: { "User-Agent": "Swiftdroom/1.0" }, cache: "no-store" }
+      );
+      if (probe.status === 404) {
+        return { success: false, error: "Job closed" };
+      }
+    } catch {
+      // Network error — proceed with submission anyway
+    }
+  }
+
+  // Submit via the Greenhouse boards REST API (same domain used for reading listings).
+  const submitUrl = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}/applications`;
 
   try {
     const res = await fetch(submitUrl, {

@@ -224,7 +224,13 @@ export default function AutoApplyPage() {
                             </p>
                           )}
                           {job.error && (
-                            <p className="mt-1 text-xs text-red-500">{job.error}</p>
+                            <p className="mt-1 text-xs text-red-500">
+                              {job.error.startsWith("Job closed")
+                                ? "This position is no longer accepting applications."
+                                : job.error.startsWith("Greenhouse API") || job.error.startsWith("Lever API")
+                                  ? "Could not submit application — the job may have been filled."
+                                  : "Submission failed. Will retry automatically."}
+                            </p>
                           )}
                         </div>
                         <a
