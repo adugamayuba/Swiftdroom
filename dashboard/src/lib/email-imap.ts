@@ -20,7 +20,23 @@ import { simpleParser, type ParsedMail } from "mailparser";
 import { db } from "@/lib/db";
 import { completeWithSecurityCode } from "@/lib/apply-greenhouse";
 import { sendEmail } from "@/lib/email";
+import { PLANS } from "@/lib/plans";
 import type { ApplyPayload } from "@/lib/apply-lever";
+import type { SubscriptionPlan } from "@prisma/client";
+
+function getMonthlyAutoApplyLimit(plan: SubscriptionPlan): number {
+  if (plan === "STARTER") return PLANS.STARTER.autoApplyLimit;
+  if (plan === "PRO") return PLANS.PRO.autoApplyLimit;
+  if (plan === "BUSINESS") return PLANS.BUSINESS.autoApplyLimit;
+  return 0;
+}
+
+async function countAppliedThisMonth(userId: string, periodStart: Date | null): Promise<number> {
+  const since = periodStart ?? new Date(new Date().setDate(1));
+  return db.autoApplyJob.count({
+    where: { userId, status: "applied", appliedAt: { gte: since } },
+  });
+}
 
 const SWIFTDROOM_DOMAIN = "@swiftdroom.com";
 
@@ -133,20 +149,39 @@ async function attemptComplete(
   code: string
 ): Promise<void> {
 
-  const [profile, settings] = await Promise.all([
+  const [profile, settings, userRecord] = await Promise.all([
     db.profile.findUnique({ where: { userId } }),
     db.autoApplySettings.findUnique({ where: { userId } }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: {
+        plan: true,
+        subscriptionStatus: true,
+        currentPeriodStart: true,
+        swiftdroomEmail: true,
+      },
+    }),
   ]);
 
   if (!profile?.email) return;
 
-  // Use the user's real email in the application (the swiftdroom alias was used only to
-  // receive the code; the actual application should have their real email if possible,
-  // or the swiftdroom alias for consistency — keep swiftdroom alias here)
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { swiftdroomEmail: true },
-  });
+  // Enforce subscription limit — same logic as auto-apply-worker
+  if (!userRecord || userRecord.subscriptionStatus !== "ACTIVE" && userRecord.subscriptionStatus !== "TRIALING") {
+    console.warn(`[email-imap] user ${userId} has no active subscription — skipping auto-complete`);
+    return;
+  }
+  const monthlyLimit = getMonthlyAutoApplyLimit(userRecord.plan);
+  if (monthlyLimit === 0) {
+    console.warn(`[email-imap] user ${userId} plan=${userRecord.plan} has no auto-apply limit`);
+    return;
+  }
+  const appliedThisMonth = await countAppliedThisMonth(userId, userRecord.currentPeriodStart);
+  if (appliedThisMonth >= monthlyLimit) {
+    console.warn(
+      `[email-imap] user ${userId} has reached monthly limit (${appliedThisMonth}/${monthlyLimit}) — skipping`
+    );
+    return;
+  }
 
   const payload: ApplyPayload & { resumeText: string; jobTitle: string; externalId?: string } = {
     fullName:
@@ -155,7 +190,7 @@ async function attemptComplete(
       profile.email.split("@")[0],
     firstName: profile.firstName || profile.fullName?.split(" ")[0] || "",
     lastName: profile.lastName || profile.fullName?.split(" ").slice(1).join(" ") || "",
-    email: user?.swiftdroomEmail ?? profile.email,
+    email: userRecord.swiftdroomEmail ?? profile.email,
     phone: profile.phone || undefined,
     linkedinUrl: profile.linkedinUrl || undefined,
     resumeUrl: profile.resumeUrl || undefined,

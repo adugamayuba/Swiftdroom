@@ -3,6 +3,15 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireActiveSubscription } from "@/lib/subscription-gate";
 import { apiError, apiZodError } from "@/lib/user-messages";
+import { PLANS } from "@/lib/plans";
+import type { SubscriptionPlan } from "@prisma/client";
+
+function getMonthlyLimit(plan: SubscriptionPlan): number {
+  if (plan === "STARTER") return PLANS.STARTER.autoApplyLimit;
+  if (plan === "PRO") return PLANS.PRO.autoApplyLimit;
+  if (plan === "BUSINESS") return PLANS.BUSINESS.autoApplyLimit;
+  return 0;
+}
 
 const settingsSchema = z.object({
   enabled: z.boolean().optional(),
@@ -15,21 +24,31 @@ export async function GET(request: NextRequest) {
   const gate = await requireActiveSubscription(request);
   if (gate.response) return gate.response;
 
-  const settings = await db.autoApplySettings.findUnique({
-    where: { userId: gate.user.id },
-  });
+  const [settings, user] = await Promise.all([
+    db.autoApplySettings.findUnique({ where: { userId: gate.user.id } }),
+    db.user.findUnique({
+      where: { id: gate.user.id },
+      select: { plan: true, currentPeriodStart: true },
+    }),
+  ]);
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
+  const periodStart = user?.currentPeriodStart ?? new Date(new Date().setDate(1));
 
-  const [appliedToday, totalPending] = await Promise.all([
+  const [appliedToday, totalPending, appliedThisMonth] = await Promise.all([
     db.autoApplyJob.count({
       where: { userId: gate.user.id, status: "applied", appliedAt: { gte: todayStart } },
     }),
     db.autoApplyJob.count({
       where: { userId: gate.user.id, status: "pending" },
     }),
+    db.autoApplyJob.count({
+      where: { userId: gate.user.id, status: "applied", appliedAt: { gte: periodStart } },
+    }),
   ]);
+
+  const monthlyLimit = getMonthlyLimit(user?.plan ?? "NONE");
 
   return NextResponse.json({
     settings: settings ?? {
@@ -41,6 +60,9 @@ export async function GET(request: NextRequest) {
     },
     appliedToday,
     totalPending,
+    appliedThisMonth,
+    monthlyLimit,
+    remainingThisMonth: Math.max(0, monthlyLimit - appliedThisMonth),
   });
 }
 

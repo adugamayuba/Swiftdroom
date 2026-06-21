@@ -51,6 +51,8 @@ export default function AutoApplyPage() {
   const [jobs, setJobs] = useState<QueueJob[]>([]);
   const [appliedToday, setAppliedToday] = useState(0);
   const [totalPending, setTotalPending] = useState(0);
+  const [appliedThisMonth, setAppliedThisMonth] = useState(0);
+  const [monthlyLimit, setMonthlyLimit] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -73,6 +75,8 @@ export default function AutoApplyPage() {
       setSettings(data.settings);
       setAppliedToday(data.appliedToday);
       setTotalPending(data.totalPending);
+      setAppliedThisMonth(data.appliedThisMonth ?? 0);
+      setMonthlyLimit(data.monthlyLimit ?? 0);
       setEnabled(data.settings.enabled);
       setCoverLetter(data.settings.coverLetter || "");
     }
@@ -144,18 +148,38 @@ export default function AutoApplyPage() {
       )}
 
       {/* Stats row */}
-      <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {[
-          { label: "Applied today",   value: appliedToday },
-          { label: "In queue",        value: totalPending },
-          { label: "All time",        value: settings?.totalApplied ?? 0 },
+          { label: "Applied today",   value: String(appliedToday) },
+          { label: "In queue",        value: String(totalPending) },
+          {
+            label: "This month",
+            value: monthlyLimit > 0 ? `${appliedThisMonth}/${monthlyLimit}` : String(appliedThisMonth),
+          },
+          { label: "All time",        value: String(settings?.totalApplied ?? 0) },
         ].map(({ label, value }) => (
-          <DashboardCard key={label} className="p-5 text-center">
-            <p className="text-3xl font-semibold tabular-nums text-[var(--brand-header)]">{value}</p>
+          <DashboardCard key={label} className="p-4 text-center">
+            <p className="text-2xl font-semibold tabular-nums text-[var(--brand-header)]">{value}</p>
             <p className="mt-1 text-xs text-[var(--brand-header)]/45">{label}</p>
           </DashboardCard>
         ))}
       </div>
+
+      {/* Monthly quota progress bar */}
+      {monthlyLimit > 0 && (
+        <div className="mt-3 px-1">
+          <div className="flex justify-between text-xs text-neutral-500 mb-1">
+            <span>{appliedThisMonth} applications used this billing period</span>
+            <span>{Math.max(0, monthlyLimit - appliedThisMonth)} remaining</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-[var(--brand-lavender)] transition-all"
+              style={{ width: `${Math.min(100, Math.round((appliedThisMonth / monthlyLimit) * 100))}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Settings card */}
       <DashboardCard className="mt-6 divide-y divide-[var(--border)]">
