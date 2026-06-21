@@ -50,7 +50,7 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     where: {
       userId,
       status: "skipped",
-      error: { in: ["Job closed", "Rate limited — will retry"] },
+      error: { in: ["Job closed", "Rate limited — will retry", "Captcha failed — will retry"] },
     },
     data: { status: "pending", error: undefined },
   });

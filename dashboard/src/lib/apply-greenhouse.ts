@@ -406,6 +406,10 @@ export async function applyViaGreenhouse(
       text = await res.text();
       // Parse Greenhouse JSON error response
       const json = JSON.parse(text) as { code?: string; message?: string };
+      if (json.code === "captcha-failed" || json.code === "captcha-retry") {
+        // CAPTCHA rejection — retryable when a better solver is available
+        return { success: false, error: "Captcha failed — will retry" };
+      }
       if (json.code === "invalid-attributes") {
         return { success: false, error: `Missing required fields: ${json.message}` };
       }
