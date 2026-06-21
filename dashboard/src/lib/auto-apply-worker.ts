@@ -43,7 +43,19 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
   const settings = await db.autoApplySettings.findUnique({ where: { userId } });
   if (!settings?.enabled) return 0;
 
-  // Existing AutoApplyJob rows that are already pending or successfully applied or skipped (closed).
+  // Reset old "skipped" records that were skipped due to wrong endpoint (not truly closed).
+  // Previous code incorrectly marked jobs as "Job closed" when the CSRF/API approach failed.
+  // Now that we have the correct JSON approach, these should be retried.
+  await db.autoApplyJob.updateMany({
+    where: {
+      userId,
+      status: "skipped",
+      error: { in: ["Job closed", "Rate limited — will retry"] },
+    },
+    data: { status: "pending", error: undefined },
+  });
+
+  // Existing AutoApplyJob rows that are already pending or successfully applied or truly skipped.
   // "failed" jobs are NOT excluded so they can be retried on transient errors.
   const existingJobIds = await db.autoApplyJob
     .findMany({ where: { userId, status: { in: ["pending", "applied", "skipped"] } }, select: { jobListingId: true } })
@@ -317,7 +329,9 @@ async function processUser(
       else result.failed++;
     }
 
-    await new Promise((r) => setTimeout(r, 1200));
+    // Respect ATS rate limits: 1.5s between jobs normally, 10s after a rate-limit
+    const isRateLimited = !applyResult.success && applyResult.error?.includes("Rate limited");
+    await new Promise((r) => setTimeout(r, isRateLimited ? 10000 : 1500));
   }
 
   // Send email digest if anything was applied

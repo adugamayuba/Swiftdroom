@@ -1,13 +1,13 @@
 /**
- * Server-side auto-apply via Greenhouse's hosted job board forms.
+ * Server-side auto-apply via Greenhouse's job board React API.
  *
- * The boards-api.greenhouse.io API is READ-ONLY for job listings.
- * Application submission requires the hosted board form endpoint:
- *   GET  boards.greenhouse.io/{token}/jobs/{id}        — fetch page + CSRF token
- *   POST boards.greenhouse.io/{token}/jobs/{id}/apply  — submit application
+ * Flow (reverse-engineered from job-boards.greenhouse.io React SPA):
+ * 1. GET job-boards.greenhouse.io/{token}/jobs/{id}  — extract __remixContext for fingerprint + questions
+ * 2. GET boards.greenhouse.io/{token}/jobs/{id}       — capture _jbs session cookie (redirect: manual)
+ * 3. POST boards.greenhouse.io/{token}/jobs/{id}      — JSON body with job_application + fingerprint
  *
- * We simulate a browser form submission: fetch the page to get the Rails
- * authenticity_token + session cookie, then POST with those included.
+ * The boards-api.greenhouse.io API is READ-ONLY. The hosted form endpoint
+ * is the only way to programmatically submit applications server-side.
  */
 
 import type { ApplyPayload, ApplyResult } from "./apply-lever";
@@ -17,51 +17,38 @@ const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
-interface GreenhouseQuestion {
-  required: boolean;
-  label: string;
-  field_type: string;
-  name?: string;
-  values?: Array<{ value: number | string; label: string }>;
-  description?: string;
-}
-
-interface GreenhouseJobDetails {
-  id: number;
-  title: string;
-  content: string;
-  questions: GreenhouseQuestion[];
-}
-
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
+interface GreenhouseFieldQuestion {
+  name: string;
+  type: string;
+  values?: Array<{ value: number | string; label: string }>;
+}
+
+interface GreenhouseQuestion {
+  required: boolean;
+  label: string;
+  description?: string | null;
+  fields: GreenhouseFieldQuestion[];
+}
+
 /**
- * Extract the Greenhouse board token and job ID from a Greenhouse apply URL.
- * Handles multiple formats:
- *   https://boards.greenhouse.io/acme/jobs/1234567        (standard)
- *   https://job-boards.greenhouse.io/acme/jobs/1234567   (alternate)
- *   https://acme.greenhouse.io/jobs/1234567               (company subdomain)
+ * Extract board token + job ID from a Greenhouse apply URL.
+ * Handles boards.greenhouse.io, job-boards.greenhouse.io, and company subdomains.
  */
 function parseGreenhouseUrl(
   applyUrl: string
-): { boardToken: string; jobId: string; host: string } | null {
+): { boardToken: string; jobId: string } | null {
   try {
     const url = new URL(applyUrl);
-
-    // Format 1: boards.greenhouse.io/{token}/jobs/{id}
     const pathMatch = url.pathname.match(/^\/([^/]+)\/jobs\/(\d+)/);
-    if (pathMatch) {
-      return { boardToken: pathMatch[1], jobId: pathMatch[2], host: url.hostname };
-    }
+    if (pathMatch) return { boardToken: pathMatch[1], jobId: pathMatch[2] };
 
-    // Format 2: {token}.greenhouse.io/jobs/{id}  (company-hosted subdomain)
     const subMatch = url.hostname.match(/^([^.]+)\.greenhouse\.io$/);
     if (subMatch && subMatch[1] !== "boards" && subMatch[1] !== "job-boards") {
       const jobIdMatch = url.pathname.match(/\/jobs\/(\d+)/);
-      if (jobIdMatch) {
-        return { boardToken: subMatch[1], jobId: jobIdMatch[1], host: url.hostname };
-      }
+      if (jobIdMatch) return { boardToken: subMatch[1], jobId: jobIdMatch[1] };
     }
   } catch {
     // fall through
@@ -69,65 +56,98 @@ function parseGreenhouseUrl(
   return null;
 }
 
-/**
- * Extract board token + job ID from a Greenhouse job's externalId.
- * ats-boards.ts stores externalId as "{boardToken}-{numericJobId}".
- */
-function parseGreenhouseExternalId(externalId: string): { boardToken: string; jobId: string; host: string } | null {
+/** Extract board token + job ID from externalId stored as "{boardToken}-{numericJobId}". */
+function parseGreenhouseExternalId(externalId: string): { boardToken: string; jobId: string } | null {
   const match = externalId.match(/^(.+)-(\d+)$/);
-  if (match) return { boardToken: match[1], jobId: match[2], host: "boards.greenhouse.io" };
+  if (match) return { boardToken: match[1], jobId: match[2] };
   return null;
 }
 
+interface LoaderData {
+  fingerprint: string;
+  submitPath: string;
+  questions: GreenhouseQuestion[];
+}
+
 /**
- * Fetch the Greenhouse hosted job board page to get the Rails CSRF token and session cookie.
- * Required for submitting applications through the hosted board form.
+ * Fetch the Remix SSR loader data embedded in the job page HTML.
+ * Contains the job fingerprint (required for submission), submit path, and question list.
  */
-async function getGreenhouseFormToken(
+async function getGreenhouseLoaderData(
   boardToken: string,
   jobId: string
-): Promise<{ csrfToken: string; sessionCookie: string } | null> {
-  // Try both hosted board domains
-  const urls = [
-    `https://boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
-    `https://job-boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
-  ];
+): Promise<LoaderData | null> {
+  try {
+    const res = await fetch(
+      `https://job-boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+      {
+        headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,*/*" },
+      }
+    );
+    if (!res.ok) return null;
 
-  for (const pageUrl of urls) {
-    try {
-      const res = await fetch(pageUrl, {
-        headers: {
-          "User-Agent": BROWSER_UA,
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.5",
-        },
-        redirect: "follow",
-      });
+    const html = await res.text();
+    const markerPos = html.indexOf("__remixContext = ");
+    if (markerPos === -1) return null;
 
-      if (!res.ok) continue;
-
-      const html = await res.text();
-
-      // Extract Rails authenticity_token from the HTML form
-      const tokenMatch =
-        html.match(/name="authenticity_token"[^>]*value="([^"]+)"/) ||
-        html.match(/value="([^"]+)"[^>]*name="authenticity_token"/);
-      if (!tokenMatch) continue;
-
-      // Extract session cookie from response headers
-      const rawCookie = res.headers.get("set-cookie") || "";
-      const sessionCookieMatch = rawCookie.match(/_greenhouse_session=[^;,]+/);
-      if (!sessionCookieMatch) continue;
-
-      return { csrfToken: tokenMatch[1], sessionCookie: sessionCookieMatch[0] };
-    } catch {
-      // try next URL
+    const jsonStart = markerPos + "__remixContext = ".length;
+    let depth = 0, end = jsonStart;
+    for (let i = jsonStart; i < html.length; i++) {
+      if (html[i] === "{") depth++;
+      else if (html[i] === "}") {
+        depth--;
+        if (depth === 0) { end = i + 1; break; }
+      }
     }
+
+    const ctx = JSON.parse(html.slice(jsonStart, end)) as {
+      state?: {
+        loaderData?: Record<string, {
+          jobPost?: { fingerprint?: string; questions?: GreenhouseQuestion[] };
+          submitPath?: string;
+        }>;
+      };
+    };
+
+    const routeKey = Object.keys(ctx.state?.loaderData ?? {}).find(
+      (k) => k !== "root"
+    );
+    const routeData = routeKey ? ctx.state?.loaderData?.[routeKey] : undefined;
+    if (!routeData?.submitPath || !routeData.jobPost?.fingerprint) return null;
+
+    return {
+      fingerprint: routeData.jobPost.fingerprint,
+      submitPath: routeData.submitPath,
+      questions: routeData.jobPost.questions ?? [],
+    };
+  } catch {
+    return null;
   }
-  return null;
 }
 
-/** Use AI to generate a short answer for a free-text question. */
+/**
+ * GET boards.greenhouse.io/{token}/jobs/{id} (with redirect:manual) to capture
+ * the _jbs session cookie Greenhouse requires on the POST.
+ */
+async function getGreenhouseSession(
+  boardToken: string,
+  jobId: string
+): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+      {
+        headers: { "User-Agent": BROWSER_UA },
+        redirect: "manual",
+      }
+    );
+    return res.headers.get("set-cookie")?.match(/_jbs=[^;]+/)?.[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** AI-generated answer for a free-text question. */
 async function aiAnswer(
   question: string,
   resumeText: string,
@@ -140,27 +160,122 @@ async function aiAnswer(
       messages: [
         {
           role: "system",
-          content: `You answer a single job application question based on the candidate's resume. Be concise, honest, and tailored. Under 150 words. No markdown.`,
+          content:
+            "Answer a job application question based on the candidate's resume. Be concise, specific, honest. Under 120 words. No markdown.",
         },
         {
           role: "user",
           content: `Question: ${question}\nJob title: ${jobTitle}\nResume:\n${resumeText.slice(0, 2000)}\n\nAnswer:`,
         },
       ],
-      max_tokens: 200,
+      max_tokens: 160,
       temperature: 0.5,
     });
-    return res.choices[0]?.message?.content?.trim() || "";
+    return res.choices[0]?.message?.content?.trim() ?? "";
   } catch {
     return "";
   }
 }
 
+/**
+ * Build the answers_attributes object for custom questions.
+ * Mirrors the logic of the `ga` function in the Greenhouse React SPA.
+ *
+ * Key format: numeric question ID (e.g. "8590525008", not "question_8590525008").
+ * Value format:
+ *   text/textarea  → { question_id, priority, text_value }
+ *   select (0/1)   → { question_id, priority, boolean_value }
+ *   select (opts)  → { question_id, priority, answer_selected_options_attributes: { "0": { question_option_id } } }
+ */
+async function buildAnswers(
+  questions: GreenhouseQuestion[],
+  resumeText: string,
+  jobTitle: string,
+  linkedinUrl?: string
+): Promise<Record<string, unknown>> {
+  const attrs: Record<string, unknown> = {};
+  let priority = 0;
+
+  const SKIP_LABELS = [
+    "first name", "last name", "email", "phone", "resume",
+    "cover letter", "linkedin", "website",
+  ];
+
+  for (const q of questions) {
+    const field = q.fields[0];
+    if (!field) continue;
+
+    const name = field.name;
+    if (!name.startsWith("question_")) continue;
+
+    // Extract numeric ID (Greenhouse expects this, not the full "question_XXX" key)
+    const qId = name.replace(/^question_/, "").replace(/\[\]$/, "");
+    const labelLower = (q.label ?? "").toLowerCase();
+
+    // Skip standard fields
+    if (SKIP_LABELS.some((s) => labelLower.includes(s))) continue;
+
+    // LinkedIn URL question
+    if (labelLower.includes("linkedin") && linkedinUrl) {
+      attrs[qId] = { question_id: qId, priority: priority++, text_value: linkedinUrl };
+      continue;
+    }
+
+    if (field.type === "input_text" || field.type === "textarea") {
+      const answer =
+        resumeText
+          ? await aiAnswer(q.label ?? q.description ?? "", resumeText, jobTitle)
+          : "";
+      if (answer) {
+        attrs[qId] = { question_id: qId, priority: priority++, text_value: answer };
+      }
+      continue;
+    }
+
+    if (
+      field.type === "multi_value_single_select" ||
+      field.type === "multi_value_multi_select"
+    ) {
+      const values = field.values ?? [];
+      if (values.length === 0) continue;
+
+      const firstVal = values[0].value;
+      const isBoolean = firstVal === 0 || firstVal === 1;
+
+      if (isBoolean) {
+        // Yes/No — pick "Yes" (1) unless question sounds like it would be a disqualifier
+        const preferNo = ["require.*sponsor", "visa sponsor"].some((p) =>
+          new RegExp(p, "i").test(q.label ?? "")
+        );
+        attrs[qId] = {
+          question_id: qId,
+          priority: priority++,
+          boolean_value: preferNo ? 0 : 1,
+        };
+      } else {
+        // Option-based — pick the first option
+        attrs[qId] = {
+          question_id: qId,
+          priority: priority++,
+          answer_selected_options_attributes: {
+            "0": { question_option_id: String(firstVal) },
+          },
+        };
+      }
+    }
+  }
+
+  return attrs;
+}
+
 export async function applyViaGreenhouse(
   applyUrl: string,
-  payload: ApplyPayload & { resumeText?: string; jobTitle?: string; externalId?: string }
+  payload: ApplyPayload & {
+    resumeText?: string;
+    jobTitle?: string;
+    externalId?: string;
+  }
 ): Promise<ApplyResult> {
-  // Prefer URL parsing; fall back to externalId (stored as "{boardToken}-{jobId}")
   const parsed =
     parseGreenhouseUrl(applyUrl) ??
     (payload.externalId ? parseGreenhouseExternalId(payload.externalId) : null);
@@ -170,113 +285,80 @@ export async function applyViaGreenhouse(
 
   const { boardToken, jobId } = parsed;
 
-  // Fetch job details with questions (best-effort, for AI-generated custom answers)
-  let jobDetails: GreenhouseJobDetails | null = null;
-  try {
-    const detailsRes = await fetch(
-      `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}?questions=true`,
-      {
-        headers: { "User-Agent": BROWSER_UA, "Accept": "application/json" },
-        cache: "no-store",
-      }
-    );
-    if (detailsRes.status === 404) {
-      return { success: false, error: "Job closed" };
-    }
-    if (detailsRes.ok) {
-      jobDetails = (await detailsRes.json()) as GreenhouseJobDetails;
-    }
-  } catch {
-    // Proceed without questions
-  }
-
-  // Get CSRF token + session cookie from the hosted job board page
-  const formAuth = await getGreenhouseFormToken(boardToken, jobId);
-  if (!formAuth) {
-    // Hosted form page not accessible — job may be on a custom career page
+  // Step 1 — get fingerprint + submitPath + questions from Remix loader data
+  const loaderData = await getGreenhouseLoaderData(boardToken, jobId);
+  if (!loaderData) {
+    console.warn(`[greenhouse] ${boardToken}/${jobId} loader data unavailable`);
     return { success: false, error: "Job closed" };
   }
 
-  const form = new FormData();
+  const { fingerprint, submitPath, questions } = loaderData;
+  console.info(
+    `[greenhouse] ${boardToken}/${jobId} fingerprint=${fingerprint.slice(0, 8)}… submitPath=${submitPath}`
+  );
 
-  // Rails CSRF + UTF-8 marker
-  form.append("utf8", "✓");
-  form.append("authenticity_token", formAuth.csrfToken);
+  // Step 2 — establish session (_jbs cookie)
+  const sessionCookie = await getGreenhouseSession(boardToken, jobId);
 
-  // Standard applicant fields
-  form.append("first_name", payload.firstName);
-  form.append("last_name", payload.lastName);
-  form.append("email", payload.email);
-  if (payload.phone) form.append("phone", payload.phone);
-  if (payload.linkedinUrl) form.append("question_url_linkedin", payload.linkedinUrl);
-  if (payload.coverLetter) form.append("cover_letter_text", payload.coverLetter);
+  // Step 3 — build answers for custom questions
+  const answersAttributes = await buildAnswers(
+    questions,
+    payload.resumeText ?? "",
+    payload.jobTitle ?? "",
+    payload.linkedinUrl
+  );
 
-  // Resume file
+  // Step 4 — assemble application JSON
+  const jobApplication: Record<string, unknown> = {
+    first_name: payload.firstName,
+    last_name: payload.lastName,
+    email: payload.email,
+    phone: payload.phone ?? "",
+    answers_attributes: answersAttributes,
+    demographic_answers: [],
+    data_compliance: {},
+    attachments: {},
+    from_job_board_renderer: true,
+    employments: [],
+    time_zone: "America/New_York",
+  };
+
+  // Resume — Greenhouse accepts a direct URL (downloads it server-side)
   if (payload.resumeUrl) {
-    try {
-      const resumeRes = await fetch(payload.resumeUrl);
-      if (resumeRes.ok) {
-        const blob = await resumeRes.blob();
-        const fileName =
-          payload.resumeUrl.split("/").pop()?.split("?")[0] || "resume.pdf";
-        form.append("resume", blob, fileName);
-      }
-    } catch {
-      // Resume upload optional
-    }
+    const fileName =
+      payload.resumeUrl.split("/").pop()?.split("?")[0] ?? "resume.pdf";
+    jobApplication.resume_url = payload.resumeUrl;
+    jobApplication.resume_url_filename = fileName;
   }
 
-  // AI-generated answers for custom required questions
-  if (jobDetails?.questions && payload.resumeText) {
-    for (const q of jobDetails.questions) {
-      if (
-        q.field_type === "short_text" ||
-        q.field_type === "long_text" ||
-        q.field_type === "textarea"
-      ) {
-        const label = q.label || q.description || "";
-        if (!label) continue;
-        const labelLower = label.toLowerCase();
-        if (
-          labelLower.includes("first name") ||
-          labelLower.includes("last name") ||
-          labelLower.includes("email") ||
-          labelLower.includes("phone") ||
-          labelLower.includes("linkedin") ||
-          labelLower.includes("resume") ||
-          labelLower.includes("cover letter")
-        )
-          continue;
-
-        const answer = await aiAnswer(label, payload.resumeText, payload.jobTitle || "");
-        if (answer && q.name) {
-          form.append(q.name, answer);
-        }
-      }
-    }
+  if (payload.linkedinUrl) {
+    jobApplication.question_url_linkedin = payload.linkedinUrl;
   }
 
-  // Submit to the hosted board form endpoint
-  const submitUrl = `https://boards.greenhouse.io/${boardToken}/jobs/${jobId}/apply`;
+  if (payload.coverLetter) {
+    jobApplication.cover_letter_text = payload.coverLetter;
+  }
+
+  // Step 5 — POST
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "User-Agent": BROWSER_UA,
+    "Origin": "https://job-boards.greenhouse.io",
+    "Referer": `https://job-boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
+  };
+  if (sessionCookie) headers["Cookie"] = sessionCookie;
 
   try {
-    const res = await fetch(submitUrl, {
+    const res = await fetch(submitPath, {
       method: "POST",
-      headers: {
-        "User-Agent": BROWSER_UA,
-        "Origin": "https://boards.greenhouse.io",
-        "Referer": `https://boards.greenhouse.io/${boardToken}/jobs/${jobId}`,
-        "Cookie": formAuth.sessionCookie,
-        "Accept": "application/json, text/javascript, */*; q=0.01",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      body: form,
+      headers,
+      body: JSON.stringify({ job_application: jobApplication, fingerprint }),
       redirect: "manual",
     });
 
     console.info(`[greenhouse] ${boardToken}/${jobId} submit status=${res.status}`);
 
-    // 200/201 = success; 302 redirect after form POST also typically means success
     if (res.ok || res.status === 201 || res.status === 302) {
       return { success: true };
     }
@@ -285,10 +367,26 @@ export async function applyViaGreenhouse(
       return { success: false, error: "Job closed" };
     }
 
-    const text = await res.text().catch(() => "");
+    if (res.status === 429) {
+      // Rate-limited — treat as temporary failure (will retry next cycle)
+      return { success: false, error: "Rate limited — will retry" };
+    }
+
+    let text = "";
+    try {
+      text = await res.text();
+      // Parse Greenhouse JSON error response
+      const json = JSON.parse(text) as { code?: string; message?: string };
+      if (json.code === "invalid-attributes") {
+        return { success: false, error: `Missing required fields: ${json.message}` };
+      }
+      if (json.message) return { success: false, error: json.message };
+    } catch {
+      // Not JSON
+    }
     return {
       success: false,
-      error: `Greenhouse ${res.status}: ${text.slice(0, 300)}`,
+      error: `Greenhouse ${res.status}: ${text.slice(0, 200)}`,
     };
   } catch (err) {
     return {
