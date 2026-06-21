@@ -354,6 +354,41 @@ export async function pollInboxEmails(): Promise<void> {
 
   polling = true;
 
+  // --- Retry saved codes from previous polls that had no matching job yet ---
+  // Covers the race condition where the code email arrives before the worker
+  // marks the job as security_code_required (both run concurrently).
+  try {
+    const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const savedCodes = await db.inboxEmail.findMany({
+      where: {
+        isVerification: true,
+        pendingCode: { not: null },
+        createdAt: { gte: fifteenMinAgo },
+      },
+      select: { id: true, userId: true, subject: true, pendingCode: true },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+
+    for (const row of savedCodes) {
+      if (!row.pendingCode) continue;
+      const companyMatch = row.subject.match(/application to (.+?)(?:\s*$)/i);
+      const companyHint = companyMatch?.[1]?.trim();
+      // Check if any security_code_required jobs exist for this user now
+      const hasPending = await db.autoApplyJob.count({
+        where: { userId: row.userId, status: "failed", error: "security_code_required" },
+      });
+      if (hasPending > 0) {
+        console.info(`[email-imap] retrying saved code "${row.pendingCode}" for user ${row.userId}`);
+        await autoCompleteApplication(row.userId, row.pendingCode, companyHint);
+        // Clear the code so we don't retry it again
+        await db.inboxEmail.update({ where: { id: row.id }, data: { pendingCode: null } });
+      }
+    }
+  } catch (retryErr) {
+    console.error("[email-imap] saved-code retry error:", retryErr);
+  }
+
   // Collect raw email buffers while IMAP is connected, then
   // disconnect immediately before doing any slow DB work.
   // This prevents Titan Mail's idle timeout from killing the socket mid-loop.
@@ -476,9 +511,16 @@ export async function pollInboxEmails(): Promise<void> {
           const companyMatch = subject.match(/application to (.+?)(?:\s*$)/i);
           const companyHint = companyMatch?.[1]?.trim();
           console.info(`[email-imap] found code "${code}" for ${toAlias}${companyHint ? ` (company: ${companyHint})` : ""}`);
+
+          // Save the code on the InboxEmail row so it can be retried if no job is
+          // ready yet (race: code email arrives before worker marks job as security_code_required).
+          await db.inboxEmail.update({
+            where: { imapUid },
+            data: { pendingCode: code },
+          });
+
           await autoCompleteApplication(targetUser.id, code, companyHint);
         } else {
-          // Log stripped HTML preview so we can see the code format
           const strippedPreview = (bodyText.trim() || htmlToText(bodyHtml)).slice(0, 400);
           console.warn(`[email-imap] no code found for ${toAlias} — subject: "${subject}" — text: "${strippedPreview}"`);
         }

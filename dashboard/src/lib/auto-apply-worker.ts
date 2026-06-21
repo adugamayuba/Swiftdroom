@@ -307,9 +307,20 @@ async function processUser(
     `[auto-apply] processing ${pendingJobs.length} pending job(s) for ${userId} using ${swiftdroomEmail}`
   );
 
+  // Track companies throttled this run — skip any further jobs from them to avoid
+  // burning CAPTCHA budget on requests that will just return 429 immediately.
+  const throttledCompanies = new Set<string>();
+
   for (const job of pendingJobs) {
     const ats = job.jobListing.atsType.toLowerCase();
+    const company = job.jobListing.company.toLowerCase();
     let applyResult: import("@/lib/apply-lever").ApplyResult;
+
+    // Skip this company if it rate-limited us earlier in this run
+    if (throttledCompanies.has(company)) {
+      console.info(`[auto-apply] skipping ${job.jobListing.company} — throttled this run`);
+      continue;
+    }
 
     // Extra guard: don't apply if Application already exists with this URL
     const alreadyApplied = await db.application.findFirst({
@@ -411,9 +422,17 @@ async function processUser(
       }
     }
 
-    // Respect ATS rate limits: 1.5s between jobs normally, 10s after a rate-limit
+    // Respect ATS rate limits:
+    // - 429/throttle: mark company as blocked for this run, wait 15s
+    // - security_code: no extra wait needed
+    // - normal: 2.5s between jobs (up from 1.5s — reduces per-company throttling)
     const isRateLimited = !applyResult.success && applyResult.error?.includes("Rate limited");
-    await new Promise((r) => setTimeout(r, isRateLimited ? 10000 : 1500));
+    if (isRateLimited) {
+      throttledCompanies.add(company);
+      console.info(`[auto-apply] ${job.jobListing.company} throttled — skipping rest of company this run`);
+    }
+    const delay = isRateLimited ? 15000 : 2500;
+    await new Promise((r) => setTimeout(r, delay));
   }
 
   // Send email digest if anything was applied
