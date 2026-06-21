@@ -55,6 +55,17 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     data: { status: "pending", error: undefined },
   });
 
+  // Reset failed jobs whose code was tried on the wrong job — now that company-hint
+  // matching is in place, resubmitting will generate fresh codes correctly routed.
+  await db.autoApplyJob.updateMany({
+    where: {
+      userId,
+      status: "failed",
+      error: { in: ["Incorrect security code", "Code verification failed"] },
+    },
+    data: { status: "pending", error: undefined },
+  });
+
   // Also reset "security_code_required" failed jobs older than 30 minutes back to pending
   // so they get re-submitted with the (now-retrieved) code on the next cycle.
   // The IMAP poller handles codes automatically, so these should resolve themselves.
