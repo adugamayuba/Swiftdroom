@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
   };
 
   console.log(`[test-apply] starting test for ${jobUrl}`);
+  console.log(`[test-apply] CAPSOLVER_API_KEY set: ${!!process.env.CAPSOLVER_API_KEY}`);
+  console.log(`[test-apply] CAPTCHA_API_KEY set: ${!!process.env.CAPTCHA_API_KEY}`);
   const result = await applyViaGreenhouse(jobUrl, dummy);
   console.log(`[test-apply] result:`, JSON.stringify(result));
 

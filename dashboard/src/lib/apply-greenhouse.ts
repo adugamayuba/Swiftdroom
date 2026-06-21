@@ -386,7 +386,12 @@ export async function applyViaGreenhouse(
       redirect: "manual",
     });
 
-    console.info(`[greenhouse] ${boardToken}/${jobId} submit status=${res.status}`);
+    const responseText = await res.text().catch(() => "");
+    const ct = res.headers.get("content-type") ?? "";
+    const xRuntime = res.headers.get("x-runtime") ?? "";
+    console.info(
+      `[greenhouse] ${boardToken}/${jobId} submit status=${res.status} ct="${ct}" runtime=${xRuntime} body="${responseText.slice(0, 200)}"`
+    );
 
     if (res.ok || res.status === 201 || res.status === 302) {
       return { success: true };
@@ -397,17 +402,13 @@ export async function applyViaGreenhouse(
     }
 
     if (res.status === 429) {
-      // Rate-limited — treat as temporary failure (will retry next cycle)
       return { success: false, error: "Rate limited — will retry" };
     }
 
-    let text = "";
+    // Try to parse JSON error from Greenhouse
     try {
-      text = await res.text();
-      // Parse Greenhouse JSON error response
-      const json = JSON.parse(text) as { code?: string; message?: string };
+      const json = JSON.parse(responseText) as { code?: string; message?: string };
       if (json.code === "captcha-failed" || json.code === "captcha-retry") {
-        // CAPTCHA rejection — retryable when a better solver is available
         return { success: false, error: "Captcha failed — will retry" };
       }
       if (json.code === "invalid-attributes") {
@@ -419,7 +420,7 @@ export async function applyViaGreenhouse(
     }
     return {
       success: false,
-      error: `Greenhouse ${res.status}: ${text.slice(0, 200)}`,
+      error: `Greenhouse ${res.status}: ${responseText.slice(0, 200)}`,
     };
   } catch (err) {
     return {
