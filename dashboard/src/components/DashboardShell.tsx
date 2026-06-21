@@ -13,6 +13,7 @@ import {
   Gift,
   Compass,
   Send,
+  Inbox,
   MoreHorizontal,
   X,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/jobs", label: "Jobs", icon: Compass },
   { href: "/dashboard/auto-apply", label: "Auto Apply", icon: Send },
+  { href: "/dashboard/inbox", label: "Inbox", icon: Inbox },
   { href: "/dashboard/profile", label: "Profile", icon: User },
   { href: "/dashboard/personas", label: "Personas", icon: Users },
   { href: "/dashboard/applications", label: "Applications", icon: Briefcase },

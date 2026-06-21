@@ -76,6 +76,8 @@ model User {
   subscribeNudgeLastSentAt DateTime?
   passwordResetToken       String?            @unique
   passwordResetExpiresAt   DateTime?
+  swiftdroomEmail          String?            @unique
+  inboxEmails              InboxEmail[]
 }
 
 model ReferralEarning {
@@ -258,6 +260,26 @@ model AutoApplyJob {
 
   @@unique([userId, jobListingId])
   @@index([userId, status, createdAt])
+}
+
+model InboxEmail {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toAlias      String
+  fromEmail    String
+  fromName     String   @default("")
+  subject      String   @default("")
+  bodyText     String   @default("")
+  bodyHtml     String   @default("")
+  imapUid      String   @default("")
+  receivedAt   DateTime @default(now())
+  isRead       Boolean  @default(false)
+  isNotified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, receivedAt])
+  @@index([imapUid])
 }
 
 model VisitorSession {

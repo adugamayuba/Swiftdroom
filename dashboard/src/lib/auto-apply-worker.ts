@@ -9,6 +9,7 @@ import { applyViaGreenhouse } from "@/lib/apply-greenhouse";
 import { sendAutoApplyDigestEmail } from "@/lib/email";
 import { refreshJobFeed } from "@/lib/job-feed";
 import { PLANS } from "@/lib/plans";
+import { getOrAssignSwiftdroomEmail } from "@/lib/user-swiftdroom-email";
 import type { ApplyPayload } from "@/lib/apply-lever";
 import type { SubscriptionPlan } from "@prisma/client";
 
@@ -213,6 +214,11 @@ async function processUser(
     return result;
   }
 
+  // Get (or create) the user's dedicated @swiftdroom.com alias.
+  // Applications are submitted with this address so Greenhouse/Lever sends
+  // verification codes to a mailbox we control — enabling fully automatic code retrieval.
+  const swiftdroomEmail = await getOrAssignSwiftdroomEmail(userId);
+
   const payload: ApplyPayload & { resumeText: string } = {
     fullName:
       profile.fullName ||
@@ -224,7 +230,7 @@ async function processUser(
       profile.lastName ||
       profile.fullName?.split(" ").slice(1).join(" ") ||
       "",
-    email: profile.email,
+    email: swiftdroomEmail,
     phone: profile.phone || undefined,
     linkedinUrl: profile.linkedinUrl || undefined,
     resumeUrl: profile.resumeUrl || undefined,

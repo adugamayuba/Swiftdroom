@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { runAutoApplyWorker } from "@/lib/auto-apply-worker";
 import { ingestGlobalJobCache } from "@/lib/job-ingest";
+import { pollInboxEmails } from "@/lib/email-imap";
 
 let started = false;
 
@@ -38,5 +39,23 @@ export function scheduleAutoApplyCron() {
     }
   });
 
+  // Inbox email poller — every 2 minutes.
+  // Connects to the Titan Mail catch-all (hi@swiftdroom.com) and routes incoming
+  // emails to the right user by their *@swiftdroom.com alias. Auto-extracts
+  // Greenhouse security codes and completes pending applications automatically.
+  const runEmailPoll = async () => {
+    try {
+      await pollInboxEmails();
+    } catch (err) {
+      console.error("[email-poll cron] error:", err);
+    }
+  };
+
+  // Run immediately on startup so codes received just before a restart aren't missed
+  setTimeout(runEmailPoll, 45_000);
+
+  cron.schedule("*/2 * * * *", runEmailPoll);
+
   console.log("[auto-apply cron] scheduled — runs every 15 minutes");
+  console.log("[email-poll cron] scheduled — runs every 2 minutes");
 }
