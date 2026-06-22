@@ -21,6 +21,11 @@ const openai = process.env.OPENAI_API_KEY
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
+// Cache demographic questions by board token — some jobs on the same board
+// don't return them via the API (e.g. discord/8599753002), but all jobs on
+// the same board share the same demographic question set.
+const demographicQuestionCache = new Map<string, DemographicQuestion[]>();
+
 interface GreenhouseFieldQuestion {
   name: string;
   type: string;
@@ -158,9 +163,14 @@ async function getGreenhouseLoaderData(
       if (Array.isArray(c) && c.length > 0) { demographicQuestions = c; break; }
     }
 
-    // If still empty, try the public Greenhouse boards API as a fallback.
-    // This is the most reliable source — it always returns demographic questions
-    // even when the Remix SSR page omits them (common for US-region boards like Discord).
+    // If still empty, check the company-level cache first (fast, no network).
+    // All jobs on the same board share the same demographic questions.
+    if (demographicQuestions.length === 0 && demographicQuestionCache.has(boardToken)) {
+      demographicQuestions = demographicQuestionCache.get(boardToken)!;
+      console.info(`[greenhouse] ${boardToken}/${jobId} using cached ${demographicQuestions.length} demographic question(s)`);
+    }
+
+    // Still empty — try the public Greenhouse boards API as a fallback.
     if (demographicQuestions.length === 0) {
       try {
         const apiRes = await fetch(
@@ -182,6 +192,7 @@ async function getGreenhouseLoaderData(
               : null;
           if (fromApi && fromApi.length > 0) {
             demographicQuestions = fromApi;
+            demographicQuestionCache.set(boardToken, fromApi); // cache for other jobs on same board
             console.info(`[greenhouse] ${boardToken}/${jobId} loaded ${fromApi.length} demographic question(s) from boards API`);
           }
         }

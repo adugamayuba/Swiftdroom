@@ -108,26 +108,11 @@ function isVerificationEmail(subject: string): boolean {
 
 // ---------- Auto-complete pending applications ----------
 
-// Per-company throttle: track last completion attempt time to avoid hammering
-// the same board every 2-minute poll cycle (e.g. Discord returns 429).
-const lastCompletionAttempt = new Map<string, number>();
-const COMPLETION_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes between attempts per company
-
 async function autoCompleteApplication(
   userId: string,
   code: string,
   companyHint?: string
 ): Promise<void> {
-  // Check per-company cooldown
-  if (companyHint) {
-    const key = `${userId}:${companyHint.toLowerCase()}`;
-    const last = lastCompletionAttempt.get(key) ?? 0;
-    if (Date.now() - last < COMPLETION_COOLDOWN_MS) {
-      console.info(`[email-imap] ${companyHint} completion on cooldown — skipping`);
-      return;
-    }
-    lastCompletionAttempt.set(key, Date.now());
-  }
   // Build where clause — filter by company if we extracted a hint from the email subject.
   // e.g. "Security code for your application to Product People"
   //
@@ -198,6 +183,8 @@ async function autoCompleteApplication(
       select: { status: true },
     });
     if (updated?.status === "applied") return;
+    // Short pause between attempts to avoid rapid-fire requests to the same board
+    await new Promise((r) => setTimeout(r, 2000));
   }
 }
 
