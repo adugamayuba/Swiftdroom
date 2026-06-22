@@ -4,6 +4,7 @@
  */
 
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { applyViaLever } from "@/lib/apply-lever";
 import { applyViaGreenhouse } from "@/lib/apply-greenhouse";
 import { sendAutoApplyDigestEmail } from "@/lib/email";
@@ -375,10 +376,14 @@ async function processUser(
           status: "applied",
           notes: "Auto-applied by Swiftdroom",
           jobDescription: job.jobListing.description,
-          submittedAnswers: applyResult.submittedData ?? undefined,
+          submittedAnswers: applyResult.submittedData
+            ? (applyResult.submittedData as unknown as Prisma.InputJsonValue)
+            : undefined,
         },
         update: {
-          submittedAnswers: applyResult.submittedData ?? undefined,
+          submittedAnswers: applyResult.submittedData
+            ? (applyResult.submittedData as unknown as Prisma.InputJsonValue)
+            : undefined,
         },
       });
 

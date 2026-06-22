@@ -18,6 +18,7 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser, type ParsedMail } from "mailparser";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { completeWithSecurityCode } from "@/lib/apply-greenhouse";
 import { sendEmail } from "@/lib/email";
 import { PLANS } from "@/lib/plans";
@@ -266,10 +267,14 @@ async function attemptComplete(
         status: "applied",
         notes: "Auto-applied via Swiftdroom",
         jobDescription: job.jobListing.description,
-        submittedAnswers: result.submittedData ?? undefined,
+        submittedAnswers: result.submittedData
+          ? (result.submittedData as unknown as Prisma.InputJsonValue)
+          : undefined,
       },
       update: {
-        submittedAnswers: result.submittedData ?? undefined,
+        submittedAnswers: result.submittedData
+          ? (result.submittedData as unknown as Prisma.InputJsonValue)
+          : undefined,
       },
     });
     await db.autoApplySettings.update({
