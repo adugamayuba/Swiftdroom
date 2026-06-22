@@ -145,8 +145,17 @@ async function autoCompleteApplication(
     };
   }
 
-  const baseWhere = { userId, status: "failed", error: "security_code_required" };
-  // When a companyFilter is present, try narrowed search first, fall back to all pending-code jobs.
+  // Only match jobs marked security_code_required within the last 20 minutes.
+  // Greenhouse issues codes tied to a specific submission — stale jobs that have been
+  // waiting hours should not consume a fresh code meant for a new submission.
+  const recentCutoff = new Date(Date.now() - 20 * 60 * 1000);
+  const baseWhere = {
+    userId,
+    status: "failed",
+    error: "security_code_required",
+    updatedAt: { gte: recentCutoff },
+  };
+  // When a companyFilter is present, try narrowed search first, fall back to all recent pending-code jobs.
   // Order by updatedAt DESC — the job most recently marked security_code_required is the one
   // whose code email just arrived. Trying newer jobs first reduces wrong-code rejections.
   let jobs = await db.autoApplyJob.findMany({
@@ -158,16 +167,28 @@ async function autoCompleteApplication(
     take: 3,
   });
 
-  // If the company filter returned nothing, widen to all pending-code jobs for this user
+  // If the company filter returned nothing, widen to all recent pending-code jobs for this user
   // (avoids losing a valid code just because of a name-format mismatch)
   if (jobs.length === 0 && Object.keys(companyFilter).length > 0) {
-    console.info(`[email-imap] company filter found 0 jobs for "${companyHint}", widening search`);
+    console.info(`[email-imap] company filter found 0 jobs for "${companyHint}", widening to all recent security-code jobs`);
     jobs = await db.autoApplyJob.findMany({
       where: baseWhere,
       include: { jobListing: true },
       orderBy: { updatedAt: "desc" },
       take: 3,
     });
+  }
+
+  if (jobs.length === 0) {
+    // No recent match — check if there are stale jobs (helps with diagnostics)
+    const staleCount = await db.autoApplyJob.count({
+      where: { userId, status: "failed", error: "security_code_required" },
+    });
+    if (staleCount > 0) {
+      console.info(
+        `[email-imap] ${staleCount} stale security-code job(s) for user ${userId} ignored (older than 20 min) — company="${companyHint ?? "any"}"`
+      );
+    }
   }
 
   if (jobs.length === 0) {

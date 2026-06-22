@@ -97,11 +97,17 @@ function detectRegion(url: string): "eu" | "us" {
 /**
  * Fetch the Remix SSR loader data embedded in the job page HTML.
  * Contains the job fingerprint (required for submission), submit path, and question list.
+ *
+ * bypassDemographicCache — when true (used during security-code completions), skip the
+ * in-process cache and always do a fresh boards-API fetch for this specific job. This is
+ * important because the cached IDs come from a different job on the same board and may
+ * differ, causing 422 "invalid-attributes" on code completion.
  */
 async function getGreenhouseLoaderData(
   boardToken: string,
   jobId: string,
-  region: "eu" | "us" = "us"
+  region: "eu" | "us" = "us",
+  bypassDemographicCache = false
 ): Promise<LoaderData | null> {
   const host =
     region === "eu"
@@ -163,15 +169,19 @@ async function getGreenhouseLoaderData(
       if (Array.isArray(c) && c.length > 0) { demographicQuestions = c; break; }
     }
 
-    // If still empty, check the company-level cache first (fast, no network).
-    // All jobs on the same board share the same demographic questions.
-    if (demographicQuestions.length === 0 && demographicQuestionCache.has(boardToken)) {
+    // If still empty (and not bypassing cache), check the in-process cache.
+    // All jobs on the same board should share the same demographic questions.
+    // We skip the cache on code-completion runs (bypassDemographicCache=true) to ensure
+    // we always use the exact IDs for this specific job rather than IDs from another job.
+    if (demographicQuestions.length === 0 && !bypassDemographicCache && demographicQuestionCache.has(boardToken)) {
       demographicQuestions = demographicQuestionCache.get(boardToken)!;
       console.info(`[greenhouse] ${boardToken}/${jobId} using cached ${demographicQuestions.length} demographic question(s)`);
     }
 
     // Still empty — try the public Greenhouse boards API as a fallback.
-    if (demographicQuestions.length === 0) {
+    // Always run this when bypassDemographicCache=true (code completion) so we fetch
+    // the IDs specific to this job rather than relying on potentially stale cache data.
+    if (demographicQuestions.length === 0 || bypassDemographicCache) {
       try {
         const apiRes = await fetch(
           `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}?questions=true`,
@@ -192,8 +202,28 @@ async function getGreenhouseLoaderData(
               : null;
           if (fromApi && fromApi.length > 0) {
             demographicQuestions = fromApi;
-            demographicQuestionCache.set(boardToken, fromApi); // cache for other jobs on same board
-            console.info(`[greenhouse] ${boardToken}/${jobId} loaded ${fromApi.length} demographic question(s) from boards API`);
+            if (!bypassDemographicCache) {
+              demographicQuestionCache.set(boardToken, fromApi); // cache only on initial path
+            }
+            console.info(
+              `[greenhouse] ${boardToken}/${jobId} loaded ${fromApi.length} demographic question(s) from boards API` +
+              (bypassDemographicCache ? " (bypass-cache, fresh fetch)" : "") +
+              `, first id=${fromApi[0]?.id}`
+            );
+          } else {
+            // Log full response so we can diagnose when boards API returns no questions
+            console.info(
+              `[greenhouse] ${boardToken}/${jobId} boards API returned 0 demographic questions` +
+              (bypassDemographicCache ? " (bypass-cache)" : "") +
+              ` — raw dq=${JSON.stringify(dq ?? null).slice(0, 300)}`
+            );
+            // For code completions, fall back to cache as last resort
+            if (bypassDemographicCache && demographicQuestionCache.has(boardToken)) {
+              demographicQuestions = demographicQuestionCache.get(boardToken)!;
+              console.info(
+                `[greenhouse] ${boardToken}/${jobId} using cache as last-resort fallback: ${demographicQuestions.length} question(s)`
+              );
+            }
           }
         }
       } catch {
@@ -402,8 +432,10 @@ export async function applyViaGreenhouse(
       : "job-boards.greenhouse.io";
   const pageUrl = `https://${pageHost}/${boardToken}/jobs/${jobId}`;
 
-  // Step 1 — get fingerprint + submitPath + questions from Remix loader data
-  const loaderData = await getGreenhouseLoaderData(boardToken, jobId, region);
+  // Step 1 — get fingerprint + submitPath + questions from Remix loader data.
+  // For security-code completions, bypass the demographic question cache so we always
+  // fetch the exact IDs for this specific job (cached IDs from sibling jobs may differ).
+  const loaderData = await getGreenhouseLoaderData(boardToken, jobId, region, !!securityCode);
   if (!loaderData) {
     console.warn(`[greenhouse] ${boardToken}/${jobId} loader data unavailable`);
     return { success: false, error: "Job closed" };

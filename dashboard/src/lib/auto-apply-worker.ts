@@ -67,19 +67,23 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     data: { status: "pending", error: undefined },
   });
 
-  // Also reset "security_code_required" failed jobs older than 30 minutes back to pending
-  // so they get re-submitted with the (now-retrieved) code on the next cycle.
-  // The IMAP poller handles codes automatically, so these should resolve themselves.
-  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
-  await db.autoApplyJob.updateMany({
+  // Reset "security_code_required" failed jobs older than 25 minutes back to pending.
+  // The IMAP poller only matches codes to jobs updated within the last 20 minutes, so
+  // anything older than 25 min will never get a code matched — re-submit to get a fresh code.
+  // Use updatedAt (not createdAt) since we care about when the code was last requested.
+  const twentyFiveMinAgo = new Date(Date.now() - 25 * 60 * 1000);
+  const resetResult = await db.autoApplyJob.updateMany({
     where: {
       userId,
       status: "failed",
       error: "security_code_required",
-      createdAt: { lt: thirtyMinAgo },
+      updatedAt: { lt: twentyFiveMinAgo },
     },
     data: { status: "pending", error: undefined },
   });
+  if (resetResult.count > 0) {
+    console.info(`[auto-apply] reset ${resetResult.count} stale security-code job(s) to pending for ${userId}`);
+  }
 
   // Purge stale FAILED jobs only — keeps the queue clean from transient errors.
   // SKIPPED jobs ("Job closed") must be kept forever: they act as the blacklist
