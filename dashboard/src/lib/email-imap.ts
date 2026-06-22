@@ -485,7 +485,7 @@ export async function pollInboxEmails(): Promise<void> {
 
       const isVerification = isVerificationEmail(subject);
 
-      await db.inboxEmail.create({
+      const storedEmail = await db.inboxEmail.create({
         data: {
           userId: targetUser.id,
           toAlias,
@@ -498,6 +498,7 @@ export async function pollInboxEmails(): Promise<void> {
           receivedAt: parsed.date ?? new Date(),
           isVerification,
         },
+        select: { id: true },
       });
 
       console.info(
@@ -515,7 +516,7 @@ export async function pollInboxEmails(): Promise<void> {
           // Save the code on the InboxEmail row so it can be retried if no job is
           // ready yet (race: code email arrives before worker marks job as security_code_required).
           await db.inboxEmail.update({
-            where: { imapUid },
+            where: { id: storedEmail.id },
             data: { pendingCode: code },
           });
 
