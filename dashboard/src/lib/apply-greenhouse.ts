@@ -169,10 +169,18 @@ async function getGreenhouseLoaderData(
         );
         if (apiRes.ok) {
           const apiData = await apiRes.json() as {
-            demographic_questions?: { questions?: DemographicQuestion[] };
+            demographic_questions?:
+              | { questions?: DemographicQuestion[] }  // nested form
+              | DemographicQuestion[];                  // direct array form
           };
-          const fromApi = apiData.demographic_questions?.questions;
-          if (Array.isArray(fromApi) && fromApi.length > 0) {
+          // Some boards return { questions: [...] }, others return the array directly
+          const dq = apiData.demographic_questions;
+          const fromApi = Array.isArray(dq)
+            ? dq
+            : Array.isArray((dq as { questions?: DemographicQuestion[] })?.questions)
+              ? (dq as { questions: DemographicQuestion[] }).questions
+              : null;
+          if (fromApi && fromApi.length > 0) {
             demographicQuestions = fromApi;
             console.info(`[greenhouse] ${boardToken}/${jobId} loaded ${fromApi.length} demographic question(s) from boards API`);
           }

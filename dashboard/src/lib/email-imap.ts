@@ -108,11 +108,26 @@ function isVerificationEmail(subject: string): boolean {
 
 // ---------- Auto-complete pending applications ----------
 
+// Per-company throttle: track last completion attempt time to avoid hammering
+// the same board every 2-minute poll cycle (e.g. Discord returns 429).
+const lastCompletionAttempt = new Map<string, number>();
+const COMPLETION_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes between attempts per company
+
 async function autoCompleteApplication(
   userId: string,
   code: string,
   companyHint?: string
 ): Promise<void> {
+  // Check per-company cooldown
+  if (companyHint) {
+    const key = `${userId}:${companyHint.toLowerCase()}`;
+    const last = lastCompletionAttempt.get(key) ?? 0;
+    if (Date.now() - last < COMPLETION_COOLDOWN_MS) {
+      console.info(`[email-imap] ${companyHint} completion on cooldown — skipping`);
+      return;
+    }
+    lastCompletionAttempt.set(key, Date.now());
+  }
   // Build where clause — filter by company if we extracted a hint from the email subject.
   // e.g. "Security code for your application to Product People"
   //
@@ -366,12 +381,13 @@ export async function pollInboxEmails(): Promise<void> {
   // Covers the race condition where the code email arrives before the worker
   // marks the job as security_code_required (both run concurrently).
   try {
-    const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000);
+    // Greenhouse security codes expire in ~3-5 minutes — only retry within that window.
+    const fourMinAgo = new Date(Date.now() - 4 * 60 * 1000);
     const savedCodes = await db.inboxEmail.findMany({
       where: {
         isVerification: true,
         pendingCode: { not: null },
-        createdAt: { gte: fifteenMinAgo },
+        createdAt: { gte: fourMinAgo },
       },
       select: { id: true, userId: true, subject: true, pendingCode: true },
       orderBy: { createdAt: "desc" },
@@ -389,7 +405,10 @@ export async function pollInboxEmails(): Promise<void> {
       if (hasPending > 0) {
         console.info(`[email-imap] retrying saved code "${row.pendingCode}" for user ${row.userId}`);
         await autoCompleteApplication(row.userId, row.pendingCode, companyHint);
-        // Clear the code so we don't retry it again
+        // Always clear after one retry — code is either consumed or expired
+        await db.inboxEmail.update({ where: { id: row.id }, data: { pendingCode: null } });
+      } else {
+        // No pending jobs left — clear the stale code
         await db.inboxEmail.update({ where: { id: row.id }, data: { pendingCode: null } });
       }
     }
