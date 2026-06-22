@@ -485,15 +485,22 @@ export async function applyViaGreenhouse(
   };
   if (sessionCookie) headers["Cookie"] = sessionCookie;
 
-  const postBody: Record<string, unknown> = { job_application: jobApplication, fingerprint };
-
-  // Demographic answers at top level — Greenhouse US boards (boards.greenhouse.io)
-  // reject 422 if they're nested inside job_application.
+  // Demographic answers placement differs by submission path:
+  //   CAPTCHA path (initial submit): top-level — boards.greenhouse.io rejects 422 if nested
+  //   Security-code path (completion): inside job_application — the full validation
+  //     pass that runs on code completion expects them nested
+  // We include them in BOTH places so either path is covered.
   if (demographicAnswers.length > 0) {
-    postBody["demographic_answers"] = demographicAnswers;
+    jobApplication.demographic_answers = demographicAnswers; // nested (code completion)
     console.info(
       `[greenhouse] ${boardToken}/${jobId} sending ${demographicAnswers.length} demographic answer(s), first: ${JSON.stringify(demographicAnswers[0])}`
     );
+  }
+
+  const postBody: Record<string, unknown> = { job_application: jobApplication, fingerprint };
+
+  if (demographicAnswers.length > 0) {
+    postBody["demographic_answers"] = demographicAnswers; // top-level (captcha path)
   }
 
   if (securityCode) {
