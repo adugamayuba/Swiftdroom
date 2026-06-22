@@ -375,8 +375,11 @@ async function processUser(
           status: "applied",
           notes: "Auto-applied by Swiftdroom",
           jobDescription: job.jobListing.description,
+          submittedAnswers: applyResult.submittedData ?? undefined,
         },
-        update: {},
+        update: {
+          submittedAnswers: applyResult.submittedData ?? undefined,
+        },
       });
 
       await db.autoApplySettings.update({

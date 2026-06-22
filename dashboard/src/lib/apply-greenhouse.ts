@@ -263,8 +263,9 @@ async function buildAnswers(
   resumeText: string,
   jobTitle: string,
   linkedinUrl?: string
-): Promise<Record<string, unknown>> {
+): Promise<{ attrs: Record<string, unknown>; readable: import("@/lib/apply-lever").SubmittedAnswer[] }> {
   const attrs: Record<string, unknown> = {};
+  const readable: import("@/lib/apply-lever").SubmittedAnswer[] = [];
   let priority = 0;
 
   const SKIP_LABELS = [
@@ -289,6 +290,7 @@ async function buildAnswers(
     // LinkedIn URL question
     if (labelLower.includes("linkedin") && linkedinUrl) {
       attrs[qId] = { question_id: qId, priority: priority++, text_value: linkedinUrl };
+      readable.push({ label: q.label ?? "LinkedIn", answer: linkedinUrl, type: "url" });
       continue;
     }
 
@@ -299,6 +301,7 @@ async function buildAnswers(
           : "";
       if (answer) {
         attrs[qId] = { question_id: qId, priority: priority++, text_value: answer };
+        readable.push({ label: q.label ?? "Text question", answer, type: field.type });
       }
       continue;
     }
@@ -314,7 +317,6 @@ async function buildAnswers(
       const isBoolean = firstVal === 0 || firstVal === 1;
 
       if (isBoolean) {
-        // Yes/No — pick "Yes" (1) unless question sounds like it would be a disqualifier
         const preferNo = ["require.*sponsor", "visa sponsor"].some((p) =>
           new RegExp(p, "i").test(q.label ?? "")
         );
@@ -323,8 +325,8 @@ async function buildAnswers(
           priority: priority++,
           boolean_value: preferNo ? 0 : 1,
         };
+        readable.push({ label: q.label ?? "Yes/No", answer: preferNo ? "No" : "Yes", type: "boolean" });
       } else {
-        // Option-based — pick the first option
         attrs[qId] = {
           question_id: qId,
           priority: priority++,
@@ -332,11 +334,12 @@ async function buildAnswers(
             "0": { question_option_id: String(firstVal) },
           },
         };
+        readable.push({ label: q.label ?? "Select", answer: String(values[0].label ?? firstVal), type: "select" });
       }
     }
   }
 
-  return attrs;
+  return { attrs, readable };
 }
 
 /**
@@ -413,7 +416,7 @@ export async function applyViaGreenhouse(
   const sessionCookie = await getGreenhouseSession(boardToken, jobId, region);
 
   // Step 3 — build answers for custom required questions
-  const answersAttributes = await buildAnswers(
+  const { attrs: answersAttributes, readable: readableAnswers } = await buildAnswers(
     questions,
     payload.resumeText ?? "",
     payload.jobTitle ?? "",
@@ -509,7 +512,29 @@ export async function applyViaGreenhouse(
     );
 
     if (res.ok || res.status === 201 || res.status === 302) {
-      return { success: true };
+      // Build human-readable demographic answers for storage
+      const readableDemographic = dqList.map((q, i) => {
+        const ans = demographicAnswers[i] as { demographic_answer_option_id: number } | undefined;
+        const options = Array.isArray(q.answer_options) ? q.answer_options : [];
+        const chosen = options.find((o) => o.id === ans?.demographic_answer_option_id);
+        return {
+          label: (q as { label?: string; question?: string }).label ??
+                 (q as { label?: string; question?: string }).question ??
+                 `Demographic question ${i + 1}`,
+          answer: chosen?.label ?? "Decline",
+          type: "demographic",
+        };
+      });
+      return {
+        success: true,
+        submittedData: {
+          ats: "greenhouse",
+          email: payload.email,
+          submittedAt: new Date().toISOString(),
+          questions: readableAnswers,
+          demographicAnswers: readableDemographic,
+        },
+      };
     }
 
     if (res.status === 404 || res.status === 410) {

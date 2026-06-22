@@ -266,8 +266,11 @@ async function attemptComplete(
         status: "applied",
         notes: "Auto-applied via Swiftdroom",
         jobDescription: job.jobListing.description,
+        submittedAnswers: result.submittedData ?? undefined,
       },
-      update: {},
+      update: {
+        submittedAnswers: result.submittedData ?? undefined,
+      },
     });
     await db.autoApplySettings.update({
       where: { userId },

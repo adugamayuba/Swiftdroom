@@ -18,11 +18,25 @@ export interface ApplyPayload {
   coverLetter?: string;
 }
 
+export interface SubmittedAnswer {
+  label: string;
+  answer: string;
+  type?: string;
+}
+
 export interface ApplyResult {
   success: boolean;
   error?: string;
   /** True when Greenhouse sent a verification code to the applicant's email */
   securityCodeRequired?: boolean;
+  /** Human-readable record of every question asked and the answer submitted */
+  submittedData?: {
+    ats: string;
+    email: string;
+    submittedAt: string;
+    questions: SubmittedAnswer[];
+    demographicAnswers: SubmittedAnswer[];
+  };
 }
 
 /**
