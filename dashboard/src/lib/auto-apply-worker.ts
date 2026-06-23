@@ -407,13 +407,7 @@ async function processUser(
         const now = new Date();
         await db.autoApplyJob.update({
           where: { id: job.id },
-          data: {
-            status: "applied",
-            appliedAt: now,
-            submittedAnswers: applyResult.submittedData
-              ? (applyResult.submittedData as unknown as Prisma.InputJsonValue)
-              : undefined,
-          },
+          data: { status: "applied", appliedAt: now },
         });
         await db.application.upsert({
           where: { id: `auto-${job.id}` },
