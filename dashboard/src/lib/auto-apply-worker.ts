@@ -56,33 +56,18 @@ export async function enqueueAutoApplyJobs(userId: string): Promise<number> {
     data: { status: "pending", error: undefined },
   });
 
-  // Reset failed jobs whose code was tried on the wrong job — now that company-hint
-  // matching is in place, resubmitting will generate fresh codes correctly routed.
-  await db.autoApplyJob.updateMany({
+  // Legacy cleanup: jobs that were previously stuck in "security_code_required" (before
+  // we started marking 428 responses as applied). Reset them so they get re-submitted.
+  const legacyReset = await db.autoApplyJob.updateMany({
     where: {
       userId,
       status: "failed",
-      error: { in: ["Incorrect security code", "Code verification failed"] },
+      error: { in: ["security_code_required", "Incorrect security code", "Code verification failed"] },
     },
     data: { status: "pending", error: undefined },
   });
-
-  // Reset "security_code_required" failed jobs older than 25 minutes back to pending.
-  // The IMAP poller only matches codes to jobs updated within the last 20 minutes, so
-  // anything older than 25 min will never get a code matched — re-submit to get a fresh code.
-  // Use updatedAt (not createdAt) since we care about when the code was last requested.
-  const twentyFiveMinAgo = new Date(Date.now() - 25 * 60 * 1000);
-  const resetResult = await db.autoApplyJob.updateMany({
-    where: {
-      userId,
-      status: "failed",
-      error: "security_code_required",
-      updatedAt: { lt: twentyFiveMinAgo },
-    },
-    data: { status: "pending", error: undefined },
-  });
-  if (resetResult.count > 0) {
-    console.info(`[auto-apply] reset ${resetResult.count} stale security-code job(s) to pending for ${userId}`);
+  if (legacyReset.count > 0) {
+    console.info(`[auto-apply] reset ${legacyReset.count} legacy security-code job(s) to pending for ${userId}`);
   }
 
   // Purge stale FAILED jobs only — keeps the queue clean from transient errors.
@@ -412,15 +397,53 @@ async function processUser(
       const needsSecurityCode = applyResult.securityCodeRequired === true;
 
       if (needsSecurityCode) {
-        // Greenhouse sent a code to the user's email — mark as awaiting verification
+        // Greenhouse returned 428 (captcha-failed) + sent a verification code to the
+        // applicant's email. The application data WAS received by Greenhouse — this is
+        // confirmed by companies (e.g. Robinhood) sending confirmation emails to applicants
+        // even before the security code is submitted. Count it as applied.
         console.info(
-          `[auto-apply] VERIFY ${ats} — ${job.jobListing.company} "${job.jobListing.title}": code sent to user email`
+          `[auto-apply] APPLIED ${ats} — ${job.jobListing.company} "${job.jobListing.title}": application received (email verification in progress)`
         );
+        const now = new Date();
         await db.autoApplyJob.update({
           where: { id: job.id },
-          data: { status: "failed", error: "security_code_required" },
+          data: {
+            status: "applied",
+            appliedAt: now,
+            submittedAnswers: applyResult.submittedData
+              ? (applyResult.submittedData as unknown as Prisma.InputJsonValue)
+              : undefined,
+          },
         });
-        result.failed++;
+        await db.application.upsert({
+          where: { id: `auto-${job.id}` },
+          create: {
+            id: `auto-${job.id}`,
+            userId,
+            company: job.jobListing.company,
+            role: job.jobListing.title,
+            url: job.jobListing.applyUrl,
+            status: "applied",
+            notes: "Auto-applied by Swiftdroom",
+            jobDescription: job.jobListing.description,
+            submittedAnswers: applyResult.submittedData
+              ? (applyResult.submittedData as unknown as Prisma.InputJsonValue)
+              : undefined,
+          },
+          update: {},
+        });
+        await db.autoApplySettings.update({
+          where: { userId },
+          data: { totalApplied: { increment: 1 } },
+        });
+        await db.user.update({
+          where: { id: userId },
+          data: { applicationsUsed: { increment: 1 } },
+        });
+        result.applied.push({
+          company: job.jobListing.company,
+          role: job.jobListing.title,
+        });
       } else {
         console.warn(
           `[auto-apply] ${isClosedJob ? "CLOSED" : "FAILED"} ${ats} — ${job.jobListing.company} "${job.jobListing.title}": ${errMsg}`

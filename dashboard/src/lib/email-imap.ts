@@ -275,9 +275,24 @@ async function attemptComplete(
   const result = await completeWithSecurityCode(job.jobListing.applyUrl, payload, code);
 
   if (result.success) {
+    // Check if this job was already counted as applied (from the initial 428 path).
+    // If so, only update the submittedAnswers — don't double-count usage.
+    const currentJob = await db.autoApplyJob.findUnique({
+      where: { id: job.id },
+      select: { status: true },
+    });
+    const alreadyApplied = currentJob?.status === "applied";
+
     await db.autoApplyJob.update({
       where: { id: job.id },
-      data: { status: "applied", appliedAt: new Date(), error: undefined },
+      data: {
+        status: "applied",
+        appliedAt: alreadyApplied ? undefined : new Date(),
+        error: undefined,
+        submittedAnswers: result.submittedData
+          ? (result.submittedData as unknown as Prisma.InputJsonValue)
+          : undefined,
+      },
     });
     await db.application.upsert({
       where: { id: `auto-${job.id}` },
@@ -300,16 +315,19 @@ async function attemptComplete(
           : undefined,
       },
     });
-    await db.autoApplySettings.update({
-      where: { userId },
-      data: { totalApplied: { increment: 1 } },
-    });
-    await db.user.update({
-      where: { id: userId },
-      data: { applicationsUsed: { increment: 1 } },
-    });
+    if (!alreadyApplied) {
+      await db.autoApplySettings.update({
+        where: { userId },
+        data: { totalApplied: { increment: 1 } },
+      });
+      await db.user.update({
+        where: { id: userId },
+        data: { applicationsUsed: { increment: 1 } },
+      });
+    }
     console.info(
-      `[email-imap] ✓ applied to ${job.jobListing.company} "${job.jobListing.title}"`
+      `[email-imap] ✓ code verified for ${job.jobListing.company} "${job.jobListing.title}"` +
+      (alreadyApplied ? " (already counted as applied)" : "")
     );
   } else {
     const errMsg = result.error ?? "Code verification failed";
