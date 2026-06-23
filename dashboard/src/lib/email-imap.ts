@@ -289,9 +289,6 @@ async function attemptComplete(
         status: "applied",
         appliedAt: alreadyApplied ? undefined : new Date(),
         error: undefined,
-        submittedAnswers: result.submittedData
-          ? (result.submittedData as unknown as Prisma.InputJsonValue)
-          : undefined,
       },
     });
     await db.application.upsert({
