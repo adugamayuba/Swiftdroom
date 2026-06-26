@@ -8,6 +8,7 @@ export function isSubscriptionPeriodValid(user: User): boolean {
 }
 
 export function hasActiveSubscription(user: User): boolean {
+  if (user.role === "COMMUNITY_LEADER" || user.role === "ADMIN") return true;
   const statusOk =
     user.subscriptionStatus === "ACTIVE" ||
     user.subscriptionStatus === "TRIALING";

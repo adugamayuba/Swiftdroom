@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
     referralDiscountAvailable: userGetsCheckoutDiscount(user),
     signupPromoCode: user.signupPromoCode,
     referralCode: user.referralCode,
+    isCommunityLeader: user.role === "COMMUNITY_LEADER",
     emailNotifications: {
       login: user.emailNotifyLogin,
       applications: user.emailNotifyApplications,

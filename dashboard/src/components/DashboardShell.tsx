@@ -77,6 +77,10 @@ export default function DashboardShell({
       })
       .then((data) => {
         if (!data) return;
+        if (data.role === "COMMUNITY_LEADER") {
+          router.replace("/community");
+          return;
+        }
         if (!data.onboardingComplete) {
           router.replace("/onboarding");
           return;

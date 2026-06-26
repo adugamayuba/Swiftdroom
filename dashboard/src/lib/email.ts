@@ -291,3 +291,33 @@ Manage auto-apply settings: ${getAppUrl()}/dashboard/auto-apply
 — The Swiftdroom team`,
   });
 }
+
+export async function sendCommunityLeaderInviteEmail(params: {
+  email: string;
+  communityName?: string;
+  signupUrl: string;
+}) {
+  const nameHint = params.communityName?.trim()
+    ? ` for ${params.communityName.trim()}`
+    : "";
+
+  await sendEmail({
+    to: params.email,
+    subject: "You're invited to Swiftdroom Community Access",
+    text: `Hi,
+
+You've been invited to join Swiftdroom as a community leader${nameHint}.
+
+As a community leader you'll get:
+• A dedicated community dashboard
+• Your own referral link for your members
+• Tools to manage your community profile (logo, name, and details)
+
+Set up your account here (link expires in 7 days):
+${params.signupUrl}
+
+If you weren't expecting this invite, you can ignore this email.
+
+— The Swiftdroom team`,
+  });
+}

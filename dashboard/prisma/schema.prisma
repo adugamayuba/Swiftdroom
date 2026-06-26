@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
+  COMMUNITY_LEADER
 }
 
 enum SubscriptionPlan {
@@ -78,6 +79,32 @@ model User {
   passwordResetExpiresAt   DateTime?
   swiftdroomEmail          String?            @unique
   inboxEmails              InboxEmail[]
+  community                Community?
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  leaderId    String   @unique
+  leader      User     @relation(fields: [leaderId], references: [id], onDelete: Cascade)
+  name        String   @default("")
+  slug        String   @unique
+  logoUrl     String   @default("")
+  description String   @default("")
+  website     String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CommunityInvite {
+  id            String    @id @default(cuid())
+  email         String
+  token         String    @unique
+  communityName String    @default("")
+  acceptedAt    DateTime?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+
+  @@index([email])
 }
 
 model ReferralEarning {

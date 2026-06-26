@@ -123,6 +123,12 @@ export default function AdminSOverviewPage() {
         >
           Manage referral payouts
         </Link>
+        <Link
+          href="/admin/s/communities"
+          className="mt-3 inline-block rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        >
+          Invite community leaders
+        </Link>
       </div>
     </div>
   );
