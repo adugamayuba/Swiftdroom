@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api-client";
+import { useRouter } from "next/navigation";
+import { apiFetch, clearAdminToken } from "@/lib/api-client";
 
 interface Invite {
   id: string;
@@ -20,6 +21,7 @@ interface CommunityRow {
 }
 
 export default function AdminCommunitiesPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [communityName, setCommunityName] = useState("");
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -31,6 +33,11 @@ export default function AdminCommunitiesPage() {
 
   async function load() {
     const res = await apiFetch("/api/admin/s/communities");
+    if (res.status === 401) {
+      clearAdminToken();
+      router.replace("/admin/s/login?return=/admin/s/communities");
+      return;
+    }
     const data = await res.json();
     setInvites(data.invites ?? []);
     setCommunities(data.communities ?? []);
@@ -55,6 +62,11 @@ export default function AdminCommunitiesPage() {
     setSubmitting(false);
 
     if (!res.ok) {
+      if (res.status === 401) {
+        clearAdminToken();
+        router.replace("/admin/s/login?return=/admin/s/communities");
+        return;
+      }
       setError(data.error || "Failed to send invite.");
       return;
     }

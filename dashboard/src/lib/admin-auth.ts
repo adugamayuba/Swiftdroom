@@ -59,22 +59,36 @@ export async function getAdminSession(): Promise<boolean> {
   return verifyAdminSessionFromToken(token);
 }
 
-function getAdminTokenFromRequest(request: NextRequest): string | null {
-  const headerToken = request.headers.get("x-admin-token")?.trim();
-  if (headerToken) return headerToken;
-
-  const auth = request.headers.get("authorization");
-  if (auth?.startsWith("Bearer ")) {
-    const token = auth.slice(7).trim();
-    if (token) return token;
-  }
-  return request.cookies.get(ADMIN_COOKIE)?.value ?? null;
-}
-
 export async function requireAdminSession(
   request: NextRequest
 ): Promise<boolean> {
-  const token = getAdminTokenFromRequest(request);
-  if (!token) return false;
-  return verifyAdminSessionFromToken(token);
+  // Try every credential source — a stale x-admin-token in localStorage must not
+  // block a valid admin_session cookie (common after re-login or cross-tab drift).
+  const candidates = new Set<string>();
+  const headerToken = request.headers.get("x-admin-token")?.trim();
+  const auth = request.headers.get("authorization");
+  const bearer =
+    auth?.startsWith("Bearer ") ? auth.slice(7).trim() : null;
+  const cookieToken = request.cookies.get(ADMIN_COOKIE)?.value;
+
+  for (const t of [headerToken, bearer, cookieToken]) {
+    if (t) candidates.add(t);
+  }
+
+  for (const token of candidates) {
+    if (await verifyAdminSessionFromToken(token)) return true;
+  }
+  return false;
+}
+
+/** Return the first admin token on the request (for syncing client localStorage). */
+export function getAdminTokenFromRequest(request: NextRequest): string | null {
+  return (
+    request.headers.get("x-admin-token")?.trim() ||
+    (request.headers.get("authorization")?.startsWith("Bearer ")
+      ? request.headers.get("authorization")!.slice(7).trim()
+      : null) ||
+    request.cookies.get(ADMIN_COOKIE)?.value ||
+    null
+  );
 }

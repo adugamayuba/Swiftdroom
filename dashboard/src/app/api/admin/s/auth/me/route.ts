@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminPasswordConfigured, requireAdminSession } from "@/lib/admin-auth";
+import {
+  getAdminTokenFromRequest,
+  isAdminPasswordConfigured,
+  requireAdminSession,
+} from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
   if (!isAdminPasswordConfigured()) {
@@ -7,5 +11,6 @@ export async function GET(request: NextRequest) {
   }
 
   const authenticated = await requireAdminSession(request);
-  return NextResponse.json({ authenticated, configured: true });
+  const adminToken = authenticated ? getAdminTokenFromRequest(request) : undefined;
+  return NextResponse.json({ authenticated, configured: true, adminToken });
 }

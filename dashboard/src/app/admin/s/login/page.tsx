@@ -58,8 +58,10 @@ export default function AdminSLoginPage() {
       setError("We couldn't sign you in. Please try again.");
       return;
     }
+    if (me.adminToken) setAdminToken(me.adminToken);
 
-    router.replace("/admin/s");
+    const returnTo = searchParams.get("return") || "/admin/s";
+    router.replace(returnTo);
   }
 
   return (

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { apiFetch, clearAdminToken, getAdminToken } from "@/lib/api-client";
+import { apiFetch, clearAdminToken, setAdminToken } from "@/lib/api-client";
 
 export default function AdminSShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -21,12 +21,6 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
 
     // Leaving login: reset so overview cannot flash before auth completes.
     setReady(false);
-
-    const token = getAdminToken();
-    if (!token) {
-      router.replace("/admin/s/login");
-      return;
-    }
 
     apiFetch("/api/admin/s/auth/me")
       .then(async (r) => {
@@ -50,6 +44,7 @@ export default function AdminSShell({ children }: { children: React.ReactNode })
           router.replace("/admin/s/login");
           return;
         }
+        if (data.adminToken) setAdminToken(data.adminToken);
         setReady(true);
       })
       .catch(() => {
